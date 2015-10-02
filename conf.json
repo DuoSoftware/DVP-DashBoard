@@ -1,0 +1,6 @@
+{
+    "RedisIp": "104.131.105.222:6379",
+	"RedisDb": 8,
+	"WriteLogFile": true,
+	"Version":"1.0.0.6"
+}
