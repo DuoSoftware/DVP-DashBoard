@@ -1,20 +1,16 @@
 package main
 
 import (
-	//"code.google.com/p/log4go"
-	"encoding/json"
+	"database/sql"
 	"fmt"
 	"github.com/fzzy/radix/extra/pubsub"
 	"github.com/fzzy/radix/redis"
-	"os"
+	_ "github.com/lib/pq"
 	"strconv"
 	"strings"
 	"time"
 )
 
-var redisIp string
-var redisDb int
-var writeConfig bool
 var statClient *StatsdClient
 
 const layout = "2006-01-02T15:04:05Z07:00"
@@ -28,31 +24,14 @@ func errHndlr(err error) {
 }
 
 func InitiateStatDClient() {
-	host := "45.55.142.207"
-	port := 8125
+	host := statsDIp
+	port := statsDPort
 
 	//client := statsd.New(host, port)
 	statClient = New(host, port)
 }
 
 func InitiateRedis() {
-	file, _ := os.Open("conf.json")
-	decoder := json.NewDecoder(file)
-	configuration := Configuration{}
-	err := decoder.Decode(&configuration)
-	if err != nil {
-		fmt.Println("error:", err)
-		redisIp = "127.0.0.1:6379"
-		redisDb = 8
-		writeConfig = false
-	} else {
-		redisIp = configuration.RedisIp
-		redisDb = configuration.RedisDb
-		writeConfig = configuration.WriteLogFile
-	}
-
-	fmt.Println("RedisIp:", redisIp)
-	fmt.Println("RedisDb:", redisDb)
 	go PubSub()
 }
 
@@ -105,7 +84,61 @@ func PubSub() {
 
 }
 
-func OnMeta(_class, _type, _category, _window string, count int, _flushEnable bool) {
+func PersistsMetaData(_class, _type, _category, _window string, count int, _flushEnable bool) {
+	conStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d", pgUser, pgPassword, pgDbname, pgHost, pgPort)
+	db, err := sql.Open("postgres", conStr)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	result, err1 := db.Exec("INSERT INTO \"Dashboard_MetaData\"(\"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", _class, _type, _category, _window, count, _flushEnable, time.Now().Local(), time.Now().Local())
+	if err1 != nil {
+		fmt.Println(err1.Error())
+	} else {
+		fmt.Println("PersistsMetaData: ", result)
+	}
+	db.Close()
+}
+
+func ReloadMetaData(_class, _type, _category string) bool {
+	var result bool
+	conStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d", pgUser, pgPassword, pgDbname, pgHost, pgPort)
+	db, err := sql.Open("postgres", conStr)
+	if err != nil {
+		fmt.Println(err.Error())
+		result = false
+	}
+
+	var EventClass string
+	var EventType string
+	var EventCategory string
+	var WindowName string
+	var Count int
+	var FlushEnable bool
+
+	err1 := db.QueryRow("SELECT \"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\" FROM \"Dashboard_MetaData\" WHERE \"EventClass\"=$1 AND \"EventType\"=$2 AND \"EventCategory\"=$3", _class, _type, _category).Scan(&EventClass, &EventType, &EventCategory, &WindowName, &Count, &FlushEnable)
+	switch {
+	case err1 == sql.ErrNoRows:
+		fmt.Println("No metaData with that ID.")
+		result = false
+	case err1 != nil:
+		fmt.Println(err1.Error())
+		result = false
+	default:
+		fmt.Printf("EventClass is %s\n", EventClass)
+		fmt.Printf("EventType is %s\n", EventType)
+		fmt.Printf("EventCategory is %s\n", EventCategory)
+		fmt.Printf("WindowName is %s\n", WindowName)
+		fmt.Printf("Count is %s\n", Count)
+		fmt.Printf("FlushEnable is %s\n", FlushEnable)
+		CacheMetaData(EventClass, EventType, EventCategory, WindowName, Count, FlushEnable)
+		result = true
+	}
+	db.Close()
+	return result
+}
+
+func CacheMetaData(_class, _type, _category, _window string, count int, _flushEnable bool) {
 
 	_windowName := fmt.Sprintf("META:%s:%s:%s:WINDOW", _class, _type, _category)
 	_incName := fmt.Sprintf("META:%s:%s:%s:COUNT", _class, _type, _category)
@@ -134,6 +167,11 @@ func OnMeta(_class, _type, _category, _window string, count int, _flushEnable bo
 	client.Cmd("setnx", _incName, strconv.Itoa(count))
 }
 
+func OnMeta(_class, _type, _category, _window string, count int, _flushEnable bool) {
+	CacheMetaData(_class, _type, _category, _window, count, _flushEnable)
+	PersistsMetaData(_class, _type, _category, _window, count, _flushEnable)
+}
+
 func OnEvent(_tenent, _company int, _class, _type, _category, _session, _parameter1, _parameter2 string) {
 	temp := fmt.Sprintf("Tenant:%d Company:%d Class:%s Type:%s Category:%s Session:%s Param1:%s Param2:%s", _tenent, _company, _class, _type, _category, _session, _parameter1, _parameter2)
 	fmt.Println("OnEvent: ", temp)
@@ -155,6 +193,12 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 	r := client.Cmd("select", redisDb)
 	errHndlr(r.Err)
 
+	isWindowExist, _ := client.Cmd("exists", _window).Bool()
+	isIncExist, _ := client.Cmd("exists", _inc).Bool()
+
+	if isWindowExist == false || isIncExist == false {
+		ReloadMetaData(_class, _type, _category)
+	}
 	window, _werr := client.Cmd("get", _window).Str()
 	errHndlr(_werr)
 	sinc, _ierr := client.Cmd("get", _inc).Str()

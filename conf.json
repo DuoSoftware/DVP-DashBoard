@@ -1,6 +1,13 @@
 {
-    "RedisIp": "104.131.105.222:6379",
+	"Port":"2226",
+    "RedisIp": "104.131.105.222",
+	"RedisPort": "6379",
 	"RedisDb": 8,
-	"WriteLogFile": true,
-	"Version":"1.0.0.6"
+	"StatsDIp":"45.55.142.207",
+	"StatsDPort":8125,
+	"PgUser":"duo",
+	"pgPassword":"DuoS123",
+	"PgDbname":"dvpdb",
+	"PgHost":"104.131.105.222",
+	"PgPort":5432
 }

@@ -1,0 +1,13 @@
+{
+	"Port":"HOST_DIALER_PORT",
+    "RedisIp": "SYS_REDIS_HOST",
+	"RedisPort": "SYS_REDIS_PORT",
+	"RedisDb": "SYS_REDIS_PORT",
+	"StatsDIp":"SYS_STATSD_HOST",
+	"StatsDPort":"SYS_STATSD_PORT",
+	"PgUser":"SYS_PGSQL_USER",
+	"pgPassword":"SYS_PGSQL_PASSWORD",
+	"PgDbname":"SYS_PGSQL_DBNAME",
+	"PgHost":"SYS_PGSQL_HOST",
+	"PgPort":"SYS_STATSD_PORT"
+}
