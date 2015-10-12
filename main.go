@@ -3,6 +3,7 @@ package main
 
 import (
 	"code.google.com/p/gorest"
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -16,7 +17,8 @@ func main() {
 	go ClearData()
 	gorest.RegisterService(new(DashBoardEvent))
 	http.Handle("/", gorest.Handle())
-	http.ListenAndServe(":8787", nil)
+	addr := fmt.Sprintf(":%s", port)
+	http.ListenAndServe(addr, nil)
 
 	////fmt.Scanln()
 	//client, error := goredis.Dial(&goredis.DialConfig{Address: "127.0.0.1:6379"})
