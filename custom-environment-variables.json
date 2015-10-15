@@ -1,5 +1,5 @@
 {
-	"Port":"HOST_DIALER_PORT",
+	"Port":"HOST_DASHBOARD_PORT",
     "RedisIp": "SYS_REDIS_HOST",
 	"RedisPort": "SYS_REDIS_PORT",
 	"RedisDb": "SYS_REDIS_DB",
