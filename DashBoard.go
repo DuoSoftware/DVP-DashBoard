@@ -129,8 +129,8 @@ func ReloadMetaData(_class, _type, _category string) bool {
 		fmt.Printf("EventType is %s\n", EventType)
 		fmt.Printf("EventCategory is %s\n", EventCategory)
 		fmt.Printf("WindowName is %s\n", WindowName)
-		fmt.Printf("Count is %s\n", Count)
-		fmt.Printf("FlushEnable is %s\n", FlushEnable)
+		fmt.Printf("Count is %d\n", Count)
+		fmt.Printf("FlushEnable is %t\n", FlushEnable)
 		CacheMetaData(EventClass, EventType, EventCategory, WindowName, Count, FlushEnable)
 		result = true
 	}
@@ -274,8 +274,8 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 		}
 
-		fmt.Sprintf("%s %s", window, sinc)
-
+		logWindow := fmt.Sprintf("%s : %s", window, sinc)
+		fmt.Println(logWindow)
 	}
 
 }
