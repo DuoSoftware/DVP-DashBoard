@@ -1,7 +1,7 @@
 package main
 
 import (
-	"code.google.com/p/gorest"
+	"github.com/sukitha/gorest/"
 	"fmt"
 	"time"
 )
