@@ -2,8 +2,8 @@
 package main
 
 import (
-	"code.google.com/p/gorest"
 	"fmt"
+	"github.com/DuoSoftware/gorest"
 	"net/http"
 	"time"
 )
