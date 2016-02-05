@@ -2,7 +2,7 @@
 package main
 
 import (
-	"code.google.com/p/gorest"
+	"github.com/sukitha/gorest/"
 	"fmt"
 	"net/http"
 	"time"
