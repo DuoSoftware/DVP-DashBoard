@@ -85,7 +85,7 @@ func PubSub() {
 }
 
 func PersistsMetaData(_class, _type, _category, _window string, count int, _flushEnable bool) {
-	conStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d", pgUser, pgPassword, pgDbname, pgHost, pgPort)
+	conStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=disable", pgUser, pgPassword, pgDbname, pgHost, pgPort)
 	db, err := sql.Open("postgres", conStr)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -96,6 +96,9 @@ func PersistsMetaData(_class, _type, _category, _window string, count int, _flus
 		fmt.Println(err1.Error())
 	} else {
 		fmt.Println("PersistsMetaData: ", result)
+		lInsertedId, err2 := result.LastInsertId()
+		fmt.Println(err2)
+		fmt.Println("Last inserted Id: ", lInsertedId)
 	}
 	db.Close()
 }
