@@ -47,7 +47,7 @@ func GetDefaultConfig() Configuration {
 		fmt.Println("error:", deferr)
 		defconfiguration.RedisIp = "127.0.0.1"
 		defconfiguration.RedisPort = "6389"
-		defconfiguration.RedisDb = 6
+		defconfiguration.RedisDb = 8
 		defconfiguration.RedisPassword = "DuoS123"
 		defconfiguration.Port = "2226"
 		defconfiguration.StatsDIp = "45.55.142.207"
@@ -78,7 +78,7 @@ func LoadDefaultConfig() {
 		fmt.Println("error:", deferr)
 		redisIp = "127.0.0.1"
 		redisPort = "6389"
-		redisDb = 6
+		redisDb = 8
 		redisPassword = "DuoS123"
 		port = "2226"
 		statsDIp = "45.55.142.207"
