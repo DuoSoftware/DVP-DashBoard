@@ -28,31 +28,33 @@ type MetaData struct {
 }
 
 type Configuration struct {
-	RedisIp    string
-	RedisPort  string
-	RedisDb    int
-	Port       string
-	StatsDIp   string
-	StatsDPort int
-	PgUser     string
-	PgPassword string
-	PgDbname   string
-	PgHost     string
-	PgPort     int
+	RedisIp       string
+	RedisPort     string
+	RedisDb       int
+	RedisPassword string
+	Port          string
+	StatsDIp      string
+	StatsDPort    int
+	PgUser        string
+	PgPassword    string
+	PgDbname      string
+	PgHost        string
+	PgPort        int
 }
 
 type EnvConfiguration struct {
-	RedisIp    string
-	RedisPort  string
-	RedisDb    string
-	Port       string
-	StatsDIp   string
-	StatsDPort string
-	PgUser     string
-	PgPassword string
-	PgDbname   string
-	PgHost     string
-	PgPort     string
+	RedisIp       string
+	RedisPort     string
+	RedisDb       string
+	RedisPassword string
+	Port          string
+	StatsDIp      string
+	StatsDPort    string
+	PgUser        string
+	PgPassword    string
+	PgDbname      string
+	PgHost        string
+	PgPort        string
 }
 
 type DashBoardEvent struct {

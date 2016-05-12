@@ -13,6 +13,7 @@ var dirPath string
 var redisIp string
 var redisPort string
 var redisDb int
+var redisPassword string
 var port string
 var statsDIp string
 var statsDPort int
@@ -45,8 +46,9 @@ func GetDefaultConfig() Configuration {
 	if deferr != nil {
 		fmt.Println("error:", deferr)
 		defconfiguration.RedisIp = "127.0.0.1"
-		defconfiguration.RedisPort = "6379"
-		defconfiguration.RedisDb = 8
+		defconfiguration.RedisPort = "6389"
+		defconfiguration.RedisDb = 6
+		defconfiguration.RedisPassword = "DuoS123"
 		defconfiguration.Port = "2226"
 		defconfiguration.StatsDIp = "45.55.142.207"
 		defconfiguration.StatsDPort = 8125
@@ -75,8 +77,9 @@ func LoadDefaultConfig() {
 	if deferr != nil {
 		fmt.Println("error:", deferr)
 		redisIp = "127.0.0.1"
-		redisPort = "6379"
-		redisDb = 8
+		redisPort = "6389"
+		redisDb = 6
+		redisPassword = "DuoS123"
 		port = "2226"
 		statsDIp = "45.55.142.207"
 		statsDPort = 8125
@@ -89,6 +92,7 @@ func LoadDefaultConfig() {
 		redisIp = fmt.Sprintf("%s:%s", defconfiguration.RedisIp, defconfiguration.RedisPort)
 		redisPort = defconfiguration.RedisPort
 		redisDb = defconfiguration.RedisDb
+		redisPassword = defconfiguration.RedisPassword
 		port = defconfiguration.Port
 		statsDIp = defconfiguration.StatsDIp
 		statsDPort = defconfiguration.StatsDPort
@@ -121,6 +125,7 @@ func LoadConfiguration() {
 		redisIp = os.Getenv(envconfiguration.RedisIp)
 		redisPort = os.Getenv(envconfiguration.RedisPort)
 		redisDb, converr = strconv.Atoi(os.Getenv(envconfiguration.RedisDb))
+		redisPassword = os.Getenv(envconfiguration.RedisPassword)
 		port = os.Getenv(envconfiguration.Port)
 		statsDIp = os.Getenv(envconfiguration.StatsDIp)
 		statsDPort, converr = strconv.Atoi(os.Getenv(envconfiguration.StatsDPort))
@@ -138,6 +143,9 @@ func LoadConfiguration() {
 		}
 		if redisDb == 0 || converr != nil {
 			redisDb = defConfig.RedisDb
+		}
+		if redisPassword == "" {
+			redisPassword = defConfig.RedisPassword
 		}
 		if port == "" {
 			port = defConfig.Port

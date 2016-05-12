@@ -44,6 +44,10 @@ func PubSub() {
 	c2, err := redis.Dial("tcp", redisIp)
 	errHndlr(err)
 	defer c2.Close()
+	//authServer
+	authE := c2.Cmd("auth", redisPassword)
+	errHndlr(authE.Err)
+
 	psc := pubsub.NewSubClient(c2)
 	psr := psc.Subscribe("events")
 	ppsr := psc.PSubscribe("EVENT:*")
@@ -155,7 +159,9 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	errHndlr(err)
 	defer client.Close()
-
+	//authServer
+	authE := client.Cmd("auth", redisPassword)
+	errHndlr(authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
 	errHndlr(r.Err)
@@ -191,7 +197,9 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	errHndlr(err)
 	defer client.Close()
-
+	//authServer
+	authE := client.Cmd("auth", redisPassword)
+	errHndlr(authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
 	errHndlr(r.Err)
@@ -296,7 +304,9 @@ func OnReset() {
 	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	errHndlr(err)
 	defer client.Close()
-
+	//authServer
+	authE := client.Cmd("auth", redisPassword)
+	errHndlr(authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
 	errHndlr(r.Err)

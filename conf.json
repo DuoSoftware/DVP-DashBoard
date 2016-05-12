@@ -1,8 +1,9 @@
 {
 	"Port":"2226",
     "RedisIp": "45.55.142.207",
-	"RedisPort": "6379",
+	"RedisPort": "6389",
 	"RedisDb": 6,
+	"RedisPassword":"DuoS123",
 	"StatsDIp":"45.55.142.207",
 	"StatsDPort":8125,
 	"PgUser":"duo",
