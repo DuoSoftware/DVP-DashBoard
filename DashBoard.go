@@ -246,7 +246,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		totCountHrEventName := fmt.Sprintf("TOTALCOUNTHR:%d:%d:%s:%s:%s:%d:%d", _tenent, _company, window, _parameter1, _parameter2, tm.Hour(), tm.Minute())
 
 		if _parameter1 == "" {
-			_parameter1 = "#"
+			_parameter1 = "empty"
 		}
 		countConcStatName := fmt.Sprintf("event.concurrent.%d.%d.%s.%s", _tenent, _company, _parameter1, window)
 		gaugeConcStatName := fmt.Sprintf("event.concurrent.%d.%d.%s.%s", _tenent, _company, _parameter1, window)
