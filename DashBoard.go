@@ -245,11 +245,14 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		totCountEventName := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 		totCountHrEventName := fmt.Sprintf("TOTALCOUNTHR:%d:%d:%s:%s:%s:%d:%d", _tenent, _company, window, _parameter1, _parameter2, tm.Hour(), tm.Minute())
 
-		countConcStatName := fmt.Sprintf("event.concurrent.%d.%d.%s.%s", _tenent, _company, window, _parameter1)
-		gaugeConcStatName := fmt.Sprintf("event.concurrent.%d.%d.%s.%s", _tenent, _company, window, _parameter1)
-		timeStatName := fmt.Sprintf("event.timer.%d.%d.%s.%s", _tenent, _company, window, _parameter1)
-		totCountStatName := fmt.Sprintf("event.totalcount.%d.%d.%s.%s", _tenent, _company, window, _parameter1)
-		totTimeStatName := fmt.Sprintf("event.totaltime.%d.%d.%s.%s", _tenent, _company, window, _parameter1)
+		if _parameter1 == "" {
+			_parameter1 = "#"
+		}
+		countConcStatName := fmt.Sprintf("event.concurrent.%d.%d.%s.%s", _tenent, _company, _parameter1, window)
+		gaugeConcStatName := fmt.Sprintf("event.concurrent.%d.%d.%s.%s", _tenent, _company, _parameter1, window)
+		timeStatName := fmt.Sprintf("event.timer.%d.%d.%s.%s", _tenent, _company, _parameter1, window)
+		totCountStatName := fmt.Sprintf("event.totalcount.%d.%d.%s.%s", _tenent, _company, _parameter1, window)
+		totTimeStatName := fmt.Sprintf("event.totaltime.%d.%d.%s.%s", _tenent, _company, _parameter1, window)
 
 		client.Cmd("incr", snapEventName)
 		client.Cmd("incr", snapHourlyEventName)
