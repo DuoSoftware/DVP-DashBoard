@@ -25,6 +25,7 @@ type MetaData struct {
 	WindowName    string
 	Count         int
 	FlushEnable   bool
+	UseSession    bool
 }
 
 type Configuration struct {
@@ -87,7 +88,7 @@ func (dashboardEvent DashBoardEvent) Meta(data MetaData) {
 	fmt.Println(data.EventType)
 	fmt.Println(data.EventCategory)
 
-	go OnMeta(data.EventClass, data.EventType, data.EventCategory, data.WindowName, data.Count, data.FlushEnable)
+	go OnMeta(data.EventClass, data.EventType, data.EventCategory, data.WindowName, data.Count, data.FlushEnable, data.UseSession)
 
 	return
 

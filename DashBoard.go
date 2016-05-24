@@ -88,14 +88,14 @@ func PubSub() {
 
 }
 
-func PersistsMetaData(_class, _type, _category, _window string, count int, _flushEnable bool) {
+func PersistsMetaData(_class, _type, _category, _window string, count int, _flushEnable, _useSession bool) {
 	conStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=disable", pgUser, pgPassword, pgDbname, pgHost, pgPort)
 	db, err := sql.Open("postgres", conStr)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
-	result, err1 := db.Exec("INSERT INTO \"Dashboard_MetaData\"(\"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", _class, _type, _category, _window, count, _flushEnable, time.Now().Local(), time.Now().Local())
+	result, err1 := db.Exec("INSERT INTO \"Dashboard_MetaData\"(\"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\", \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", _class, _type, _category, _window, count, _flushEnable, _useSession, time.Now().Local(), time.Now().Local())
 	if err1 != nil {
 		fmt.Println(err1.Error())
 	} else {
@@ -122,8 +122,9 @@ func ReloadMetaData(_class, _type, _category string) bool {
 	var WindowName string
 	var Count int
 	var FlushEnable bool
+	var UseSession bool
 
-	err1 := db.QueryRow("SELECT \"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\" FROM \"Dashboard_MetaData\" WHERE \"EventClass\"=$1 AND \"EventType\"=$2 AND \"EventCategory\"=$3", _class, _type, _category).Scan(&EventClass, &EventType, &EventCategory, &WindowName, &Count, &FlushEnable)
+	err1 := db.QueryRow("SELECT \"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\" FROM \"Dashboard_MetaData\" WHERE \"EventClass\"=$1 AND \"EventType\"=$2 AND \"EventCategory\"=$3", _class, _type, _category).Scan(&EventClass, &EventType, &EventCategory, &WindowName, &Count, &FlushEnable, &UseSession)
 	switch {
 	case err1 == sql.ErrNoRows:
 		fmt.Println("No metaData with that ID.")
@@ -138,18 +139,20 @@ func ReloadMetaData(_class, _type, _category string) bool {
 		fmt.Printf("WindowName is %s\n", WindowName)
 		fmt.Printf("Count is %d\n", Count)
 		fmt.Printf("FlushEnable is %t\n", FlushEnable)
-		CacheMetaData(EventClass, EventType, EventCategory, WindowName, Count, FlushEnable)
+		fmt.Printf("UseSession is %t\n", UseSession)
+		CacheMetaData(EventClass, EventType, EventCategory, WindowName, Count, FlushEnable, UseSession)
 		result = true
 	}
 	db.Close()
 	return result
 }
 
-func CacheMetaData(_class, _type, _category, _window string, count int, _flushEnable bool) {
+func CacheMetaData(_class, _type, _category, _window string, count int, _flushEnable, _useSession bool) {
 
 	_windowName := fmt.Sprintf("META:%s:%s:%s:WINDOW", _class, _type, _category)
 	_incName := fmt.Sprintf("META:%s:%s:%s:COUNT", _class, _type, _category)
 	_flushName := fmt.Sprintf("META:%s:%s:%s:FLUSH", _class, _type, _category)
+	_useSessionName := fmt.Sprintf("META:%s:%s:%s:USESESSION", _class, _type, _category)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -172,13 +175,14 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 		client.Cmd("del", _flushName)
 	}
 
+	client.Cmd("setnx", _useSessionName, strconv.FormatBool(_useSession))
 	client.Cmd("setnx", _windowName, _window)
 	client.Cmd("setnx", _incName, strconv.Itoa(count))
 }
 
-func OnMeta(_class, _type, _category, _window string, count int, _flushEnable bool) {
-	CacheMetaData(_class, _type, _category, _window, count, _flushEnable)
-	PersistsMetaData(_class, _type, _category, _window, count, _flushEnable)
+func OnMeta(_class, _type, _category, _window string, count int, _flushEnable, _useSession bool) {
+	CacheMetaData(_class, _type, _category, _window, count, _flushEnable, _useSession)
+	PersistsMetaData(_class, _type, _category, _window, count, _flushEnable, _useSession)
 }
 
 func OnEvent(_tenent, _company int, _class, _type, _category, _session, _parameter1, _parameter2 string) {
@@ -187,6 +191,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 	_window := fmt.Sprintf("META:%s:%s:%s:WINDOW", _class, _type, _category)
 	_inc := fmt.Sprintf("META:%s:%s:%s:COUNT", _class, _type, _category)
+	_useSessionName := fmt.Sprintf("META:%s:%s:%s:USESESSION", _class, _type, _category)
 	tm := time.Now()
 
 	defer func() {
@@ -214,6 +219,8 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 	errHndlr(_werr)
 	sinc, _ierr := client.Cmd("get", _inc).Str()
 	errHndlr(_ierr)
+	useSession, _userr := client.Cmd("get", _useSessionName).Bool()
+	errHndlr(_userr)
 
 	iinc, berr := strconv.Atoi(sinc)
 
@@ -238,17 +245,19 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		totCountEventName := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 		totCountHrEventName := fmt.Sprintf("TOTALCOUNTHR:%d:%d:%s:%s:%s:%d:%d", _tenent, _company, window, _parameter1, _parameter2, tm.Hour(), tm.Minute())
 
-		countConcStatName := fmt.Sprintf("event.concurrent.%d.%d.%s", _tenent, _company, window)
-		gaugeConcStatName := fmt.Sprintf("event.concurrent.%d.%d.%s", _tenent, _company, window)
-		timeStatName := fmt.Sprintf("event.timer.%d.%d.%s", _tenent, _company, window)
-		totCountStatName := fmt.Sprintf("event.totalcount.%d.%d.%s", _tenent, _company, window)
-		totTimeStatName := fmt.Sprintf("event.totaltime.%d.%d.%s", _tenent, _company, window)
+		countConcStatName := fmt.Sprintf("event.concurrent.%d.%d.%s.%s", _tenent, _company, window, _parameter1)
+		gaugeConcStatName := fmt.Sprintf("event.concurrent.%d.%d.%s.%s", _tenent, _company, window, _parameter1)
+		timeStatName := fmt.Sprintf("event.timer.%d.%d.%s.%s", _tenent, _company, window, _parameter1)
+		totCountStatName := fmt.Sprintf("event.totalcount.%d.%d.%s.%s", _tenent, _company, window, _parameter1)
+		totTimeStatName := fmt.Sprintf("event.totaltime.%d.%d.%s.%s", _tenent, _company, window, _parameter1)
 
 		client.Cmd("incr", snapEventName)
 		client.Cmd("incr", snapHourlyEventName)
 
 		if iinc > 0 {
-			client.Cmd("hset", sessEventName, "time", tm.Format(layout))
+			if useSession {
+				client.Cmd("hset", sessEventName, "time", tm.Format(layout))
+			}
 			ccount, _ := client.Cmd("incr", concEventName).Int()
 			tcount, _ := client.Cmd("incr", totCountEventName).Int()
 			client.Cmd("incr", totCountHrEventName)
