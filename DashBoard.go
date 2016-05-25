@@ -219,7 +219,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 	errHndlr(_werr)
 	sinc, _ierr := client.Cmd("get", _inc).Str()
 	errHndlr(_ierr)
-	useSession, _userr := client.Cmd("get", _useSessionName).Bool()
+	useSession, _userr := client.Cmd("get", _useSessionName).Str()
 	errHndlr(_userr)
 
 	iinc, berr := strconv.Atoi(sinc)
@@ -259,7 +259,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		client.Cmd("incr", snapHourlyEventName)
 
 		if iinc > 0 {
-			if useSession {
+			if useSession == "true" {
 				client.Cmd("hset", sessEventName, "time", tm.Format(layout))
 			}
 			ccount, _ := client.Cmd("incr", concEventName).Int()
@@ -284,7 +284,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 				fmt.Println(timeDiff)
 
-				isdel, _ := client.Cmd("del", sessEventName).Int()
+				isdel, _ := client.Cmd("del", sessEvents[0]).Int()
 				if isdel == 1 {
 					rinc, _ := client.Cmd("incrby", totTimeEventName, timeDiff).Int()
 					dccount, _ := client.Cmd("decr", concEventName).Int()
