@@ -10,5 +10,8 @@
 	"pgPassword":"SYS_DATABASE_POSTGRES_PASSWORD",
 	"PgDbname":"SYS_DATABASE_POSTGRES_USER",
 	"PgHost":"SYS_DATABASE_HOST",
-	"PgPort":"SYS_SQL_PORT"
+	"PgPort":"SYS_SQL_PORT",
+	"SecurityIp":"SYS_REDIS_HOST",
+	"SecurityPort":"SYS_REDIS_PORT",
+	"SecurityPassword":"SYS_REDIS_PASSWORD"
 }

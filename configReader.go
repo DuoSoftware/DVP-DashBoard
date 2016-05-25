@@ -22,6 +22,9 @@ var pgPassword string
 var pgDbname string
 var pgHost string
 var pgPort int
+var securityIp string
+var securityPort string
+var securityPassword string
 
 func GetDirPath() string {
 	envPath := os.Getenv("GO_CONFIG_DIR")
@@ -57,6 +60,9 @@ func GetDefaultConfig() Configuration {
 		defconfiguration.PgDbname = "dvpdb"
 		defconfiguration.PgHost = "104.131.105.222"
 		defconfiguration.PgPort = 5432
+		defconfiguration.SecurityIp = "45.55.142.207"
+		defconfiguration.SecurityPort = "6389"
+		defconfiguration.SecurityPassword = "DuoS123"
 	}
 
 	return defconfiguration
@@ -88,6 +94,9 @@ func LoadDefaultConfig() {
 		pgDbname = "dvpdb"
 		pgHost = "104.131.105.222"
 		pgPort = 5432
+		securityIp = "45.55.142.207"
+		securityPort = "6389"
+		securityPassword = "DuoS123"
 	} else {
 		redisIp = fmt.Sprintf("%s:%s", defconfiguration.RedisIp, defconfiguration.RedisPort)
 		redisPort = defconfiguration.RedisPort
@@ -101,6 +110,9 @@ func LoadDefaultConfig() {
 		pgDbname = defconfiguration.PgDbname
 		pgHost = defconfiguration.PgHost
 		pgPort = defconfiguration.PgPort
+		securityIp = defconfiguration.SecurityIp
+		securityPort = defconfiguration.SecurityPort
+		securityPassword = defconfiguration.SecurityPassword
 	}
 }
 
@@ -134,6 +146,9 @@ func LoadConfiguration() {
 		pgDbname = os.Getenv(envconfiguration.PgDbname)
 		pgHost = os.Getenv(envconfiguration.PgHost)
 		pgPort, converr = strconv.Atoi(os.Getenv(envconfiguration.PgPort))
+		securityIp = os.Getenv(envconfiguration.SecurityIp)
+		securityPort = os.Getenv(envconfiguration.SecurityPort)
+		securityPassword = os.Getenv(envconfiguration.SecurityPassword)
 
 		if redisIp == "" {
 			redisIp = defConfig.RedisIp
@@ -171,8 +186,18 @@ func LoadConfiguration() {
 		if pgPort == 0 || converr != nil {
 			pgPort = defConfig.PgPort
 		}
+		if securityIp == "" {
+			securityIp = defConfig.SecurityIp
+		}
+		if securityPort == "" {
+			securityPort = defConfig.SecurityPort
+		}
+		if securityPassword == "" {
+			securityPassword = defConfig.SecurityPassword
+		}
 
 		redisIp = fmt.Sprintf("%s:%s", redisIp, redisPort)
+		securityIp = fmt.Sprintf("%s:%s", securityIp, securityPort)
 	}
 
 	fmt.Println("redisIp:", redisIp)

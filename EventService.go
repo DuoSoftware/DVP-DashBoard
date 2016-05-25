@@ -29,33 +29,46 @@ type MetaData struct {
 }
 
 type Configuration struct {
-	RedisIp       string
-	RedisPort     string
-	RedisDb       int
-	RedisPassword string
-	Port          string
-	StatsDIp      string
-	StatsDPort    int
-	PgUser        string
-	PgPassword    string
-	PgDbname      string
-	PgHost        string
-	PgPort        int
+	RedisIp          string
+	RedisPort        string
+	RedisDb          int
+	RedisPassword    string
+	Port             string
+	StatsDIp         string
+	StatsDPort       int
+	PgUser           string
+	PgPassword       string
+	PgDbname         string
+	PgHost           string
+	PgPort           int
+	SecurityIp       string
+	SecurityPort     string
+	SecurityPassword string
 }
 
 type EnvConfiguration struct {
-	RedisIp       string
-	RedisPort     string
-	RedisDb       string
-	RedisPassword string
-	Port          string
-	StatsDIp      string
-	StatsDPort    string
-	PgUser        string
-	PgPassword    string
-	PgDbname      string
-	PgHost        string
-	PgPort        string
+	RedisIp          string
+	RedisPort        string
+	RedisDb          string
+	RedisPassword    string
+	Port             string
+	StatsDIp         string
+	StatsDPort       string
+	PgUser           string
+	PgPassword       string
+	PgDbname         string
+	PgHost           string
+	PgPort           string
+	SecurityIp       string
+	SecurityPort     string
+	SecurityPassword string
+}
+
+type Result struct {
+	Exception     string
+	CustomMessage string
+	IsSuccess     bool
+	Result        string
 }
 
 type DashBoardEvent struct {
@@ -63,6 +76,10 @@ type DashBoardEvent struct {
 	event              gorest.EndPoint `method:"POST" path:"/Event/" postdata:"EventData"`
 	meta               gorest.EndPoint `method:"POST" path:"/Meta/" postdata:"MetaData"`
 	reset              gorest.EndPoint `method:"DELETE" path:"/Reset/"`
+	maxWaiting         gorest.EndPoint `method:"GET" path:"/MaxWaiting/{window:string}/{param1:string}/{param2:string}" output:"int"`
+	currentMaxTime     gorest.EndPoint `method:"GET" path:"/CurrentMaxTime/{window:string}/{param1:string}/{param2:string}" output:"int"`
+	currentCount       gorest.EndPoint `method:"GET" path:"/CurrentCount/{window:string}/{param1:string}/{param2:string}" output:"int"`
+	averageTime        gorest.EndPoint `method:"GET" path:"/AverageTime/{window:string}/{param1:string}/{param2:string}" output:"float32"`
 }
 
 func (dashboardEvent DashBoardEvent) Event(data EventData) {
@@ -100,6 +117,58 @@ func (dashboardEvent DashBoardEvent) Reset() {
 
 	go OnReset()
 
+}
+
+func (dashBoardEvent DashBoardEvent) MaxWaiting(window, param1, param2 string) int {
+	company, tenant := validateCompanyTenant(dashBoardEvent)
+	if company != 0 && tenant != 0 {
+		resultChannel := make(chan int)
+		go OnGetMaxTime(tenant, company, window, param1, param2, resultChannel)
+		var maxTime = <-resultChannel
+		close(resultChannel)
+		return maxTime
+	} else {
+		return 0
+	}
+}
+
+func (dashBoardEvent DashBoardEvent) CurrentMaxTime(window, param1, param2 string) int {
+	company, tenant := validateCompanyTenant(dashBoardEvent)
+	if company != 0 && tenant != 0 {
+		resultChannel := make(chan int)
+		go OnGetCurrentMaxTime(tenant, company, window, param1, param2, resultChannel)
+		var maxTime = <-resultChannel
+		close(resultChannel)
+		return maxTime
+	} else {
+		return 0
+	}
+}
+
+func (dashBoardEvent DashBoardEvent) CurrentCount(window, param1, param2 string) int {
+	company, tenant := validateCompanyTenant(dashBoardEvent)
+	if company != 0 && tenant != 0 {
+		resultChannel := make(chan int)
+		go OnGetCurrentCount(tenant, company, window, param1, param2, resultChannel)
+		var maxTime = <-resultChannel
+		close(resultChannel)
+		return maxTime
+	} else {
+		return 0
+	}
+}
+
+func (dashBoardEvent DashBoardEvent) AverageTime(window, param1, param2 string) float32 {
+	company, tenant := validateCompanyTenant(dashBoardEvent)
+	if company != 0 && tenant != 0 {
+		resultChannel := make(chan float32)
+		go OnGetAverageTime(tenant, company, window, param1, param2, resultChannel)
+		var maxTime = <-resultChannel
+		close(resultChannel)
+		return maxTime
+	} else {
+		return 0
+	}
 }
 
 //Registerres a service on the rootpath.
