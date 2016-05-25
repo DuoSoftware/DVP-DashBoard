@@ -275,30 +275,32 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 			fmt.Println("tcount ", tcount)
 
 		} else {
-			tmx, _ := client.Cmd("hget", sessEventName, "time").Str()
+			sessEventSearch := fmt.Sprintf("SESSION:%d:%d:%s:%s:*", _tenent, _company, window, _session)
+			sessEvents, _ := client.Cmd("keys", sessEventSearch).List()
+			if len(sessEvents) > 0 {
+				tmx, _ := client.Cmd("hget", sessEvents[0], "time").Str()
+				tm2, _ := time.Parse(layout, tmx)
+				timeDiff := int(tm.UTC().Sub(tm2.UTC()).Seconds())
 
-			tm2, _ := time.Parse(layout, tmx)
+				fmt.Println(timeDiff)
 
-			timeDiff := int(tm.UTC().Sub(tm2.UTC()).Seconds())
+				isdel, _ := client.Cmd("del", sessEventName).Int()
+				if isdel == 1 {
+					rinc, _ := client.Cmd("incrby", totTimeEventName, timeDiff).Int()
+					dccount, _ := client.Cmd("decr", concEventName).Int()
 
-			fmt.Println(timeDiff)
+					oldMaxTime, _ := client.Cmd("get", maxTimeEventName).Int()
+					if oldMaxTime < timeDiff {
+						client.Cmd("set", maxTimeEventName, timeDiff)
+					}
 
-			isdel, _ := client.Cmd("del", sessEventName).Int()
-			if isdel == 1 {
-				rinc, _ := client.Cmd("incrby", totTimeEventName, timeDiff).Int()
-				dccount, _ := client.Cmd("decr", concEventName).Int()
+					statClient.Decrement(countConcStatName)
+					statClient.Gauge(gaugeConcStatName, dccount)
+					statClient.Gauge(totTimeStatName, rinc)
 
-				oldMaxTime, _ := client.Cmd("get", maxTimeEventName).Int()
-				if oldMaxTime < timeDiff {
-					client.Cmd("set", maxTimeEventName, timeDiff)
+					duration := int64(tm.UTC().Sub(tm2.UTC()) / time.Millisecond)
+					statClient.Timing(timeStatName, duration)
 				}
-
-				statClient.Decrement(countConcStatName)
-				statClient.Gauge(gaugeConcStatName, dccount)
-				statClient.Gauge(totTimeStatName, rinc)
-
-				duration := int64(tm.UTC().Sub(tm2.UTC()) / time.Millisecond)
-				statClient.Timing(timeStatName, duration)
 			}
 
 		}
