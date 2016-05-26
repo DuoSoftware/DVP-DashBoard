@@ -244,7 +244,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		totTimeEventName := fmt.Sprintf("TOTALTIME:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 		totCountEventName := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 		totCountHrEventName := fmt.Sprintf("TOTALCOUNTHR:%d:%d:%s:%s:%s:%d:%d", _tenent, _company, window, _parameter1, _parameter2, tm.Hour(), tm.Minute())
-		maxTimeEventName := fmt.Sprintf("MAXTIME:%d:%d:%s,%s,%s", _tenent, _company, window, _parameter1, _parameter2)
+		maxTimeEventName := fmt.Sprintf("MAXTIME:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 
 		if _parameter1 == "" {
 			_parameter1 = "empty"
@@ -432,7 +432,7 @@ func OnGetMaxTime(_tenant, _company int, _window, _parameter1, _parameter2 strin
 	r := client.Cmd("select", redisDb)
 	errHndlr(r.Err)
 
-	maxtimeSearch := fmt.Sprintf("MAXTIME:%d:%d:%s,%s,%s", _tenant, _company, _window, _parameter1, _parameter2)
+	maxtimeSearch := fmt.Sprintf("MAXTIME:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
 	keyList, _ := client.Cmd("keys", maxtimeSearch).List()
 	if len(keyList) > 0 {
 		tempMaxTime := 0
