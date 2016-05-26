@@ -62,6 +62,37 @@ func validateCompanyTenant(dashboardEvent DashBoardEvent) (company, tenant int) 
 	}
 }
 
+func validateCompanyTenantGraph(dashBoardGraph DashBoardGraph) (company, tenant int) {
+	internalAccessToken := dashBoardGraph.Context.Request().Header.Get("companyinfo")
+	if internalAccessToken != "" {
+		ids := strings.Split(internalAccessToken, ":")
+		if len(ids) == 2 {
+			tenant, _ = strconv.Atoi(ids[0])
+			company, _ = strconv.Atoi(ids[1])
+			return company, tenant
+		} else {
+			return 0, 0
+		}
+	} else {
+		user := context.Get(dashBoardGraph.Context.Request(), "user")
+		if user != nil {
+			iTenant := user.(*jwt.Token).Claims["tenant"]
+			iCompany := user.(*jwt.Token).Claims["company"]
+			if iTenant != nil && iCompany != nil {
+				tenant := int(iTenant.(float64))
+				company := int(iCompany.(float64))
+				return company, tenant
+			} else {
+				dashBoardGraph.RB().Write(ResponseGenerator(false, "Invalid company or tenant", "", ""))
+				return
+			}
+		} else {
+			dashBoardGraph.RB().Write(ResponseGenerator(false, "User data not found in JWT", "", ""))
+			return
+		}
+	}
+}
+
 func ResponseGenerator(isSuccess bool, customMessage, result, exception string) []byte {
 	res := Result{}
 	res.IsSuccess = isSuccess

@@ -71,6 +71,20 @@ type Result struct {
 	Result        string
 }
 
+type QueueDetail struct {
+	TotalQueued        int
+	TotalAnswered      int
+	QueueDropped       int
+	CurrentWaiting     int
+	MaxWaitTime        int
+	CurrentMaxWaitTime int
+	AverageWaitTime    float32
+}
+type QueueDetails struct {
+	QueueId   string
+	QueueInfo QueueDetail
+}
+
 type DashBoardEvent struct {
 	gorest.RestService `root:"/DashboardEvent/" consumes:"application/json" produces:"application/json"`
 	event              gorest.EndPoint `method:"POST" path:"/Event/" postdata:"EventData"`
@@ -80,6 +94,15 @@ type DashBoardEvent struct {
 	currentMaxTime     gorest.EndPoint `method:"GET" path:"/CurrentMaxTime/{window:string}/{param1:string}/{param2:string}" output:"int"`
 	currentCount       gorest.EndPoint `method:"GET" path:"/CurrentCount/{window:string}/{param1:string}/{param2:string}" output:"int"`
 	averageTime        gorest.EndPoint `method:"GET" path:"/AverageTime/{window:string}/{param1:string}/{param2:string}" output:"float32"`
+	queueDetails       gorest.EndPoint `method:"GET" path:"/QueueDetails/" output:"[]QueueDetails"`
+}
+
+type DashBoardGraph struct {
+	gorest.RestService `root:"/DashboardGraph/" consumes:"application/json" produces:"application/json"`
+	calls              gorest.EndPoint `method:"GET" path:"/Calls/{duration:int}" output:"string"`
+	channels           gorest.EndPoint `method:"GET" path:"/Channels/{duration:int}" output:"string"`
+	bridge             gorest.EndPoint `method:"GET" path:"/Bridge/{duration:int}" output:"string"`
+	queued             gorest.EndPoint `method:"GET" path:"/Queued/{duration:int}" output:"string"`
 }
 
 func (dashboardEvent DashBoardEvent) Event(data EventData) {
@@ -168,6 +191,55 @@ func (dashBoardEvent DashBoardEvent) AverageTime(window, param1, param2 string) 
 		return maxTime
 	} else {
 		return 0
+	}
+}
+
+func (dashBoardEvent DashBoardEvent) QueueDetails() []QueueDetails {
+	company, tenant := validateCompanyTenant(dashBoardEvent)
+	if company != 0 && tenant != 0 {
+		resultChannel := make(chan []QueueDetails)
+		go OnGetQueueDetails(tenant, company, resultChannel)
+		var queueInfo = <-resultChannel
+		close(resultChannel)
+		return queueInfo
+	} else {
+		return make([]QueueDetails, 0)
+	}
+}
+
+func (dashBoardGraph DashBoardGraph) Calls(duration int) string {
+	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
+	if company != 0 && tenant != 0 {
+		return OnGetCalls(tenant, company, duration)
+	} else {
+		return ""
+	}
+}
+
+func (dashBoardGraph DashBoardGraph) Channels(duration int) string {
+	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
+	if company != 0 && tenant != 0 {
+		return OnGetChannels(tenant, company, duration)
+	} else {
+		return ""
+	}
+}
+
+func (dashBoardGraph DashBoardGraph) Bridge(duration int) string {
+	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
+	if company != 0 && tenant != 0 {
+		return OnGetBridge(tenant, company, duration)
+	} else {
+		return ""
+	}
+}
+
+func (dashBoardGraph DashBoardGraph) Queued(duration int) string {
+	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
+	if company != 0 && tenant != 0 {
+		return OnGetQueued(tenant, company, duration)
+	} else {
+		return ""
 	}
 }
 

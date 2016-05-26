@@ -16,6 +16,7 @@ func main() {
 	InitiateStatDClient()
 	go ClearData()
 	gorest.RegisterService(new(DashBoardEvent))
+	gorest.RegisterService(new(DashBoardGraph))
 	http.Handle("/", gorest.Handle())
 	addr := fmt.Sprintf(":%s", port)
 	http.ListenAndServe(addr, nil)

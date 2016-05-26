@@ -452,7 +452,7 @@ func OnGetMaxTime(_tenant, _company int, _window, _parameter1, _parameter2 strin
 func OnGetCurrentMaxTime(_tenant, _company int, _window, _parameter1, _parameter2 string, resultChannel chan int) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered in OnGetMaxTime", r)
+			fmt.Println("Recovered in OnGetCurrentMaxTime", r)
 		}
 	}()
 	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
@@ -488,7 +488,7 @@ func OnGetCurrentMaxTime(_tenant, _company int, _window, _parameter1, _parameter
 func OnGetCurrentCount(_tenant, _company int, _window, _parameter1, _parameter2 string, resultChannel chan int) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered in OnGetMaxTime", r)
+			fmt.Println("Recovered in OnGetCurrentCount", r)
 		}
 	}()
 	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
@@ -519,7 +519,7 @@ func OnGetCurrentCount(_tenant, _company int, _window, _parameter1, _parameter2 
 func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 string, resultChannel chan float32) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered in OnGetMaxTime", r)
+			fmt.Println("Recovered in OnGetAverageTime", r)
 		}
 	}()
 	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
@@ -565,7 +565,119 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 	}
 	fmt.Println("totalTime: ", totalTime)
 	fmt.Println("totalCount: ", totalCount)
-	avg := float32(totalTime) / float32(totalCount)
+
+	var avg float32
+	if totalCount == 0 {
+		avg = 0
+	} else {
+		avg = float32(totalTime) / float32(totalCount)
+	}
 	fmt.Println("avg: ", avg)
 	resultChannel <- avg
+}
+
+func OnGetTotalCount(_tenant, _company int, _window, _parameter1, _parameter2 string, resultChannel chan int) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnGetTotalCount", r)
+		}
+	}()
+	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	errHndlr(err)
+	defer client.Close()
+	//authServer
+	authE := client.Cmd("auth", redisPassword)
+	errHndlr(authE.Err)
+	// select database
+	r := client.Cmd("select", redisDb)
+	errHndlr(r.Err)
+
+	totalSearch := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
+	keyList, _ := client.Cmd("keys", totalSearch).List()
+	if len(keyList) > 0 {
+		temptotal := 0
+		for _, key := range keyList {
+			value, _ := client.Cmd("get", key).Int()
+			temptotal = temptotal + value
+		}
+		resultChannel <- temptotal
+
+	} else {
+		resultChannel <- 0
+	}
+}
+
+func OnGetQueueDetails(_tenant, _company int, resultChannel chan []QueueDetails) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnGetQueueDetails", r)
+		}
+	}()
+
+	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	errHndlr(err)
+	defer client.Close()
+	//authServer
+	authE := client.Cmd("auth", redisPassword)
+	errHndlr(authE.Err)
+	// select database
+	r := client.Cmd("select", redisDb)
+	errHndlr(r.Err)
+
+	queueSearch := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:*", _tenant, _company, "QUEUE")
+	keyList, _ := client.Cmd("keys", queueSearch).List()
+	if len(keyList) > 0 {
+		queueIdList := make([]string, 0)
+		for _, key := range keyList {
+			keyItems := strings.Split(key, ":")
+			if len(keyItems) >= 5 {
+				queueIdList = AppendIfMissing(queueIdList, keyItems[4])
+			}
+		}
+
+		queueDetailList := make([]QueueDetails, 0)
+
+		for _, queueId := range queueIdList {
+			queueD := QueueDetails{}
+
+			totalQueued := make(chan int)
+			totalAnswer := make(chan int)
+			totalDropped := make(chan int)
+			maxWaitTime := make(chan int)
+			currentMaxWaitTime := make(chan int)
+			currentWaiting := make(chan int)
+			avgWaitingTime := make(chan float32)
+
+			go OnGetTotalCount(_tenant, _company, "QUEUE", queueId, "*", totalQueued)
+			go OnGetTotalCount(_tenant, _company, "QUEUEANSWERED", queueId, "*", totalAnswer)
+			go OnGetTotalCount(_tenant, _company, "QUEUEDROPPED", queueId, "*", totalDropped)
+			go OnGetMaxTime(_tenant, _company, "QUEUE", queueId, "*", maxWaitTime)
+			go OnGetCurrentMaxTime(_tenant, _company, "QUEUE", queueId, "*", currentMaxWaitTime)
+			go OnGetCurrentCount(_tenant, _company, "QUEUE", queueId, "*", currentWaiting)
+			go OnGetAverageTime(_tenant, _company, "QUEUE", queueId, "*", avgWaitingTime)
+
+			queueD.QueueId = queueId
+			queueD.QueueInfo.TotalQueued = <-totalQueued
+			queueD.QueueInfo.TotalAnswered = <-totalAnswer
+			queueD.QueueInfo.QueueDropped = <-totalDropped
+			queueD.QueueInfo.MaxWaitTime = <-maxWaitTime
+			queueD.QueueInfo.CurrentMaxWaitTime = <-currentMaxWaitTime
+			queueD.QueueInfo.CurrentWaiting = <-currentWaiting
+			queueD.QueueInfo.AverageWaitTime = <-avgWaitingTime
+
+			close(totalQueued)
+			close(totalAnswer)
+			close(totalDropped)
+			close(maxWaitTime)
+			close(currentMaxWaitTime)
+			close(currentWaiting)
+			close(avgWaitingTime)
+
+			queueDetailList = append(queueDetailList, queueD)
+		}
+
+		resultChannel <- queueDetailList
+	} else {
+		resultChannel <- make([]QueueDetails, 0)
+	}
 }
