@@ -19,6 +19,7 @@ func loadJwtMiddleware() *jwtmiddleware.JWTMiddleware {
 			fmt.Println(token.Claims["jti"])
 			secretKey := fmt.Sprintf("token:iss:%s:%s", token.Claims["iss"], token.Claims["jti"])
 			secret := SecurityGet(secretKey)
+			fmt.Println("secret: ", secret)
 			if secret == "" {
 				return nil, fmt.Errorf("Invalied 'iss' or 'jti' in JWT")
 			}
@@ -74,7 +75,9 @@ func validateCompanyTenantGraph(dashBoardGraph DashBoardGraph) (company, tenant 
 			return 0, 0
 		}
 	} else {
+		fmt.Println(dashBoardGraph.Context.Request())
 		user := context.Get(dashBoardGraph.Context.Request(), "user")
+		fmt.Println(user)
 		if user != nil {
 			iTenant := user.(*jwt.Token).Claims["tenant"]
 			iCompany := user.(*jwt.Token).Claims["company"]
@@ -112,6 +115,10 @@ func SecurityGet(key string) string {
 	client, err := redis.DialTimeout("tcp", securityIp, time.Duration(10)*time.Second)
 	errHndlr(err)
 	defer client.Close()
+
+	//authServer
+	authE := client.Cmd("auth", redisPassword)
+	errHndlr(authE.Err)
 
 	strObj, _ := client.Cmd("get", key).Str()
 	fmt.Println(strObj)

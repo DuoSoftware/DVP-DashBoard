@@ -4,6 +4,7 @@ package main
 import (
 	"fmt"
 	"github.com/DuoSoftware/gorest"
+	"github.com/rs/cors"
 	"net/http"
 	"time"
 )
@@ -15,11 +16,17 @@ func main() {
 	InitiateRedis()
 	InitiateStatDClient()
 	go ClearData()
+
+	jwtMiddleware := loadJwtMiddleware()
 	gorest.RegisterService(new(DashBoardEvent))
 	gorest.RegisterService(new(DashBoardGraph))
-	http.Handle("/", gorest.Handle())
+	app := jwtMiddleware.Handler(gorest.Handle())
+	c := cors.New(cors.Options{
+		AllowedHeaders: []string{"accept", "authorization"},
+	})
+	handler := c.Handler(app)
 	addr := fmt.Sprintf(":%s", port)
-	http.ListenAndServe(addr, nil)
+	http.ListenAndServe(addr, handler)
 
 	////fmt.Scanln()
 	//client, error := goredis.Dial(&goredis.DialConfig{Address: "127.0.0.1:6379"})
@@ -33,7 +40,6 @@ func main() {
 	//}
 	//fmt.Println("Hello World!")
 }
-
 func ClearData() {
 	for {
 		tmNow := time.Now().UTC()
