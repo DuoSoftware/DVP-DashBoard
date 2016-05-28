@@ -67,6 +67,6 @@ func OnGetQueued(_tenant, _company, _duration int) string {
 			fmt.Println("Recovered in OnGetQueued", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=stats.gauges.event.concurrent.%d.%d.*.QUEUE&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.QUEUE&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	return IncokeGhaphite(url)
 }
