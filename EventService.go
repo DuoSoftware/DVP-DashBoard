@@ -95,6 +95,7 @@ type DashBoardEvent struct {
 	currentCount       gorest.EndPoint `method:"GET" path:"/CurrentCount/{window:string}/{param1:string}/{param2:string}" output:"int"`
 	averageTime        gorest.EndPoint `method:"GET" path:"/AverageTime/{window:string}/{param1:string}/{param2:string}" output:"float32"`
 	queueDetails       gorest.EndPoint `method:"GET" path:"/QueueDetails/" output:"[]QueueDetails"`
+	totalCount         gorest.EndPoint `method:"GET" path:"/TotalCount/{window:string}/{param1:string}/{param2:string}" output:"int"`
 }
 
 type DashBoardGraph struct {
@@ -204,6 +205,19 @@ func (dashBoardEvent DashBoardEvent) QueueDetails() []QueueDetails {
 		return queueInfo
 	} else {
 		return make([]QueueDetails, 0)
+	}
+}
+
+func (dashBoardEvent DashBoardEvent) TotalCount(window, param1, param2 string) int {
+	company, tenant := validateCompanyTenant(dashBoardEvent)
+	if company != 0 && tenant != 0 {
+		resultChannel := make(chan int)
+		go OnGetTotalCount(tenant, company, window, param1, param2, resultChannel)
+		var totalCount = <-resultChannel
+		close(resultChannel)
+		return totalCount
+	} else {
+		return 0
 	}
 }
 

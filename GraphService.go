@@ -47,7 +47,7 @@ func OnGetChannels(_tenant, _company, _duration int) string {
 			fmt.Println("Recovered in OnGetChannels", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.CHANNELS&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.CALLCHANNELS&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	return IncokeGhaphite(url)
 }
 
