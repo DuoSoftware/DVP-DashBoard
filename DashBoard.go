@@ -293,8 +293,9 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 					if oldMaxTime < timeDiff {
 						client.Cmd("set", maxTimeEventName, timeDiff)
 					}
-
-					statClient.Decrement(countConcStatName)
+					if window != "QUEUE" {
+						statClient.Decrement(countConcStatName)
+					}
 					statClient.Gauge(gaugeConcStatName, dccount)
 					statClient.Gauge(totTimeStatName, rinc)
 
