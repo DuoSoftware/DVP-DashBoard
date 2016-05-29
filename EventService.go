@@ -104,6 +104,7 @@ type DashBoardGraph struct {
 	channels           gorest.EndPoint `method:"GET" path:"/Channels/{duration:int}" output:"string"`
 	bridge             gorest.EndPoint `method:"GET" path:"/Bridge/{duration:int}" output:"string"`
 	queued             gorest.EndPoint `method:"GET" path:"/Queued/{duration:int}" output:"string"`
+	concurrentqueued   gorest.EndPoint `method:"GET" path:"/ConcurrentQueued/{queue:string}/{duration:int}" output:"string"`
 }
 
 func (dashboardEvent DashBoardEvent) Event(data EventData) {
@@ -252,6 +253,15 @@ func (dashBoardGraph DashBoardGraph) Queued(duration int) string {
 	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
 	if company != 0 && tenant != 0 {
 		return OnGetQueued(tenant, company, duration)
+	} else {
+		return ""
+	}
+}
+
+func (dashBoardGraph DashBoardGraph) Concurrentqueued(queue string, duration int) string {
+	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
+	if company != 0 && tenant != 0 {
+		return OnGetConcurrentQueue(tenant, company, duration, queue)
 	} else {
 		return ""
 	}

@@ -70,3 +70,15 @@ func OnGetQueued(_tenant, _company, _duration int) string {
 	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.QUEUE&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	return IncokeGhaphite(url)
 }
+
+func OnGetConcurrentQueue(_tenant, _company, _duration int, _queue string) string {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnGetQueued", r)
+		}
+	}()
+
+	//stats.gauges.event.concurrent.1.3.Queue-3-1-CALLSERVER-CALL-attribute_8-L.QUEUE
+	url := fmt.Sprintf("http://%s/render?target=stats.gauges.event.concurrent.%d.%d.%s.QUEUE&from=-%dmin&format=json", statsDIp, _tenant, _company, _queue, _duration)
+	return IncokeGhaphite(url)
+}
