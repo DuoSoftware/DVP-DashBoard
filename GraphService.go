@@ -37,7 +37,7 @@ func OnGetCalls(_tenant, _company, _duration int) string {
 			fmt.Println("Recovered in OnGetCalls", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.CALLS&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=summarize(derivative(stats.event.concurrent.%d.%d.*.CALLS),\"1min\")&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	return IncokeGhaphite(url)
 }
 
@@ -47,7 +47,7 @@ func OnGetChannels(_tenant, _company, _duration int) string {
 			fmt.Println("Recovered in OnGetChannels", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.CALLCHANNELS&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=summarize(derivative(stats.event.concurrent.%d.%d.*.CALLCHANNELS),\"1min\")&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	return IncokeGhaphite(url)
 }
 
@@ -57,7 +57,7 @@ func OnGetBridge(_tenant, _company, _duration int) string {
 			fmt.Println("Recovered in OnGetBridge", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.BRIDGE&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=summarize(derivative(stats.event.concurrent.%d.%d.*.BRIDGE),\"1min\")&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	return IncokeGhaphite(url)
 }
 
@@ -67,6 +67,6 @@ func OnGetQueued(_tenant, _company, _duration int) string {
 			fmt.Println("Recovered in OnGetQueued", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.QUEUE&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=summarize(derivative(stats.event.concurrent.%d.%d.*.QUEUE),\"1min\")&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	return IncokeGhaphite(url)
 }
