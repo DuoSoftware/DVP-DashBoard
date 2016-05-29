@@ -93,7 +93,7 @@ func (client *StatsdClient) TimingWithSampleRate(stat string, time int64, sample
 //     client.Increment('foo.bar')
 func (client *StatsdClient) Increment(stat string) {
 	stats := []string{stat}
-	client.UpdateStats(stats, 1, 1)
+	client.UpdateStats(stats, 1, 6)
 }
 
 func (client *StatsdClient) Gauge(stat string, val int) {
@@ -135,7 +135,7 @@ func (client *StatsdClient) IncrementWithSampling(stat string, sampleRate float3
 //     client.Decrement('foo.bar')
 func (client *StatsdClient) Decrement(stat string) {
 	stats := []string{stat}
-	client.UpdateStats(stats[:], -1, 1)
+	client.UpdateStats(stats[:], -1, 6)
 }
 
 // Decrements one stat counter with sampling
