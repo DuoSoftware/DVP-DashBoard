@@ -682,3 +682,48 @@ func OnGetQueueDetails(_tenant, _company int, resultChannel chan []QueueDetails)
 		resultChannel <- make([]QueueDetails, 0)
 	}
 }
+
+func OnGetSingleQueueDetails(_tenant, _company int, queueId string, resultChannel chan QueueDetails) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnGetQueueDetails", r)
+		}
+	}()
+
+	queueD := QueueDetails{}
+
+	totalQueued := make(chan int)
+	totalAnswer := make(chan int)
+	totalDropped := make(chan int)
+	maxWaitTime := make(chan int)
+	currentMaxWaitTime := make(chan int)
+	currentWaiting := make(chan int)
+	avgWaitingTime := make(chan float32)
+
+	go OnGetTotalCount(_tenant, _company, "QUEUE", queueId, "*", totalQueued)
+	go OnGetTotalCount(_tenant, _company, "QUEUEANSWERED", queueId, "*", totalAnswer)
+	go OnGetTotalCount(_tenant, _company, "QUEUEDROPPED", queueId, "*", totalDropped)
+	go OnGetMaxTime(_tenant, _company, "QUEUE", queueId, "*", maxWaitTime)
+	go OnGetCurrentMaxTime(_tenant, _company, "QUEUE", queueId, "*", currentMaxWaitTime)
+	go OnGetCurrentCount(_tenant, _company, "QUEUE", queueId, "*", currentWaiting)
+	go OnGetAverageTime(_tenant, _company, "QUEUE", queueId, "*", avgWaitingTime)
+
+	queueD.QueueId = queueId
+	queueD.QueueInfo.TotalQueued = <-totalQueued
+	queueD.QueueInfo.TotalAnswered = <-totalAnswer
+	queueD.QueueInfo.QueueDropped = <-totalDropped
+	queueD.QueueInfo.MaxWaitTime = <-maxWaitTime
+	queueD.QueueInfo.CurrentMaxWaitTime = <-currentMaxWaitTime
+	queueD.QueueInfo.CurrentWaiting = <-currentWaiting
+	queueD.QueueInfo.AverageWaitTime = <-avgWaitingTime
+
+	close(totalQueued)
+	close(totalAnswer)
+	close(totalDropped)
+	close(maxWaitTime)
+	close(currentMaxWaitTime)
+	close(currentWaiting)
+	close(avgWaitingTime)
+
+	resultChannel <- queueD
+}

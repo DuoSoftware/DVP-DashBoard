@@ -95,6 +95,7 @@ type DashBoardEvent struct {
 	currentCount       gorest.EndPoint `method:"GET" path:"/CurrentCount/{window:string}/{param1:string}/{param2:string}" output:"int"`
 	averageTime        gorest.EndPoint `method:"GET" path:"/AverageTime/{window:string}/{param1:string}/{param2:string}" output:"float32"`
 	queueDetails       gorest.EndPoint `method:"GET" path:"/QueueDetails/" output:"[]QueueDetails"`
+	queueSingleDetail  gorest.EndPoint `method:"GET" path:"/QueueSingleDetail/{queueId:string}" output:"QueueDetails"`
 	totalCount         gorest.EndPoint `method:"GET" path:"/TotalCount/{window:string}/{param1:string}/{param2:string}" output:"int"`
 }
 
@@ -206,6 +207,21 @@ func (dashBoardEvent DashBoardEvent) QueueDetails() []QueueDetails {
 		return queueInfo
 	} else {
 		return make([]QueueDetails, 0)
+	}
+}
+
+func (dashBoardEvent DashBoardEvent) QueueSingleDetail(queueId string) QueueDetails {
+	company, tenant := validateCompanyTenant(dashBoardEvent)
+	if company != 0 && tenant != 0 {
+		resultChannel := make(chan QueueDetails)
+		go OnGetSingleQueueDetails(tenant, company, queueId, resultChannel)
+		var queueInfo = <-resultChannel
+		close(resultChannel)
+		return queueInfo
+	} else {
+
+		var detais = QueueDetails{}
+		return detais
 	}
 }
 

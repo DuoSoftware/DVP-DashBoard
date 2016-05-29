@@ -71,6 +71,9 @@ func OnGetQueued(_tenant, _company, _duration int) string {
 	return IncokeGhaphite(url)
 }
 
+
+
+
 func OnGetConcurrentQueue(_tenant, _company, _duration int, _queue string) string {
 	defer func() {
 		if r := recover(); r != nil {
