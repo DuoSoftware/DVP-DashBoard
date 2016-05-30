@@ -19,7 +19,7 @@ func loadJwtMiddleware() *jwtmiddleware.JWTMiddleware {
 			fmt.Println(token.Claims["jti"])
 			secretKey := fmt.Sprintf("token:iss:%s:%s", token.Claims["iss"], token.Claims["jti"])
 			secret := SecurityGet(secretKey)
-			fmt.Println("secret: ", secret)
+			//fmt.Println("secret: ", secret)
 			if secret == "" {
 				return nil, fmt.Errorf("Invalied 'iss' or 'jti' in JWT")
 			}
@@ -121,6 +121,6 @@ func SecurityGet(key string) string {
 	errHndlr(authE.Err)
 
 	strObj, _ := client.Cmd("get", key).Str()
-	fmt.Println(strObj)
+	//fmt.Println(strObj)
 	return strObj
 }
