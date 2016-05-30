@@ -335,6 +335,7 @@ func OnReset() {
 	val, _ := client.Cmd("keys", _searchName).List()
 	_windowList := make([]string, 0)
 	_keysToRemove := make([]string, 0)
+	_loginSessions := make([]string, 0)
 	lenth := len(val)
 	fmt.Println(lenth)
 	if lenth > 0 {
@@ -367,6 +368,12 @@ func OnReset() {
 			_keysToRemove = AppendListIfMissing(_keysToRemove, concVal)
 
 			sessVal, _ := client.Cmd("keys", sessEventSearch).List()
+			for _, sess := range sessVal {
+				sessItems := strings.Split(sess, ":")
+				if len(sessItems) >= 4 && sessItems[3] == "LOGIN" {
+					_loginSessions = AppendIfMissing(_loginSessions, sess)
+				}
+			}
 			_keysToRemove = AppendListIfMissing(_keysToRemove, sessVal)
 
 			totTimeVal, _ := client.Cmd("keys", totTimeEventSearch).List()
@@ -382,10 +389,14 @@ func OnReset() {
 			_keysToRemove = AppendListIfMissing(_keysToRemove, maxTimeVal)
 
 		}
-
+		tm := time.Now()
 		for _, remove := range _keysToRemove {
 			fmt.Println("remove_: ", remove)
 			client.Cmd("del", remove)
+		}
+		for _, session := range _loginSessions {
+			fmt.Println("readdSession: ", session)
+			client.Cmd("hset", session, "time", tm.Format(layout))
 		}
 	}
 }
