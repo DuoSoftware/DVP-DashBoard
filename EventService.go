@@ -19,13 +19,15 @@ type EventData struct {
 }
 
 type MetaData struct {
-	EventClass    string
-	EventType     string
-	EventCategory string
-	WindowName    string
-	Count         int
-	FlushEnable   bool
-	UseSession    bool
+	EventClass      string
+	EventType       string
+	EventCategory   string
+	WindowName      string
+	Count           int
+	FlushEnable     bool
+	UseSession      bool
+	ThresholdEnable bool
+	ThresholdValue  int
 }
 
 type Configuration struct {
@@ -80,9 +82,23 @@ type QueueDetail struct {
 	CurrentMaxWaitTime int
 	AverageWaitTime    float32
 }
+
 type QueueDetails struct {
 	QueueId   string
 	QueueInfo QueueDetail
+}
+
+type SummeryDetail struct {
+	Company        int
+	Tenant         int
+	WindowName     string
+	Param1         string
+	Param2         string
+	MaxTime        int
+	TotalCount     int
+	TotalTime      int
+	ThresholdValue int
+	SummaryDate    time.Time
 }
 
 type DashBoardEvent struct {
@@ -131,7 +147,7 @@ func (dashboardEvent DashBoardEvent) Meta(data MetaData) {
 	fmt.Println(data.EventType)
 	fmt.Println(data.EventCategory)
 
-	go OnMeta(data.EventClass, data.EventType, data.EventCategory, data.WindowName, data.Count, data.FlushEnable, data.UseSession)
+	go OnMeta(data.EventClass, data.EventType, data.EventCategory, data.WindowName, data.Count, data.FlushEnable, data.UseSession, data.ThresholdEnable, data.ThresholdValue)
 
 	return
 

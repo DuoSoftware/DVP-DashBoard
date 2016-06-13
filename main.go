@@ -47,6 +47,7 @@ func ClearData() {
 		timeToWait := clerTime.Sub(tmNow)
 		timer := time.NewTimer(timeToWait)
 		<-timer.C
+		OnSetDailySummary(clerTime)
 		OnReset()
 	}
 }

@@ -88,14 +88,43 @@ func PubSub() {
 
 }
 
-func PersistsMetaData(_class, _type, _category, _window string, count int, _flushEnable, _useSession bool) {
+func PersistsSummaryData(_summary SummeryDetail) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in PersistsSummaryData", r)
+		}
+	}()
 	conStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=disable", pgUser, pgPassword, pgDbname, pgHost, pgPort)
 	db, err := sql.Open("postgres", conStr)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
-	result, err1 := db.Exec("INSERT INTO \"Dashboard_MetaData\"(\"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\", \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", _class, _type, _category, _window, count, _flushEnable, _useSession, time.Now().Local(), time.Now().Local())
+	result, err1 := db.Exec("INSERT INTO \"Dashboard_DailySummaries\"(\"Company\", \"Tenant\", \"WindowName\", \"Param1\", \"Param2\", \"MaxTime\", \"TotalCount\", \"TotalTime\", \"ThresholdValue\", \"SummaryDate\", \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)", _summary.Company, _summary.Tenant, _summary.WindowName, _summary.Param1, _summary.Param2, _summary.MaxTime, _summary.TotalCount, _summary.TotalTime, _summary.ThresholdValue, _summary.SummaryDate, time.Now().UTC(), time.Now().UTC())
+	if err1 != nil {
+		fmt.Println(err1.Error())
+	} else {
+		fmt.Println("PersistsSummaryData: ", result)
+		lInsertedId, err2 := result.LastInsertId()
+		fmt.Println(err2)
+		fmt.Println("Last inserted Id: ", lInsertedId)
+	}
+	db.Close()
+}
+
+func PersistsMetaData(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _thresholdEnable bool, _thresholdValue int) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in PersistsMetaData", r)
+		}
+	}()
+	conStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=disable", pgUser, pgPassword, pgDbname, pgHost, pgPort)
+	db, err := sql.Open("postgres", conStr)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	result, err1 := db.Exec("INSERT INTO \"Dashboard_MetaData\"(\"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\", \"ThresholdEnable\", \"ThresholdValue\", \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)", _class, _type, _category, _window, count, _flushEnable, _useSession, _thresholdEnable, _thresholdValue, time.Now().Local(), time.Now().Local())
 	if err1 != nil {
 		fmt.Println(err1.Error())
 	} else {
@@ -108,6 +137,11 @@ func PersistsMetaData(_class, _type, _category, _window string, count int, _flus
 }
 
 func ReloadMetaData(_class, _type, _category string) bool {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in ReloadMetaData", r)
+		}
+	}()
 	var result bool
 	conStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d", pgUser, pgPassword, pgDbname, pgHost, pgPort)
 	db, err := sql.Open("postgres", conStr)
@@ -123,8 +157,10 @@ func ReloadMetaData(_class, _type, _category string) bool {
 	var Count int
 	var FlushEnable bool
 	var UseSession bool
+	var ThresholdEnable bool
+	var ThresholdValue int
 
-	err1 := db.QueryRow("SELECT \"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\" FROM \"Dashboard_MetaData\" WHERE \"EventClass\"=$1 AND \"EventType\"=$2 AND \"EventCategory\"=$3", _class, _type, _category).Scan(&EventClass, &EventType, &EventCategory, &WindowName, &Count, &FlushEnable, &UseSession)
+	err1 := db.QueryRow("SELECT \"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\", \"ThresholdEnable\", \"ThresholdValue\" FROM \"Dashboard_MetaData\" WHERE \"EventClass\"=$1 AND \"EventType\"=$2 AND \"EventCategory\"=$3", _class, _type, _category).Scan(&EventClass, &EventType, &EventCategory, &WindowName, &Count, &FlushEnable, &UseSession, &ThresholdEnable, &ThresholdValue)
 	switch {
 	case err1 == sql.ErrNoRows:
 		fmt.Println("No metaData with that ID.")
@@ -140,19 +176,26 @@ func ReloadMetaData(_class, _type, _category string) bool {
 		fmt.Printf("Count is %d\n", Count)
 		fmt.Printf("FlushEnable is %t\n", FlushEnable)
 		fmt.Printf("UseSession is %t\n", UseSession)
-		CacheMetaData(EventClass, EventType, EventCategory, WindowName, Count, FlushEnable, UseSession)
+		fmt.Printf("ThresholdEnable is %t\n", ThresholdEnable)
+		fmt.Printf("ThresholdValue is %d\n", ThresholdValue)
+		CacheMetaData(EventClass, EventType, EventCategory, WindowName, Count, FlushEnable, UseSession, ThresholdEnable, ThresholdValue)
 		result = true
 	}
 	db.Close()
 	return result
 }
 
-func CacheMetaData(_class, _type, _category, _window string, count int, _flushEnable, _useSession bool) {
-
+func CacheMetaData(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _thresholdEnable bool, _thresholdValue int) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in CacheMetaData", r)
+		}
+	}()
 	_windowName := fmt.Sprintf("META:%s:%s:%s:WINDOW", _class, _type, _category)
 	_incName := fmt.Sprintf("META:%s:%s:%s:COUNT", _class, _type, _category)
 	_flushName := fmt.Sprintf("META:%s:%s:%s:FLUSH", _class, _type, _category)
 	_useSessionName := fmt.Sprintf("META:%s:%s:%s:USESESSION", _class, _type, _category)
+	_thresholdEnableName := fmt.Sprintf("META:%s:%s:%s:thresholdEnable", _class, _type, _category)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -175,23 +218,31 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 		client.Cmd("del", _flushName)
 	}
 
+	if _thresholdEnable == true {
+		client.Cmd("setnx", _thresholdEnableName, _thresholdValue)
+	} else {
+		client.Cmd("del", _thresholdEnableName)
+	}
+
 	client.Cmd("setnx", _useSessionName, strconv.FormatBool(_useSession))
 	client.Cmd("setnx", _windowName, _window)
 	client.Cmd("setnx", _incName, strconv.Itoa(count))
 }
 
-func OnMeta(_class, _type, _category, _window string, count int, _flushEnable, _useSession bool) {
-	CacheMetaData(_class, _type, _category, _window, count, _flushEnable, _useSession)
-	PersistsMetaData(_class, _type, _category, _window, count, _flushEnable, _useSession)
+func OnMeta(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _thresholdEnable bool, _thresholdValue int) {
+	CacheMetaData(_class, _type, _category, _window, count, _flushEnable, _useSession, _thresholdEnable, _thresholdValue)
+	PersistsMetaData(_class, _type, _category, _window, count, _flushEnable, _useSession, _thresholdEnable, _thresholdValue)
 }
 
 func OnEvent(_tenent, _company int, _class, _type, _category, _session, _parameter1, _parameter2 string) {
+
 	temp := fmt.Sprintf("Tenant:%d Company:%d Class:%s Type:%s Category:%s Session:%s Param1:%s Param2:%s", _tenent, _company, _class, _type, _category, _session, _parameter1, _parameter2)
 	fmt.Println("OnEvent: ", temp)
 
 	_window := fmt.Sprintf("META:%s:%s:%s:WINDOW", _class, _type, _category)
 	_inc := fmt.Sprintf("META:%s:%s:%s:COUNT", _class, _type, _category)
 	_useSessionName := fmt.Sprintf("META:%s:%s:%s:USESESSION", _class, _type, _category)
+	_thresholdEnableName := fmt.Sprintf("META:%s:%s:%s:thresholdEnable", _class, _type, _category)
 	tm := time.Now()
 
 	defer func() {
@@ -221,6 +272,8 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 	errHndlr(_ierr)
 	useSession, _userr := client.Cmd("get", _useSessionName).Str()
 	errHndlr(_userr)
+	threshold, _thresherr := client.Cmd("get", _thresholdEnableName).Str()
+	errHndlr(_thresherr)
 
 	iinc, berr := strconv.Atoi(sinc)
 
@@ -245,6 +298,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		totCountEventName := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 		totCountHrEventName := fmt.Sprintf("TOTALCOUNTHR:%d:%d:%s:%s:%s:%d:%d", _tenent, _company, window, _parameter1, _parameter2, tm.Hour(), tm.Minute())
 		maxTimeEventName := fmt.Sprintf("MAXTIME:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
+		thresholdEventName := fmt.Sprintf("THRESHOLD:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 
 		if _parameter1 == "" {
 			_parameter1 = "empty"
@@ -295,6 +349,13 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 					}
 					if window != "QUEUE" {
 						statClient.Decrement(countConcStatName)
+					}
+					if threshold != "" {
+						thValue, _ := strconv.Atoi(threshold)
+						if timeDiff > thValue {
+							thcount, _ := client.Cmd("incr", thresholdEventName).Int()
+							fmt.Println(thresholdEventName, ": ", thcount)
+						}
 					}
 					statClient.Gauge(gaugeConcStatName, dccount)
 					statClient.Gauge(totTimeStatName, rinc)
@@ -357,6 +418,7 @@ func OnReset() {
 			totCountEventSearch := fmt.Sprintf("TOTALCOUNT:*:%s:*", window)
 			totCountHr := fmt.Sprintf("TOTALCOUNTHR:*:%s:*", window)
 			maxTimeEventSearch := fmt.Sprintf("MAXTIME:*:%s:*", window)
+			thresholdEventSearch := fmt.Sprintf("THRESHOLD:*:%s:*", window)
 
 			snapVal, _ := client.Cmd("keys", snapEventSearch).List()
 			_keysToRemove = AppendListIfMissing(_keysToRemove, snapVal)
@@ -388,6 +450,9 @@ func OnReset() {
 			maxTimeVal, _ := client.Cmd("keys", maxTimeEventSearch).List()
 			_keysToRemove = AppendListIfMissing(_keysToRemove, maxTimeVal)
 
+			thresholdCountVal, _ := client.Cmd("keys", thresholdEventSearch).List()
+			_keysToRemove = AppendListIfMissing(_keysToRemove, thresholdCountVal)
+
 		}
 		tm := time.Now()
 		for _, remove := range _keysToRemove {
@@ -398,6 +463,53 @@ func OnReset() {
 			fmt.Println("readdSession: ", session)
 			client.Cmd("hset", session, "time", tm.Format(layout))
 		}
+	}
+}
+
+func OnSetDailySummary(_date time.Time) {
+	totCountEventSearch := fmt.Sprintf("TOTALCOUNT:*")
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnReset", r)
+		}
+	}()
+	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	errHndlr(err)
+	defer client.Close()
+	//authServer
+	authE := client.Cmd("auth", redisPassword)
+	errHndlr(authE.Err)
+	// select database
+	r := client.Cmd("select", redisDb)
+	errHndlr(r.Err)
+
+	totalEventKeys, _ := client.Cmd("keys", totCountEventSearch).List()
+	for _, key := range totalEventKeys {
+		keyItems := strings.Split(key, ":")
+		summery := SummeryDetail{}
+		tenant, _ := strconv.Atoi(keyItems[1])
+		company, _ := strconv.Atoi(keyItems[2])
+		summery.Tenant = tenant
+		summery.Company = company
+		summery.WindowName = keyItems[3]
+		summery.Param1 = keyItems[4]
+		summery.Param2 = keyItems[5]
+
+		totTimeEventName := fmt.Sprintf("TOTALTIME:%d:%d:%s:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
+		maxTimeEventName := fmt.Sprintf("MAXTIME:%d:%d:%s:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
+		thresholdEventName := fmt.Sprintf("THRESHOLD:%d:%d:%s:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
+
+		totCount, _ := client.Cmd("keys", key).Int()
+		totTime, _ := client.Cmd("keys", totTimeEventName).Int()
+		maxTime, _ := client.Cmd("keys", maxTimeEventName).Int()
+		threshold, _ := client.Cmd("keys", thresholdEventName).Int()
+
+		summery.TotalCount = totCount
+		summery.TotalTime = totTime
+		summery.MaxTime = maxTime
+		summery.ThresholdValue = threshold
+		summery.SummaryDate = _date
+		go PersistsSummaryData(summery)
 	}
 }
 
