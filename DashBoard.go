@@ -485,6 +485,7 @@ func OnSetDailySummary(_date time.Time) {
 
 	totalEventKeys, _ := client.Cmd("keys", totCountEventSearch).List()
 	for _, key := range totalEventKeys {
+		fmt.Println("Key: ", key)
 		keyItems := strings.Split(key, ":")
 		summery := SummeryDetail{}
 		tenant, _ := strconv.Atoi(keyItems[1])
@@ -499,10 +500,19 @@ func OnSetDailySummary(_date time.Time) {
 		maxTimeEventName := fmt.Sprintf("MAXTIME:%d:%d:%s:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
 		thresholdEventName := fmt.Sprintf("THRESHOLD:%d:%d:%s:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
 
-		totCount, _ := client.Cmd("keys", key).Int()
-		totTime, _ := client.Cmd("keys", totTimeEventName).Int()
-		maxTime, _ := client.Cmd("keys", maxTimeEventName).Int()
-		threshold, _ := client.Cmd("keys", thresholdEventName).Int()
+		fmt.Println("totTimeEventName: ", totTimeEventName)
+		fmt.Println("maxTimeEventName: ", maxTimeEventName)
+		fmt.Println("thresholdEventName: ", thresholdEventName)
+
+		totCount, _ := client.Cmd("get", key).Int()
+		totTime, _ := client.Cmd("get", totTimeEventName).Int()
+		maxTime, _ := client.Cmd("get", maxTimeEventName).Int()
+		threshold, _ := client.Cmd("get", thresholdEventName).Int()
+
+		fmt.Println("totCount: ", totCount)
+		fmt.Println("totTime: ", totTime)
+		fmt.Println("maxTime: ", maxTime)
+		fmt.Println("threshold: ", threshold)
 
 		summery.TotalCount = totCount
 		summery.TotalTime = totTime
