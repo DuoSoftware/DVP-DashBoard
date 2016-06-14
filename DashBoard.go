@@ -496,6 +496,16 @@ func OnSetDailySummary(_date time.Time) {
 		summery.Param1 = keyItems[4]
 		summery.Param2 = keyItems[5]
 
+		currentTime := 0
+		if summery.WindowName == "LOGIN" {
+			sessEventName := fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
+			isLoginSessionExits, _ := client.Cmd("exists", sessEventName).Bool()
+			if isLoginSessionExits {
+				tmx, _ := client.Cmd("hget", sessEventName, "time").Str()
+				tm2, _ := time.Parse(layout, tmx)
+				currentTime = int(_date.Sub(tm2.UTC()).Seconds())
+			}
+		}
 		totTimeEventName := fmt.Sprintf("TOTALTIME:%d:%d:%s:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
 		maxTimeEventName := fmt.Sprintf("MAXTIME:%d:%d:%s:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
 		thresholdEventName := fmt.Sprintf("THRESHOLD:%d:%d:%s:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
@@ -515,7 +525,7 @@ func OnSetDailySummary(_date time.Time) {
 		fmt.Println("threshold: ", threshold)
 
 		summery.TotalCount = totCount
-		summery.TotalTime = totTime
+		summery.TotalTime = totTime + currentTime
 		summery.MaxTime = maxTime
 		summery.ThresholdValue = threshold
 		summery.SummaryDate = _date
