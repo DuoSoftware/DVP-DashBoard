@@ -15,11 +15,9 @@ import (
 func loadJwtMiddleware() *jwtmiddleware.JWTMiddleware {
 	return (jwtmiddleware.New(jwtmiddleware.Options{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
-			fmt.Println(token.Claims["iss"])
-			fmt.Println(token.Claims["jti"])
-			secretKey := fmt.Sprintf("token:iss:%s:%s", token.Claims["iss"], token.Claims["jti"])
+			claims := token.Claims.(jwt.MapClaims)
+			secretKey := fmt.Sprintf("token:iss:%s:%s", claims["iss"], claims["jti"])
 			secret := SecurityGet(secretKey)
-			//fmt.Println("secret: ", secret)
 			if secret == "" {
 				return nil, fmt.Errorf("Invalied 'iss' or 'jti' in JWT")
 			}
@@ -46,8 +44,9 @@ func validateCompanyTenant(dashboardEvent DashBoardEvent) (company, tenant int) 
 	} else {
 		user := context.Get(dashboardEvent.Context.Request(), "user")
 		if user != nil {
-			iTenant := user.(*jwt.Token).Claims["tenant"]
-			iCompany := user.(*jwt.Token).Claims["company"]
+			claims := user.(*jwt.Token).Claims.(jwt.MapClaims)
+			iTenant := claims["tenant"]
+			iCompany := claims["company"]
 			if iTenant != nil && iCompany != nil {
 				tenant := int(iTenant.(float64))
 				company := int(iCompany.(float64))
@@ -75,12 +74,13 @@ func validateCompanyTenantGraph(dashBoardGraph DashBoardGraph) (company, tenant 
 			return 0, 0
 		}
 	} else {
-		//fmt.Println(dashBoardGraph.Context.Request())
+		fmt.Println(dashBoardGraph.Context.Request())
 		user := context.Get(dashBoardGraph.Context.Request(), "user")
-		//fmt.Println(user)
+		fmt.Println(user)
 		if user != nil {
-			iTenant := user.(*jwt.Token).Claims["tenant"]
-			iCompany := user.(*jwt.Token).Claims["company"]
+			claims := user.(*jwt.Token).Claims.(jwt.MapClaims)
+			iTenant := claims["tenant"]
+			iCompany := claims["company"]
 			if iTenant != nil && iCompany != nil {
 				tenant := int(iTenant.(float64))
 				company := int(iCompany.(float64))
