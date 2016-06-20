@@ -498,12 +498,13 @@ func OnSetDailySummary(_date time.Time) {
 
 		currentTime := 0
 		if summery.WindowName == "LOGIN" {
-			sessEventName := fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
-			isLoginSessionExits, _ := client.Cmd("exists", sessEventName).Bool()
-			if isLoginSessionExits {
-				tmx, _ := client.Cmd("hget", sessEventName, "time").Str()
+			sessEventSearch := fmt.Sprintf("SESSION:%d:%d:%s:*:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
+			sessEvents, _ := client.Cmd("keys", sessEventSearch).List()
+			if len(sessEvents) > 0 {
+				tmx, _ := client.Cmd("hget", sessEvents[0], "time").Str()
 				tm2, _ := time.Parse(layout, tmx)
 				currentTime = int(_date.Sub(tm2.UTC()).Seconds())
+				fmt.Println("currentTime: ", currentTime)
 			}
 		}
 		totTimeEventName := fmt.Sprintf("TOTALTIME:%d:%d:%s:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)

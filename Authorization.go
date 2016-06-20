@@ -75,9 +75,9 @@ func validateCompanyTenantGraph(dashBoardGraph DashBoardGraph) (company, tenant 
 			return 0, 0
 		}
 	} else {
-		fmt.Println(dashBoardGraph.Context.Request())
+		//fmt.Println(dashBoardGraph.Context.Request())
 		user := context.Get(dashBoardGraph.Context.Request(), "user")
-		fmt.Println(user)
+		//fmt.Println(user)
 		if user != nil {
 			iTenant := user.(*jwt.Token).Claims["tenant"]
 			iCompany := user.(*jwt.Token).Claims["company"]
