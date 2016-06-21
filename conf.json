@@ -3,6 +3,7 @@
     "RedisIp": "45.55.142.207",
 	"RedisPort": "6389",
 	"RedisDb": 8,
+	"ArdsRedisDb": 6,
 	"RedisPassword":"DuoS123",
 	"StatsDIp":"45.55.142.207",
 	"StatsDPort":8125,

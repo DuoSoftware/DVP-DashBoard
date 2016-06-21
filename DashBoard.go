@@ -802,6 +802,7 @@ func OnGetQueueDetails(_tenant, _company int, resultChannel chan []QueueDetails)
 			go OnGetAverageTime(_tenant, _company, "QUEUE", queueId, "*", avgWaitingTime)
 
 			queueD.QueueId = queueId
+			queueD.QueueName = GetQueueName(queueId)
 			queueD.QueueInfo.TotalQueued = <-totalQueued
 			queueD.QueueInfo.TotalAnswered = <-totalAnswer
 			queueD.QueueInfo.QueueDropped = <-totalDropped
@@ -853,6 +854,7 @@ func OnGetSingleQueueDetails(_tenant, _company int, queueId string, resultChanne
 	go OnGetAverageTime(_tenant, _company, "QUEUE", queueId, "*", avgWaitingTime)
 
 	queueD.QueueId = queueId
+	queueD.QueueName = GetQueueName(queueId)
 	queueD.QueueInfo.TotalQueued = <-totalQueued
 	queueD.QueueInfo.TotalAnswered = <-totalAnswer
 	queueD.QueueInfo.QueueDropped = <-totalDropped
@@ -870,4 +872,30 @@ func OnGetSingleQueueDetails(_tenant, _company int, queueId string, resultChanne
 	close(avgWaitingTime)
 
 	resultChannel <- queueD
+}
+
+func GetQueueName(queueId string) string {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in GetQueueName", r)
+		}
+	}()
+	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	errHndlr(err)
+	defer client.Close()
+	//authServer
+	authE := client.Cmd("auth", redisPassword)
+	errHndlr(authE.Err)
+	// select database
+	r := client.Cmd("select", ardsRedisDb)
+	errHndlr(r.Err)
+
+	qId := strings.Replace(queueId, "-", ":", -1)
+	queueName, _ := client.Cmd("hget", "QueueNameHash", qId).Str()
+	fmt.Println("queueName: ", queueName)
+	if queueName == "" {
+		return queueId
+	} else {
+		return queueName
+	}
 }

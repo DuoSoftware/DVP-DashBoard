@@ -34,6 +34,7 @@ type Configuration struct {
 	RedisIp          string
 	RedisPort        string
 	RedisDb          int
+	ArdsRedisDb      int
 	RedisPassword    string
 	Port             string
 	StatsDIp         string
@@ -52,6 +53,7 @@ type EnvConfiguration struct {
 	RedisIp          string
 	RedisPort        string
 	RedisDb          string
+	ArdsRedisDb      string
 	RedisPassword    string
 	Port             string
 	StatsDIp         string
@@ -85,6 +87,7 @@ type QueueDetail struct {
 
 type QueueDetails struct {
 	QueueId   string
+	QueueName string
 	QueueInfo QueueDetail
 }
 

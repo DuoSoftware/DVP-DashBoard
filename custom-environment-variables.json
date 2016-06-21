@@ -3,6 +3,7 @@
     "RedisIp": "SYS_REDIS_HOST",
 	"RedisPort": "SYS_REDIS_PORT",
 	"RedisDb": "SYS_REDIS_DB",
+	"ArdsRedisDb": "SYS_ARDSREDIS_DB",
 	"RedisPassword":"SYS_REDIS_PASSWORD",
 	"StatsDIp":"SYS_GRAPHITE_HOST",
 	"StatsDPort":"SYS_GRAPHITESTATSD_PORT",
