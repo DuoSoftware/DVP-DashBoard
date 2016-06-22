@@ -34,7 +34,7 @@ func IncokeGhaphite(_url string, result chan string) {
 	}
 }
 
-func OnGetCalls(_tenant, _company, _duration int) string {
+func OnGetCalls(_tenant, _company, _duration int, result chan string) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in OnGetCalls", r)
@@ -45,10 +45,10 @@ func OnGetCalls(_tenant, _company, _duration int) string {
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
 	close(resultChannel)
-	return queueInfo
+	result <- queueInfo
 }
 
-func OnGetChannels(_tenant, _company, _duration int) string {
+func OnGetChannels(_tenant, _company, _duration int, result chan string) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in OnGetChannels", r)
@@ -59,10 +59,10 @@ func OnGetChannels(_tenant, _company, _duration int) string {
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
 	close(resultChannel)
-	return queueInfo
+	result <- queueInfo
 }
 
-func OnGetBridge(_tenant, _company, _duration int) string {
+func OnGetBridge(_tenant, _company, _duration int, result chan string) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in OnGetBridge", r)
@@ -73,10 +73,10 @@ func OnGetBridge(_tenant, _company, _duration int) string {
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
 	close(resultChannel)
-	return queueInfo
+	result <- queueInfo
 }
 
-func OnGetQueued(_tenant, _company, _duration int) string {
+func OnGetQueued(_tenant, _company, _duration int, result chan string) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in OnGetQueued", r)
@@ -87,10 +87,10 @@ func OnGetQueued(_tenant, _company, _duration int) string {
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
 	close(resultChannel)
-	return queueInfo
+	result <- queueInfo
 }
 
-func OnGetConcurrentQueue(_tenant, _company, _duration int, _queue string) string {
+func OnGetConcurrentQueue(_tenant, _company, _duration int, _queue string, result chan string) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in OnGetQueued", r)
@@ -103,5 +103,5 @@ func OnGetConcurrentQueue(_tenant, _company, _duration int, _queue string) strin
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
 	close(resultChannel)
-	return queueInfo
+	result <- queueInfo
 }

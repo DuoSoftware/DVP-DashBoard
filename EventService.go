@@ -260,7 +260,11 @@ func (dashBoardEvent DashBoardEvent) TotalCount(window, param1, param2 string) i
 func (dashBoardGraph DashBoardGraph) Calls(duration int) string {
 	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
 	if company != 0 && tenant != 0 {
-		return OnGetCalls(tenant, company, duration)
+		resultChannel := make(chan string)
+		go OnGetCalls(tenant, company, duration, resultChannel)
+		var graphData = <-resultChannel
+		close(resultChannel)
+		return graphData
 	} else {
 		return ""
 	}
@@ -269,7 +273,11 @@ func (dashBoardGraph DashBoardGraph) Calls(duration int) string {
 func (dashBoardGraph DashBoardGraph) Channels(duration int) string {
 	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
 	if company != 0 && tenant != 0 {
-		return OnGetChannels(tenant, company, duration)
+		resultChannel := make(chan string)
+		go OnGetChannels(tenant, company, duration, resultChannel)
+		var graphData = <-resultChannel
+		close(resultChannel)
+		return graphData
 	} else {
 		return ""
 	}
@@ -278,7 +286,11 @@ func (dashBoardGraph DashBoardGraph) Channels(duration int) string {
 func (dashBoardGraph DashBoardGraph) Bridge(duration int) string {
 	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
 	if company != 0 && tenant != 0 {
-		return OnGetBridge(tenant, company, duration)
+		resultChannel := make(chan string)
+		go OnGetBridge(tenant, company, duration, resultChannel)
+		var graphData = <-resultChannel
+		close(resultChannel)
+		return graphData
 	} else {
 		return ""
 	}
@@ -287,7 +299,11 @@ func (dashBoardGraph DashBoardGraph) Bridge(duration int) string {
 func (dashBoardGraph DashBoardGraph) Queued(duration int) string {
 	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
 	if company != 0 && tenant != 0 {
-		return OnGetQueued(tenant, company, duration)
+		resultChannel := make(chan string)
+		go OnGetQueued(tenant, company, duration, resultChannel)
+		var graphData = <-resultChannel
+		close(resultChannel)
+		return graphData
 	} else {
 		return ""
 	}
@@ -296,7 +312,11 @@ func (dashBoardGraph DashBoardGraph) Queued(duration int) string {
 func (dashBoardGraph DashBoardGraph) Concurrentqueued(queue string, duration int) string {
 	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
 	if company != 0 && tenant != 0 {
-		return OnGetConcurrentQueue(tenant, company, duration, queue)
+		resultChannel := make(chan string)
+		go OnGetConcurrentQueue(tenant, company, duration, queue, resultChannel)
+		var graphData = <-resultChannel
+		close(resultChannel)
+		return graphData
 	} else {
 		return ""
 	}
