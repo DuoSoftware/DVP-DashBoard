@@ -14,21 +14,18 @@ func IncokeGhaphite(_url string, result chan string) {
 	}()
 	fmt.Println("graphite_url: ", _url)
 	resp, err := http.Get(_url)
-
+	defer resp.Body.Close()
 	if err != nil {
 		fmt.Println(err.Error())
-		resp.Body.Close()
 		result <- ""
 	} else {
 		response, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println(err.Error())
-			resp.Body.Close()
 			result <- ""
 		} else {
 			tmx := string(response[:])
 			fmt.Println(tmx)
-			resp.Body.Close()
 			result <- tmx
 		}
 	}
