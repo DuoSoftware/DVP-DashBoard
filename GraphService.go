@@ -14,11 +14,12 @@ func IncokeGhaphite(_url string) string {
 	}()
 	fmt.Println("graphite_url: ", _url)
 	resp, err := http.Get(_url)
+
+	defer resp.Body.Close()
 	if err != nil {
 		fmt.Println(err.Error())
 		return ""
 	} else {
-		defer resp.Body.Close()
 		response, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println(err.Error())
@@ -70,9 +71,6 @@ func OnGetQueued(_tenant, _company, _duration int) string {
 	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.QUEUE&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	return IncokeGhaphite(url)
 }
-
-
-
 
 func OnGetConcurrentQueue(_tenant, _company, _duration int, _queue string) string {
 	defer func() {
