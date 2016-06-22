@@ -18,7 +18,7 @@ func main() {
 	go ClearData()
 
 	jwtMiddleware := loadJwtMiddleware()
-	gorest.RegisterService(new(DashBoardEvent))
+	//gorest.RegisterService(new(DashBoardEvent))
 	gorest.RegisterService(new(DashBoardGraph))
 	app := jwtMiddleware.Handler(gorest.Handle())
 	c := cors.New(cors.Options{
