@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func IncokeGhaphite(_url string) string {
+func IncokeGhaphite(_url string, result chan string) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in IncokeGhaphite", r)
@@ -18,18 +18,18 @@ func IncokeGhaphite(_url string) string {
 	if err != nil {
 		fmt.Println(err.Error())
 		resp.Body.Close()
-		return ""
+		result <- ""
 	} else {
 		response, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println(err.Error())
 			resp.Body.Close()
-			return ""
+			result <- ""
 		} else {
 			tmx := string(response[:])
 			fmt.Println(tmx)
 			resp.Body.Close()
-			return tmx
+			result <- tmx
 		}
 	}
 }
@@ -41,7 +41,11 @@ func OnGetCalls(_tenant, _company, _duration int) string {
 		}
 	}()
 	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.CALLS&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
-	return IncokeGhaphite(url)
+	resultChannel := make(chan string)
+	go IncokeGhaphite(url, resultChannel)
+	var queueInfo = <-resultChannel
+	close(resultChannel)
+	return queueInfo
 }
 
 func OnGetChannels(_tenant, _company, _duration int) string {
@@ -51,7 +55,11 @@ func OnGetChannels(_tenant, _company, _duration int) string {
 		}
 	}()
 	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.CALLCHANNELS&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
-	return IncokeGhaphite(url)
+	resultChannel := make(chan string)
+	go IncokeGhaphite(url, resultChannel)
+	var queueInfo = <-resultChannel
+	close(resultChannel)
+	return queueInfo
 }
 
 func OnGetBridge(_tenant, _company, _duration int) string {
@@ -61,7 +69,11 @@ func OnGetBridge(_tenant, _company, _duration int) string {
 		}
 	}()
 	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.BRIDGE&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
-	return IncokeGhaphite(url)
+	resultChannel := make(chan string)
+	go IncokeGhaphite(url, resultChannel)
+	var queueInfo = <-resultChannel
+	close(resultChannel)
+	return queueInfo
 }
 
 func OnGetQueued(_tenant, _company, _duration int) string {
@@ -71,7 +83,11 @@ func OnGetQueued(_tenant, _company, _duration int) string {
 		}
 	}()
 	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.QUEUE&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
-	return IncokeGhaphite(url)
+	resultChannel := make(chan string)
+	go IncokeGhaphite(url, resultChannel)
+	var queueInfo = <-resultChannel
+	close(resultChannel)
+	return queueInfo
 }
 
 func OnGetConcurrentQueue(_tenant, _company, _duration int, _queue string) string {
@@ -83,5 +99,9 @@ func OnGetConcurrentQueue(_tenant, _company, _duration int, _queue string) strin
 
 	//stats.gauges.event.concurrent.1.3.Queue-3-1-CALLSERVER-CALL-attribute_8-L.QUEUE
 	url := fmt.Sprintf("http://%s/render?target=stats.gauges.event.concurrent.%d.%d.%s.QUEUE&from=-%dmin&format=json", statsDIp, _tenant, _company, _queue, _duration)
-	return IncokeGhaphite(url)
+	resultChannel := make(chan string)
+	go IncokeGhaphite(url, resultChannel)
+	var queueInfo = <-resultChannel
+	close(resultChannel)
+	return queueInfo
 }
