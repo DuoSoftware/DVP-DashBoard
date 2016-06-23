@@ -6,7 +6,7 @@ import (
 	"github.com/auth0/go-jwt-middleware"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/fzzy/radix/redis"
-	"github.com/gorilla/context"
+	//"github.com/gorilla/context"
 	"strconv"
 	"strings"
 	"time"
@@ -30,69 +30,206 @@ func loadJwtMiddleware() *jwtmiddleware.JWTMiddleware {
 	}))
 }
 
-func validateCompanyTenant(dashboardEvent DashBoardEvent) (company, tenant int) {
-	internalAccessToken := dashboardEvent.Context.Request().Header.Get("companyinfo")
-	if internalAccessToken != "" {
-		ids := strings.Split(internalAccessToken, ":")
-		if len(ids) == 2 {
-			tenant, _ = strconv.Atoi(ids[0])
-			company, _ = strconv.Atoi(ids[1])
-			return company, tenant
-		} else {
-			return 0, 0
+func FindScope(vs []interface{}, scope, action string) (bool, bool) {
+	for _, v := range vs {
+		scopeInfo := v.(map[string]interface{})
+		if scopeInfo["resource"] == scope {
+			return true, FindAction(scopeInfo["actions"].([]interface{}), action)
 		}
-	} else {
-		user := context.Get(dashboardEvent.Context.Request(), "user")
-		if user != nil {
-			claims := user.(*jwt.Token).Claims.(jwt.MapClaims)
-			iTenant := claims["tenant"]
-			iCompany := claims["company"]
-			if iTenant != nil && iCompany != nil {
-				tenant := int(iTenant.(float64))
-				company := int(iCompany.(float64))
-				return company, tenant
+	}
+	return false, false
+}
+
+func FindAction(vs []interface{}, action string) bool {
+	for _, v := range vs {
+		if v == action {
+			return true
+		}
+	}
+	return false
+}
+
+//func Include(vs []interface{}, t string) bool {
+//	return Index(vs, t) >= 0
+//}
+
+func decodeJwtDashBoardGraph(dashBoardGraph DashBoardGraph, funcScope, action string) (company, tenant int) {
+	tokenVals := strings.Split(dashBoardGraph.Context.Request().Header.Get("authorization"), " ")
+	internalAccessToken := dashBoardGraph.Context.Request().Header.Get("companyinfo")
+	if len(tokenVals) > 1 {
+		token, err := jwt.Parse(tokenVals[1], func(token *jwt.Token) (interface{}, error) {
+			// Don't forget to validate the alg is what you expect:
+			claims := token.Claims.(jwt.MapClaims)
+			secretKey := fmt.Sprintf("token:iss:%s:%s", claims["iss"], claims["jti"])
+			fmt.Println(secretKey)
+			secret := SecurityGet(secretKey)
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(secret), nil
+		})
+
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			scopes := claims["scope"].([]interface{})
+			scope, actions := FindScope(scopes, funcScope, action)
+			fmt.Println(scope, ":: ", actions)
+			if scope && actions {
+				if internalAccessToken != "" {
+					ids := strings.Split(internalAccessToken, ":")
+					if len(ids) == 2 {
+						tenant, _ = strconv.Atoi(ids[0])
+						company, _ = strconv.Atoi(ids[1])
+						return company, tenant
+					} else {
+						return 0, 0
+					}
+				} else {
+					iTenant := claims["tenant"]
+					iCompany := claims["company"]
+					if iTenant != nil && iCompany != nil {
+						tenant := int(iTenant.(float64))
+						company := int(iCompany.(float64))
+						return company, tenant
+					} else {
+						dashBoardGraph.RB().Write(ResponseGenerator(false, "Invalid company or tenant", "", ""))
+						return
+					}
+				}
 			} else {
-				dashboardEvent.RB().Write(ResponseGenerator(false, "Invalid company or tenant", "", ""))
+				dashBoardGraph.RB().Write(ResponseGenerator(false, "Invalid scopes", "", ""))
 				return
 			}
 		} else {
-			dashboardEvent.RB().Write(ResponseGenerator(false, "User data not found in JWT", "", ""))
+			fmt.Println(err)
+			dashBoardGraph.RB().Write(ResponseGenerator(false, "Invalid token", "", ""))
 			return
 		}
+	} else {
+		dashBoardGraph.RB().Write(ResponseGenerator(false, "Invalid token", "", ""))
+		return
 	}
 }
 
-func validateCompanyTenantGraph(dashBoardGraph DashBoardGraph) (company, tenant int) {
-	internalAccessToken := dashBoardGraph.Context.Request().Header.Get("companyinfo")
-	if internalAccessToken != "" {
-		ids := strings.Split(internalAccessToken, ":")
-		if len(ids) == 2 {
-			tenant, _ = strconv.Atoi(ids[0])
-			company, _ = strconv.Atoi(ids[1])
-			return company, tenant
-		} else {
-			return 0, 0
-		}
-	} else {
-		user := context.Get(dashBoardGraph.Context.Request(), "user")
-		if user != nil {
-			claims := user.(*jwt.Token).Claims.(jwt.MapClaims)
-			iTenant := claims["tenant"]
-			iCompany := claims["company"]
-			if iTenant != nil && iCompany != nil {
-				tenant := int(iTenant.(float64))
-				company := int(iCompany.(float64))
-				return company, tenant
+func decodeJwtDashBoardEvent(dashBoardEvent DashBoardEvent, funcScope, action string) (company, tenant int) {
+	tokenVals := strings.Split(dashBoardEvent.Context.Request().Header.Get("authorization"), " ")
+	internalAccessToken := dashBoardEvent.Context.Request().Header.Get("companyinfo")
+	if len(tokenVals) > 1 {
+		token, err := jwt.Parse(tokenVals[1], func(token *jwt.Token) (interface{}, error) {
+			// Don't forget to validate the alg is what you expect:
+			claims := token.Claims.(jwt.MapClaims)
+			secretKey := fmt.Sprintf("token:iss:%s:%s", claims["iss"], claims["jti"])
+			fmt.Println(secretKey)
+			secret := SecurityGet(secretKey)
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(secret), nil
+		})
+
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			scopes := claims["scope"].([]interface{})
+			scope, actions := FindScope(scopes, funcScope, action)
+			fmt.Println(scope, ":: ", actions)
+			if scope && actions {
+				if internalAccessToken != "" {
+					ids := strings.Split(internalAccessToken, ":")
+					if len(ids) == 2 {
+						tenant, _ = strconv.Atoi(ids[0])
+						company, _ = strconv.Atoi(ids[1])
+						return company, tenant
+					} else {
+						return 0, 0
+					}
+				} else {
+					iTenant := claims["tenant"]
+					iCompany := claims["company"]
+					if iTenant != nil && iCompany != nil {
+						tenant := int(iTenant.(float64))
+						company := int(iCompany.(float64))
+						return company, tenant
+					} else {
+						dashBoardEvent.RB().Write(ResponseGenerator(false, "Invalid company or tenant", "", ""))
+						return
+					}
+				}
 			} else {
-				dashBoardGraph.RB().Write(ResponseGenerator(false, "Invalid company or tenant", "", ""))
+				dashBoardEvent.RB().Write(ResponseGenerator(false, "Invalid scopes", "", ""))
 				return
 			}
 		} else {
-			dashBoardGraph.RB().Write(ResponseGenerator(false, "User data not found in JWT", "", ""))
+			fmt.Println(err)
+			dashBoardEvent.RB().Write(ResponseGenerator(false, "Invalid token", "", ""))
 			return
 		}
+	} else {
+		dashBoardEvent.RB().Write(ResponseGenerator(false, "Invalid token", "", ""))
+		return
 	}
 }
+
+//func validateCompanyTenant(dashboardEvent DashBoardEvent) (company, tenant int) {
+//	internalAccessToken := dashboardEvent.Context.Request().Header.Get("companyinfo")
+//	if internalAccessToken != "" {
+//		ids := strings.Split(internalAccessToken, ":")
+//		if len(ids) == 2 {
+//			tenant, _ = strconv.Atoi(ids[0])
+//			company, _ = strconv.Atoi(ids[1])
+//			return company, tenant
+//		} else {
+//			return 0, 0
+//		}
+//	} else {
+//		user := context.Get(dashboardEvent.Context.Request(), "user")
+//		if user != nil {
+//			claims := user.(*jwt.Token).Claims.(jwt.MapClaims)
+//			iTenant := claims["tenant"]
+//			iCompany := claims["company"]
+//			if iTenant != nil && iCompany != nil {
+//				tenant := int(iTenant.(float64))
+//				company := int(iCompany.(float64))
+//				return company, tenant
+//			} else {
+//				dashboardEvent.RB().Write(ResponseGenerator(false, "Invalid company or tenant", "", ""))
+//				return
+//			}
+//		} else {
+//			dashboardEvent.RB().Write(ResponseGenerator(false, "User data not found in JWT", "", ""))
+//			return
+//		}
+//	}
+//}
+
+//func validateCompanyTenantGraph(dashBoardGraph DashBoardGraph) (company, tenant int) {
+//	internalAccessToken := dashBoardGraph.Context.Request().Header.Get("companyinfo")
+//	if internalAccessToken != "" {
+//		ids := strings.Split(internalAccessToken, ":")
+//		if len(ids) == 2 {
+//			tenant, _ = strconv.Atoi(ids[0])
+//			company, _ = strconv.Atoi(ids[1])
+//			return company, tenant
+//		} else {
+//			return 0, 0
+//		}
+//	} else {
+//		user := context.Get(dashBoardGraph.Context.Request(), "user")
+//		if user != nil {
+//			claims := user.(*jwt.Token).Claims.(jwt.MapClaims)
+//			iTenant := claims["tenant"]
+//			iCompany := claims["company"]
+//			if iTenant != nil && iCompany != nil {
+//				tenant := int(iTenant.(float64))
+//				company := int(iCompany.(float64))
+//				return company, tenant
+//			} else {
+//				dashBoardGraph.RB().Write(ResponseGenerator(false, "Invalid company or tenant", "", ""))
+//				return
+//			}
+//		} else {
+//			dashBoardGraph.RB().Write(ResponseGenerator(false, "User data not found in JWT", "", ""))
+//			return
+//		}
+//	}
+//}
 
 func ResponseGenerator(isSuccess bool, customMessage, result, exception string) []byte {
 	res := Result{}

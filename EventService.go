@@ -165,7 +165,7 @@ func (dashboardEvent DashBoardEvent) Reset() {
 }
 
 func (dashBoardEvent DashBoardEvent) MaxWaiting(window, param1, param2 string) int {
-	company, tenant := validateCompanyTenant(dashBoardEvent)
+	company, tenant := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan int)
 		go OnGetMaxTime(tenant, company, window, param1, param2, resultChannel)
@@ -178,7 +178,7 @@ func (dashBoardEvent DashBoardEvent) MaxWaiting(window, param1, param2 string) i
 }
 
 func (dashBoardEvent DashBoardEvent) CurrentMaxTime(window, param1, param2 string) int {
-	company, tenant := validateCompanyTenant(dashBoardEvent)
+	company, tenant := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan int)
 		go OnGetCurrentMaxTime(tenant, company, window, param1, param2, resultChannel)
@@ -191,7 +191,7 @@ func (dashBoardEvent DashBoardEvent) CurrentMaxTime(window, param1, param2 strin
 }
 
 func (dashBoardEvent DashBoardEvent) CurrentCount(window, param1, param2 string) int {
-	company, tenant := validateCompanyTenant(dashBoardEvent)
+	company, tenant := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan int)
 		go OnGetCurrentCount(tenant, company, window, param1, param2, resultChannel)
@@ -204,7 +204,7 @@ func (dashBoardEvent DashBoardEvent) CurrentCount(window, param1, param2 string)
 }
 
 func (dashBoardEvent DashBoardEvent) AverageTime(window, param1, param2 string) float32 {
-	company, tenant := validateCompanyTenant(dashBoardEvent)
+	company, tenant := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan float32)
 		go OnGetAverageTime(tenant, company, window, param1, param2, resultChannel)
@@ -217,7 +217,7 @@ func (dashBoardEvent DashBoardEvent) AverageTime(window, param1, param2 string) 
 }
 
 func (dashBoardEvent DashBoardEvent) QueueDetails() []QueueDetails {
-	company, tenant := validateCompanyTenant(dashBoardEvent)
+	company, tenant := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan []QueueDetails)
 		go OnGetQueueDetails(tenant, company, resultChannel)
@@ -230,7 +230,7 @@ func (dashBoardEvent DashBoardEvent) QueueDetails() []QueueDetails {
 }
 
 func (dashBoardEvent DashBoardEvent) QueueSingleDetail(queueId string) QueueDetails {
-	company, tenant := validateCompanyTenant(dashBoardEvent)
+	company, tenant := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan QueueDetails)
 		go OnGetSingleQueueDetails(tenant, company, queueId, resultChannel)
@@ -245,7 +245,7 @@ func (dashBoardEvent DashBoardEvent) QueueSingleDetail(queueId string) QueueDeta
 }
 
 func (dashBoardEvent DashBoardEvent) TotalCount(window, param1, param2 string) int {
-	company, tenant := validateCompanyTenant(dashBoardEvent)
+	company, tenant := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan int)
 		go OnGetTotalCount(tenant, company, window, param1, param2, resultChannel)
@@ -258,7 +258,7 @@ func (dashBoardEvent DashBoardEvent) TotalCount(window, param1, param2 string) i
 }
 
 func (dashBoardGraph DashBoardGraph) Calls(duration int) string {
-	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
+	company, tenant := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
 		go OnGetCalls(tenant, company, duration, resultChannel)
@@ -271,7 +271,7 @@ func (dashBoardGraph DashBoardGraph) Calls(duration int) string {
 }
 
 func (dashBoardGraph DashBoardGraph) Channels(duration int) string {
-	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
+	company, tenant := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
 		go OnGetChannels(tenant, company, duration, resultChannel)
@@ -284,7 +284,7 @@ func (dashBoardGraph DashBoardGraph) Channels(duration int) string {
 }
 
 func (dashBoardGraph DashBoardGraph) Bridge(duration int) string {
-	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
+	company, tenant := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
 		go OnGetBridge(tenant, company, duration, resultChannel)
@@ -297,7 +297,8 @@ func (dashBoardGraph DashBoardGraph) Bridge(duration int) string {
 }
 
 func (dashBoardGraph DashBoardGraph) Queued(duration int) string {
-	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
+	company, tenant := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	fmt.Println(company, "::", tenant)
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
 		go OnGetQueued(tenant, company, duration, resultChannel)
@@ -310,7 +311,7 @@ func (dashBoardGraph DashBoardGraph) Queued(duration int) string {
 }
 
 func (dashBoardGraph DashBoardGraph) Concurrentqueued(queue string, duration int) string {
-	company, tenant := validateCompanyTenantGraph(dashBoardGraph)
+	company, tenant := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
 		go OnGetConcurrentQueue(tenant, company, duration, queue, resultChannel)

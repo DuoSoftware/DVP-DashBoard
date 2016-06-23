@@ -17,16 +17,26 @@ func main() {
 	InitiateStatDClient()
 	go ClearData()
 
-	jwtMiddleware := loadJwtMiddleware()
+	//jwtMiddleware := loadJwtMiddleware()
 	gorest.RegisterService(new(DashBoardEvent))
-	//gorest.RegisterService(new(DashBoardGraph))
-	app := jwtMiddleware.Handler(gorest.Handle())
+	gorest.RegisterService(new(DashBoardGraph))
+	//app := jwtMiddleware.Handler(gorest.Handle())
 	c := cors.New(cors.Options{
 		AllowedHeaders: []string{"accept", "authorization"},
 	})
-	handler := c.Handler(app)
+	handler := c.Handler(gorest.Handle())
 	addr := fmt.Sprintf(":%s", port)
-	http.ListenAndServe(addr, handler)
+	s := &http.Server{
+		Addr:           addr,
+		Handler:        handler,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+
+	s.SetKeepAlivesEnabled(false)
+	s.ListenAndServe()
+	//http.ListenAndServe(addr, handler)
 
 	////fmt.Scanln()
 	//client, error := goredis.Dial(&goredis.DialConfig{Address: "127.0.0.1:6379"})
