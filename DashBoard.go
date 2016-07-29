@@ -397,6 +397,7 @@ func OnReset() {
 	_windowList := make([]string, 0)
 	_keysToRemove := make([]string, 0)
 	_loginSessions := make([]string, 0)
+	_productivitySessions := make([]string, 0)
 	lenth := len(val)
 	fmt.Println(lenth)
 	if lenth > 0 {
@@ -434,6 +435,8 @@ func OnReset() {
 				sessItems := strings.Split(sess, ":")
 				if len(sessItems) >= 4 && sessItems[3] == "LOGIN" {
 					_loginSessions = AppendIfMissing(_loginSessions, sess)
+				} else if len(sessItems) >= 4 && sessItems[3] == "PRODUCTIVITY" {
+					_productivitySessions = AppendIfMissing(_productivitySessions, sess)
 				}
 			}
 			_keysToRemove = AppendListIfMissing(_keysToRemove, sessVal)
@@ -462,6 +465,10 @@ func OnReset() {
 		for _, session := range _loginSessions {
 			fmt.Println("readdSession: ", session)
 			client.Cmd("hset", session, "time", tm.Format(layout))
+		}
+		for _, prosession := range _productivitySessions {
+			fmt.Println("readdSession: ", prosession)
+			client.Cmd("hset", prosession, "time", tm.Format(layout))
 		}
 	}
 }
