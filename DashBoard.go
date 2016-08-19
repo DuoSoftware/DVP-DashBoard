@@ -397,6 +397,7 @@ func OnReset() {
 	_windowList := make([]string, 0)
 	_keysToRemove := make([]string, 0)
 	_loginSessions := make([]string, 0)
+	_loginCounts := make([]string, 0)
 	_productivitySessions := make([]string, 0)
 	lenth := len(val)
 	fmt.Println(lenth)
@@ -438,15 +439,30 @@ func OnReset() {
 				} else if len(sessItems) >= 4 && sessItems[3] == "PRODUCTIVITY" {
 					_productivitySessions = AppendIfMissing(_productivitySessions, sess)
 				} else {
-					_keysToRemove = AppendListIfMissing(_keysToRemove, sessVal)
+					_keysToRemove = AppendIfMissing(_keysToRemove, sess)
 				}
 			}
 
 			totTimeVal, _ := client.Cmd("keys", totTimeEventSearch).List()
-			_keysToRemove = AppendListIfMissing(_keysToRemove, totTimeVal)
-
+			for _, totT := range totTimeVal {
+				totItems := strings.Split(totT, ":")
+				if len(totItems) >= 4 && totItems[3] == "LOGIN" {
+					_loginCounts = AppendIfMissing(_loginCounts, totT)
+				else {
+					_keysToRemove = AppendIfMissing(_keysToRemove, totT)
+				}
+			}
+			
 			totCountVal, _ := client.Cmd("keys", totCountEventSearch).List()
-			_keysToRemove = AppendListIfMissing(_keysToRemove, totCountVal)
+			for _, totC := range totCountVal {
+				totCItems := strings.Split(totC, ":")
+				if len(totCItems) >= 4 && totCItems[3] == "LOGIN" {
+					_loginCounts = AppendIfMissing(_loginCounts, totC)
+				else {
+					_keysToRemove = AppendIfMissing(_keysToRemove, totC)
+				}
+			}
+			
 
 			totCountHrVal, _ := client.Cmd("keys", totCountHr).List()
 			_keysToRemove = AppendListIfMissing(_keysToRemove, totCountHrVal)
@@ -466,6 +482,10 @@ func OnReset() {
 		for _, session := range _loginSessions {
 			fmt.Println("readdSession: ", session)
 			client.Cmd("hset", session, "time", tm.Format(layout))
+		}
+		for _, lcount := range _loginCounts {
+			fmt.Println("readdSession: ", lcount)
+			client.Cmd("set", lcount, 0)
 		}
 		/*for _, prosession := range _productivitySessions {
 			fmt.Println("readdSession: ", prosession)
