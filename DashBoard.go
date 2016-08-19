@@ -448,21 +448,20 @@ func OnReset() {
 				totItems := strings.Split(totT, ":")
 				if len(totItems) >= 4 && totItems[3] == "LOGIN" {
 					_loginCounts = AppendIfMissing(_loginCounts, totT)
-				else {
+				} else {
 					_keysToRemove = AppendIfMissing(_keysToRemove, totT)
 				}
 			}
-			
+
 			totCountVal, _ := client.Cmd("keys", totCountEventSearch).List()
 			for _, totC := range totCountVal {
 				totCItems := strings.Split(totC, ":")
 				if len(totCItems) >= 4 && totCItems[3] == "LOGIN" {
 					_loginCounts = AppendIfMissing(_loginCounts, totC)
-				else {
+				} else {
 					_keysToRemove = AppendIfMissing(_keysToRemove, totC)
 				}
 			}
-			
 
 			totCountHrVal, _ := client.Cmd("keys", totCountHr).List()
 			_keysToRemove = AppendListIfMissing(_keysToRemove, totCountHrVal)
