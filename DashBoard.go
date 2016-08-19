@@ -397,7 +397,6 @@ func OnReset() {
 	_windowList := make([]string, 0)
 	_keysToRemove := make([]string, 0)
 	_loginSessions := make([]string, 0)
-	_loginCounts := make([]string, 0)
 	_productivitySessions := make([]string, 0)
 	lenth := len(val)
 	fmt.Println(lenth)
@@ -444,24 +443,10 @@ func OnReset() {
 			}
 
 			totTimeVal, _ := client.Cmd("keys", totTimeEventSearch).List()
-			for _, totT := range totTimeVal {
-				totItems := strings.Split(totT, ":")
-				if len(totItems) >= 4 && totItems[3] == "LOGIN" {
-					_loginCounts = AppendIfMissing(_loginCounts, totT)
-				} else {
-					_keysToRemove = AppendIfMissing(_keysToRemove, totT)
-				}
-			}
+			_keysToRemove = AppendListIfMissing(_keysToRemove, totTimeVal)
 
 			totCountVal, _ := client.Cmd("keys", totCountEventSearch).List()
-			for _, totC := range totCountVal {
-				totCItems := strings.Split(totC, ":")
-				if len(totCItems) >= 4 && totCItems[3] == "LOGIN" {
-					_loginCounts = AppendIfMissing(_loginCounts, totC)
-				} else {
-					_keysToRemove = AppendIfMissing(_keysToRemove, totC)
-				}
-			}
+			_keysToRemove = AppendListIfMissing(_keysToRemove, totCountVal)
 
 			totCountHrVal, _ := client.Cmd("keys", totCountHr).List()
 			_keysToRemove = AppendListIfMissing(_keysToRemove, totCountHrVal)
@@ -481,10 +466,13 @@ func OnReset() {
 		for _, session := range _loginSessions {
 			fmt.Println("readdSession: ", session)
 			client.Cmd("hset", session, "time", tm.Format(layout))
-		}
-		for _, lcount := range _loginCounts {
-			fmt.Println("readdSession: ", lcount)
-			client.Cmd("set", lcount, 0)
+			sessItemsL := strings.Split(session, ":")
+			if len(sessItemsL) >= 7 {
+				LtotTimeEventName := fmt.Sprintf("TOTALTIME:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5], sessItemsL[6])
+				LtotCountEventName := fmt.Sprintf("TOTALCOUNT:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5], sessItemsL[6])
+				client.Cmd("set", LtotTimeEventName, 0)
+				client.Cmd("set", LtotCountEventName, 0)
+			}
 		}
 		/*for _, prosession := range _productivitySessions {
 			fmt.Println("readdSession: ", prosession)
