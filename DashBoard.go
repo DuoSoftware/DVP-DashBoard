@@ -437,9 +437,10 @@ func OnReset() {
 					_loginSessions = AppendIfMissing(_loginSessions, sess)
 				} else if len(sessItems) >= 4 && sessItems[3] == "PRODUCTIVITY" {
 					_productivitySessions = AppendIfMissing(_productivitySessions, sess)
+				} else {
+					_keysToRemove = AppendListIfMissing(_keysToRemove, sessVal)
 				}
 			}
-			_keysToRemove = AppendListIfMissing(_keysToRemove, sessVal)
 
 			totTimeVal, _ := client.Cmd("keys", totTimeEventSearch).List()
 			_keysToRemove = AppendListIfMissing(_keysToRemove, totTimeVal)
@@ -466,10 +467,10 @@ func OnReset() {
 			fmt.Println("readdSession: ", session)
 			client.Cmd("hset", session, "time", tm.Format(layout))
 		}
-		for _, prosession := range _productivitySessions {
+		/*for _, prosession := range _productivitySessions {
 			fmt.Println("readdSession: ", prosession)
 			client.Cmd("hset", prosession, "time", tm.Format(layout))
-		}
+		}*/
 	}
 }
 
