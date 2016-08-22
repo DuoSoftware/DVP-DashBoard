@@ -52,12 +52,17 @@ func main() {
 }
 func ClearData() {
 	for {
+		fmt.Println("----------Start ClearData----------------------")
 		tmNow := time.Now().UTC()
 		clerTime := time.Date(tmNow.Year(), tmNow.Month(), tmNow.Day(), 23, 59, 59, 0, time.UTC)
+		fmt.Println("Next Clear Time:: " + clerTime.String())
 		timeToWait := clerTime.Sub(tmNow)
 		timer := time.NewTimer(timeToWait)
 		<-timer.C
 		OnSetDailySummary(clerTime)
 		OnReset()
+		fmt.Println("----------ClearData Wait after reset----------------------")
+		timer2 := time.NewTimer(time.Duration(5 * 60000))
+		<-timer2.C
 	}
 }
