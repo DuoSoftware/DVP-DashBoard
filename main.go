@@ -54,8 +54,8 @@ func ClearData() {
 	for {
 		fmt.Println("----------Start ClearData----------------------")
 
-		tmNow := time.Now().UTC()
-		clerTime := time.Date(tmNow.Year(), tmNow.Month(), tmNow.Day(), 23, 59, 59, 0, time.UTC)
+		tmNow := time.Now().Local()
+		clerTime := time.Date(tmNow.Year(), tmNow.Month(), tmNow.Day(), 23, 59, 59, 0, time.Local)
 		fmt.Println("Next Clear Time:: " + clerTime.String())
 		timeToWait := clerTime.Sub(tmNow)
 		timer := time.NewTimer(timeToWait)
