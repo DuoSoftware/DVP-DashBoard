@@ -100,7 +100,7 @@ func PersistsSummaryData(_summary SummeryDetail) {
 		fmt.Println(err.Error())
 	}
 
-	result, err1 := db.Exec("INSERT INTO \"Dashboard_DailySummaries\"(\"Company\", \"Tenant\", \"WindowName\", \"Param1\", \"Param2\", \"MaxTime\", \"TotalCount\", \"TotalTime\", \"ThresholdValue\", \"SummaryDate\", \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)", _summary.Company, _summary.Tenant, _summary.WindowName, _summary.Param1, _summary.Param2, _summary.MaxTime, _summary.TotalCount, _summary.TotalTime, _summary.ThresholdValue, _summary.SummaryDate, time.Now().UTC(), time.Now().UTC())
+	result, err1 := db.Exec("INSERT INTO \"Dashboard_DailySummaries\"(\"Company\", \"Tenant\", \"WindowName\", \"Param1\", \"Param2\", \"MaxTime\", \"TotalCount\", \"TotalTime\", \"ThresholdValue\", \"SummaryDate\", \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)", _summary.Company, _summary.Tenant, _summary.WindowName, _summary.Param1, _summary.Param2, _summary.MaxTime, _summary.TotalCount, _summary.TotalTime, _summary.ThresholdValue, _summary.SummaryDate, time.Now().Local(), time.Now().Local())
 	if err1 != nil {
 		fmt.Println(err1.Error())
 	} else {
@@ -243,7 +243,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 	_inc := fmt.Sprintf("META:%s:%s:%s:COUNT", _class, _type, _category)
 	_useSessionName := fmt.Sprintf("META:%s:%s:%s:USESESSION", _class, _type, _category)
 	_thresholdEnableName := fmt.Sprintf("META:%s:%s:%s:thresholdEnable", _class, _type, _category)
-	tm := time.Now()
+	tm := time.Now().Local()
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -334,7 +334,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 			if len(sessEvents) > 0 {
 				tmx, _ := client.Cmd("hget", sessEvents[0], "time").Str()
 				tm2, _ := time.Parse(layout, tmx)
-				timeDiff := int(tm.UTC().Sub(tm2.UTC()).Seconds())
+				timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
 
 				fmt.Println(timeDiff)
 
@@ -360,7 +360,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 					statClient.Gauge(gaugeConcStatName, dccount)
 					statClient.Gauge(totTimeStatName, rinc)
 
-					duration := int64(tm.UTC().Sub(tm2.UTC()) / time.Millisecond)
+					duration := int64(tm.Local().Sub(tm2.Local()) / time.Millisecond)
 					statClient.Timing(timeStatName, duration)
 				}
 			}
@@ -518,7 +518,7 @@ func OnSetDailySummary(_date time.Time) {
 			if len(sessEvents) > 0 {
 				tmx, _ := client.Cmd("hget", sessEvents[0], "time").Str()
 				tm2, _ := time.Parse(layout, tmx)
-				currentTime = int(_date.Sub(tm2.UTC()).Seconds())
+				currentTime = int(_date.Sub(tm2.Local()).Seconds())
 				fmt.Println("currentTime: ", currentTime)
 			}
 		}
@@ -633,7 +633,7 @@ func OnGetCurrentMaxTime(_tenant, _company int, _window, _parameter1, _parameter
 		for _, key := range keyList {
 			tmx, _ := client.Cmd("hget", key, "time").Str()
 			tm2, _ := time.Parse(layout, tmx)
-			timeDiff := int(tm.UTC().Sub(tm2.UTC()).Seconds())
+			timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
 			if tempMaxTime < timeDiff {
 				tempMaxTime = timeDiff
 			}
