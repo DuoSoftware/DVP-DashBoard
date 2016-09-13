@@ -53,10 +53,13 @@ func main() {
 func ClearData() {
 	for {
 		fmt.Println("----------Start ClearData----------------------")
-
-		tmNow := time.Now().Local()
+		location, _ := time.LoadLocation("Asia/Colombo")
+		fmt.Println("location:: " + location.String())
+		localtime := time.Now().Local()
+		fmt.Println("localtime:: " + localtime.String())
+		tmNow := time.Now().In(location)
 		fmt.Println("tmNow:: " + tmNow.String())
-		clerTime := time.Date(tmNow.Year(), tmNow.Month(), tmNow.Day(), 23, 59, 59, 0, time.Local)
+		clerTime := time.Date(tmNow.Year(), tmNow.Month(), tmNow.Day(), 23, 59, 59, 0, location)
 		fmt.Println("Next Clear Time:: " + clerTime.String())
 		timeToWait := clerTime.Sub(tmNow)
 		fmt.Println("timeToWait:: " + timeToWait.String())
