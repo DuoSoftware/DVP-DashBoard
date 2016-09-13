@@ -72,7 +72,7 @@ func decodeJwtDashBoardGraph(dashBoardGraph DashBoardGraph, funcScope, action st
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			scopes := claims["scope"].([]interface{})
 			scope, actions := FindScope(scopes, funcScope, action)
-			fmt.Println(scope, ":: ", actions)
+			//fmt.Println(scope, ":: ", actions)
 			if scope && actions {
 				if internalAccessToken != "" {
 					ids := strings.Split(internalAccessToken, ":")
@@ -129,7 +129,7 @@ func decodeJwtDashBoardEvent(dashBoardEvent DashBoardEvent, funcScope, action st
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			scopes := claims["scope"].([]interface{})
 			scope, actions := FindScope(scopes, funcScope, action)
-			fmt.Println(scope, ":: ", actions)
+			//fmt.Println(scope, ":: ", actions)
 			if scope && actions {
 				if internalAccessToken != "" {
 					ids := strings.Split(internalAccessToken, ":")
