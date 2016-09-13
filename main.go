@@ -3,9 +3,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/DuoSoftware/gorest"
-	"github.com/rs/cors"
-	"net/http"
+	//"github.com/DuoSoftware/gorest"
+	//"github.com/rs/cors"
+	//"net/http"
 	"time"
 )
 
@@ -13,29 +13,29 @@ func main() {
 
 	//fmt.Println("Hello World!")
 	LoadConfiguration()
-	InitiateRedis()
-	InitiateStatDClient()
-	go ClearData()
+	//InitiateRedis()
+	//InitiateStatDClient()
+	ClearData()
 
 	//jwtMiddleware := loadJwtMiddleware()
-	gorest.RegisterService(new(DashBoardEvent))
-	gorest.RegisterService(new(DashBoardGraph))
+	//gorest.RegisterService(new(DashBoardEvent))
+	//gorest.RegisterService(new(DashBoardGraph))
 	//app := jwtMiddleware.Handler(gorest.Handle())
-	c := cors.New(cors.Options{
-		AllowedHeaders: []string{"accept", "authorization"},
-	})
-	handler := c.Handler(gorest.Handle())
-	addr := fmt.Sprintf(":%s", port)
-	s := &http.Server{
+	//c := cors.New(cors.Options{
+	//AllowedHeaders: []string{"accept", "authorization"},
+	//})
+	//handler := c.Handler(gorest.Handle())
+	//addr := fmt.Sprintf(":%s", port)
+	/*s := &http.Server{
 		Addr:           addr,
 		Handler:        handler,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
-	}
+	}*/
 
-	s.SetKeepAlivesEnabled(false)
-	s.ListenAndServe()
+	//s.SetKeepAlivesEnabled(false)
+	//s.ListenAndServe()
 	//http.ListenAndServe(addr, handler)
 
 	////fmt.Scanln()
@@ -55,9 +55,11 @@ func ClearData() {
 		fmt.Println("----------Start ClearData----------------------")
 
 		tmNow := time.Now().Local()
+		fmt.Println("tmNow:: " + tmNow.String())
 		clerTime := time.Date(tmNow.Year(), tmNow.Month(), tmNow.Day(), 23, 59, 59, 0, time.Local)
 		fmt.Println("Next Clear Time:: " + clerTime.String())
 		timeToWait := clerTime.Sub(tmNow)
+		fmt.Println("timeToWait:: " + timeToWait.String())
 		timer := time.NewTimer(timeToWait)
 		<-timer.C
 		OnSetDailySummary(clerTime)
