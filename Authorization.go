@@ -61,7 +61,7 @@ func decodeJwtDashBoardGraph(dashBoardGraph DashBoardGraph, funcScope, action st
 			// Don't forget to validate the alg is what you expect:
 			claims := token.Claims.(jwt.MapClaims)
 			secretKey := fmt.Sprintf("token:iss:%s:%s", claims["iss"], claims["jti"])
-			fmt.Println(secretKey)
+			//fmt.Println(secretKey)
 			secret := SecurityGet(secretKey)
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
@@ -118,7 +118,7 @@ func decodeJwtDashBoardEvent(dashBoardEvent DashBoardEvent, funcScope, action st
 			// Don't forget to validate the alg is what you expect:
 			claims := token.Claims.(jwt.MapClaims)
 			secretKey := fmt.Sprintf("token:iss:%s:%s", claims["iss"], claims["jti"])
-			fmt.Println(secretKey)
+			//fmt.Println(secretKey)
 			secret := SecurityGet(secretKey)
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
