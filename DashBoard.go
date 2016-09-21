@@ -77,7 +77,7 @@ func PubSub() {
 				itenet, _ := strconv.Atoi(stenent)
 				icompany, _ := strconv.Atoi(scompany)
 
-				OnEvent(itenet, icompany, sclass, stype, scategory, ssession, sparam1, sparam2)
+				go OnEvent(itenet, icompany, sclass, stype, scategory, ssession, sparam1, sparam2)
 			}
 
 		}
