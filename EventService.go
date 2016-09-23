@@ -125,6 +125,9 @@ type DashBoardGraph struct {
 	bridge             gorest.EndPoint `method:"GET" path:"/Bridge/{duration:int}" output:"string"`
 	queued             gorest.EndPoint `method:"GET" path:"/Queued/{duration:int}" output:"string"`
 	concurrentqueued   gorest.EndPoint `method:"GET" path:"/ConcurrentQueued/{queue:string}/{duration:int}" output:"string"`
+	newticket          gorest.EndPoint `method:"GET" path:"/NewTicket/{duration:int}" output:"string"`
+	closedticket       gorest.EndPoint `method:"GET" path:"/ClosedTicket/{duration:int}" output:"string"`
+	closedvsopenticket gorest.EndPoint `method:"GET" path:"/ClosedVsOpenTicket/{duration:int}" output:"string"`
 }
 
 func (dashboardEvent DashBoardEvent) Event(data EventData) {
@@ -326,6 +329,51 @@ func (dashBoardGraph DashBoardGraph) Concurrentqueued(queue string, duration int
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
 		go OnGetConcurrentQueue(tenant, company, duration, queue, resultChannel)
+		var graphData = <-resultChannel
+		close(resultChannel)
+		return graphData
+	} else {
+		dashBoardGraph.RB().SetResponseCode(403)
+		return ""
+	}
+}
+
+func (dashBoardGraph DashBoardGraph) NewTicket(duration int) string {
+	company, tenant, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	fmt.Println(company, "::", tenant)
+	if company != 0 && tenant != 0 {
+		resultChannel := make(chan string)
+		go OnGetTotalNewTicket(tenant, company, duration, resultChannel)
+		var graphData = <-resultChannel
+		close(resultChannel)
+		return graphData
+	} else {
+		dashBoardGraph.RB().SetResponseCode(403)
+		return ""
+	}
+}
+
+func (dashBoardGraph DashBoardGraph) ClosedTicket(duration int) string {
+	company, tenant, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	fmt.Println(company, "::", tenant)
+	if company != 0 && tenant != 0 {
+		resultChannel := make(chan string)
+		go OnGetTotalClosedTicket(tenant, company, duration, resultChannel)
+		var graphData = <-resultChannel
+		close(resultChannel)
+		return graphData
+	} else {
+		dashBoardGraph.RB().SetResponseCode(403)
+		return ""
+	}
+}
+
+func (dashBoardGraph DashBoardGraph) ClosedVsOpenTicket(duration int) string {
+	company, tenant, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	fmt.Println(company, "::", tenant)
+	if company != 0 && tenant != 0 {
+		resultChannel := make(chan string)
+		go OnGetDiffClosedVsNew(tenant, company, duration, resultChannel)
 		var graphData = <-resultChannel
 		close(resultChannel)
 		return graphData

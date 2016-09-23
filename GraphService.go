@@ -111,3 +111,45 @@ func OnGetConcurrentQueue(_tenant, _company, _duration int, _queue string, resul
 	close(resultChannel)
 	result <- queueInfo
 }
+
+func OnGetTotalNewTicket(_tenant, _company, _duration int, result chan string) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnGetTotalNewTicket", r)
+		}
+	}()
+	url := fmt.Sprintf("http://%s/render?target=sumSeries(stats.gauges.event.totalcount.1.103.total.NEWTICKET)&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
+	resultChannel := make(chan string)
+	go IncokeGhaphite(url, resultChannel)
+	var ticketInfo = <-resultChannel
+	close(resultChannel)
+	result <- ticketInfo
+}
+
+func OnGetTotalClosedTicket(_tenant, _company, _duration int, result chan string) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnGetTotalClosedTicket", r)
+		}
+	}()
+	url := fmt.Sprintf("http://%s/render?target=sumSeries(stats.gauges.event.totalcount.1.103.total.CLOSEDTICKET)&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
+	resultChannel := make(chan string)
+	go IncokeGhaphite(url, resultChannel)
+	var ticketInfo = <-resultChannel
+	close(resultChannel)
+	result <- ticketInfo
+}
+
+func OnGetDiffClosedVsNew(_tenant, _company, _duration int, result chan string) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnGetDiffClosedVsNew", r)
+		}
+	}()
+	url := fmt.Sprintf("http://%s/render?target=diffSeries(stats.gauges.event.totalcount.1.103.total.NEWTICKET,stats.gauges.event.totalcount.1.103.total.CLOSEDTICKET)&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
+	resultChannel := make(chan string)
+	go IncokeGhaphite(url, resultChannel)
+	var ticketInfo = <-resultChannel
+	close(resultChannel)
+	result <- ticketInfo
+}
