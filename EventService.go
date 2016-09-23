@@ -125,9 +125,9 @@ type DashBoardGraph struct {
 	bridge             gorest.EndPoint `method:"GET" path:"/Bridge/{duration:int}" output:"string"`
 	queued             gorest.EndPoint `method:"GET" path:"/Queued/{duration:int}" output:"string"`
 	concurrentqueued   gorest.EndPoint `method:"GET" path:"/ConcurrentQueued/{queue:string}/{duration:int}" output:"string"`
-	newticket          gorest.EndPoint `method:"GET" path:"/NewTicket/{duration:int}" output:"string"`
-	closedticket       gorest.EndPoint `method:"GET" path:"/ClosedTicket/{duration:int}" output:"string"`
-	closedvsopenticket gorest.EndPoint `method:"GET" path:"/ClosedVsOpenTicket/{duration:int}" output:"string"`
+	newTicket          gorest.EndPoint `method:"GET" path:"/NewTicket/{duration:int}" output:"string"`
+	closedTicket       gorest.EndPoint `method:"GET" path:"/ClosedTicket/{duration:int}" output:"string"`
+	closedVsOpenTicket gorest.EndPoint `method:"GET" path:"/ClosedVsOpenTicket/{duration:int}" output:"string"`
 }
 
 func (dashboardEvent DashBoardEvent) Event(data EventData) {
