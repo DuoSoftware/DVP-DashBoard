@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/auth0/go-jwt-middleware"
 	"github.com/dgrijalva/jwt-go"
@@ -53,7 +52,7 @@ func FindAction(vs []interface{}, action string) bool {
 //	return Index(vs, t) >= 0
 //}
 
-func decodeJwtDashBoardGraph(dashBoardGraph DashBoardGraph, funcScope, action string) (company, tenant int) {
+func decodeJwtDashBoardGraph(dashBoardGraph DashBoardGraph, funcScope, action string) (company, tenant int, veeryMessage Result) {
 	tokenVals := strings.Split(dashBoardGraph.Context.Request().Header.Get("authorization"), " ")
 	internalAccessToken := dashBoardGraph.Context.Request().Header.Get("companyinfo")
 	if len(tokenVals) > 1 {
@@ -79,9 +78,9 @@ func decodeJwtDashBoardGraph(dashBoardGraph DashBoardGraph, funcScope, action st
 					if len(ids) == 2 {
 						tenant, _ = strconv.Atoi(ids[0])
 						company, _ = strconv.Atoi(ids[1])
-						return company, tenant
+						return company, tenant, ResponseGenerator(true, "Read Companyinfo Success", "", "")
 					} else {
-						return 0, 0
+						return 0, 0, ResponseGenerator(false, "Invalied Companyinfo", "", "")
 					}
 				} else {
 					iTenant := claims["tenant"]
@@ -89,28 +88,24 @@ func decodeJwtDashBoardGraph(dashBoardGraph DashBoardGraph, funcScope, action st
 					if iTenant != nil && iCompany != nil {
 						tenant := int(iTenant.(float64))
 						company := int(iCompany.(float64))
-						return company, tenant
+						return company, tenant, ResponseGenerator(true, "Read Companyinfo Success", "", "")
 					} else {
-						dashBoardGraph.RB().Write(ResponseGenerator(false, "Invalid company or tenant", "", ""))
-						return
+						return 0, 0, ResponseGenerator(false, "Invalid company or tenant", "", "")
 					}
 				}
 			} else {
-				dashBoardGraph.RB().Write(ResponseGenerator(false, "Invalid scopes", "", ""))
-				return
+				return 0, 0, ResponseGenerator(false, "Invalid scopes", "", "")
 			}
 		} else {
 			fmt.Println(err)
-			dashBoardGraph.RB().Write(ResponseGenerator(false, "Invalid token", "", ""))
-			return
+			return 0, 0, ResponseGenerator(false, "Invalid token", "", "")
 		}
 	} else {
-		dashBoardGraph.RB().Write(ResponseGenerator(false, "Invalid token", "", ""))
-		return
+		return 0, 0, ResponseGenerator(false, "Invalid token", "", "")
 	}
 }
 
-func decodeJwtDashBoardEvent(dashBoardEvent DashBoardEvent, funcScope, action string) (company, tenant int) {
+func decodeJwtDashBoardEvent(dashBoardEvent DashBoardEvent, funcScope, action string) (company, tenant int, veeryMessage Result) {
 	tokenVals := strings.Split(dashBoardEvent.Context.Request().Header.Get("authorization"), " ")
 	internalAccessToken := dashBoardEvent.Context.Request().Header.Get("companyinfo")
 	if len(tokenVals) > 1 {
@@ -136,9 +131,9 @@ func decodeJwtDashBoardEvent(dashBoardEvent DashBoardEvent, funcScope, action st
 					if len(ids) == 2 {
 						tenant, _ = strconv.Atoi(ids[0])
 						company, _ = strconv.Atoi(ids[1])
-						return company, tenant
+						return company, tenant, ResponseGenerator(true, "Read Companyinfo Success", "", "")
 					} else {
-						return 0, 0
+						return 0, 0, ResponseGenerator(false, "Invalied Companyinfo", "", "")
 					}
 				} else {
 					iTenant := claims["tenant"]
@@ -146,24 +141,20 @@ func decodeJwtDashBoardEvent(dashBoardEvent DashBoardEvent, funcScope, action st
 					if iTenant != nil && iCompany != nil {
 						tenant := int(iTenant.(float64))
 						company := int(iCompany.(float64))
-						return company, tenant
+						return company, tenant, ResponseGenerator(true, "Read Companyinfo Success", "", "")
 					} else {
-						dashBoardEvent.RB().Write(ResponseGenerator(false, "Invalid company or tenant", "", ""))
-						return
+						return 0, 0, ResponseGenerator(false, "Invalid company or tenant", "", "")
 					}
 				}
 			} else {
-				dashBoardEvent.RB().Write(ResponseGenerator(false, "Invalid scopes", "", ""))
-				return
+				return 0, 0, ResponseGenerator(false, "Invalid scopes", "", "")
 			}
 		} else {
 			fmt.Println(err)
-			dashBoardEvent.RB().Write(ResponseGenerator(false, "Invalid token", "", ""))
-			return
+			return 0, 0, ResponseGenerator(false, "Invalid token", "", "")
 		}
 	} else {
-		dashBoardEvent.RB().Write(ResponseGenerator(false, "Invalid token", "", ""))
-		return
+		return 0, 0, ResponseGenerator(false, "Invalid token", "", "")
 	}
 }
 
@@ -231,14 +222,13 @@ func decodeJwtDashBoardEvent(dashBoardEvent DashBoardEvent, funcScope, action st
 //	}
 //}
 
-func ResponseGenerator(isSuccess bool, customMessage, result, exception string) []byte {
+func ResponseGenerator(isSuccess bool, customMessage, result, exception string) Result {
 	res := Result{}
 	res.IsSuccess = isSuccess
 	res.CustomMessage = customMessage
 	res.Exception = exception
 	res.Result = result
-	resb, _ := json.Marshal(res)
-	return resb
+	return res
 }
 
 func SecurityGet(key string) string {
