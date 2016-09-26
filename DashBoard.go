@@ -303,11 +303,23 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		if _parameter1 == "" {
 			_parameter1 = "empty"
 		}
-		countConcStatName := fmt.Sprintf("event.concurrent.%d.%d.%s.%s", _tenent, _company, _parameter1, window)
-		gaugeConcStatName := fmt.Sprintf("event.concurrent.%d.%d.%s.%s", _tenent, _company, _parameter1, window)
-		timeStatName := fmt.Sprintf("event.timer.%d.%d.%s.%s", _tenent, _company, _parameter1, window)
-		totCountStatName := fmt.Sprintf("event.totalcount.%d.%d.%s.%s", _tenent, _company, _parameter1, window)
-		totTimeStatName := fmt.Sprintf("event.totaltime.%d.%d.%s.%s", _tenent, _company, _parameter1, window)
+
+		var statsDPath string
+		switch _class {
+		case "TICKET":
+			statsDPath = "ticket"
+			break
+
+		default:
+			statsDPath = "common"
+			break
+		}
+
+		countConcStatName := fmt.Sprintf("event.%s.concurrent.%d.%d.%s.%s", statsDPath, _tenent, _company, _parameter1, window)
+		gaugeConcStatName := fmt.Sprintf("event.%s.concurrent.%d.%d.%s.%s", statsDPath, _tenent, _company, _parameter1, window)
+		timeStatName := fmt.Sprintf("event.%s.timer.%d.%d.%s.%s", statsDPath, _tenent, _company, _parameter1, window)
+		totCountStatName := fmt.Sprintf("event.%s.totalcount.%d.%d.%s.%s", statsDPath, _tenent, _company, _parameter1, window)
+		totTimeStatName := fmt.Sprintf("event.%s.totaltime.%d.%d.%s.%s", statsDPath, _tenent, _company, _parameter1, window)
 
 		client.Cmd("incr", snapEventName)
 		client.Cmd("incr", snapHourlyEventName)
