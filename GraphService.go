@@ -46,7 +46,7 @@ func OnGetCalls(_tenant, _company, _duration int, result chan string) {
 			fmt.Println("Recovered in OnGetCalls", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.CALLS&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=stats.event.common.concurrent.%d.%d.*.CALLS&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
@@ -60,7 +60,7 @@ func OnGetChannels(_tenant, _company, _duration int, result chan string) {
 			fmt.Println("Recovered in OnGetChannels", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.CALLCHANNELS&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=stats.event.common.concurrent.%d.%d.*.CALLCHANNELS&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
@@ -74,7 +74,7 @@ func OnGetBridge(_tenant, _company, _duration int, result chan string) {
 			fmt.Println("Recovered in OnGetBridge", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=stats.event.concurrent.%d.%d.*.BRIDGE&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=stats.event.common.concurrent.%d.%d.*.BRIDGE&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
@@ -88,7 +88,7 @@ func OnGetQueued(_tenant, _company, _duration int, result chan string) {
 			fmt.Println("Recovered in OnGetQueued", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=sumSeries(stats.event.concurrent.%d.%d.*.QUEUE)&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=sumSeries(stats.event.common.concurrent.%d.%d.*.QUEUE)&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
@@ -104,7 +104,7 @@ func OnGetConcurrentQueue(_tenant, _company, _duration int, _queue string, resul
 	}()
 
 	//stats.gauges.event.concurrent.1.3.Queue-3-1-CALLSERVER-CALL-attribute_8-L.QUEUE
-	url := fmt.Sprintf("http://%s/render?target=stats.gauges.event.concurrent.%d.%d.%s.QUEUE&from=-%dmin&format=json", statsDIp, _tenant, _company, _queue, _duration)
+	url := fmt.Sprintf("http://%s/render?target=stats.gauges.event.common.concurrent.%d.%d.%s.QUEUE&from=-%dmin&format=json", statsDIp, _tenant, _company, _queue, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
@@ -118,7 +118,7 @@ func OnGetTotalNewTicket(_tenant, _company, _duration int, result chan string) {
 			fmt.Println("Recovered in OnGetTotalNewTicket", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=summarize(sumSeries(stats.gauges.event.totalcount.%d.%d.total.NEWTICKET),\"1d\",\"max\")&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=summarize(sumSeries(stats.gauges.event.ticket.totalcount.%d.%d.total.NEWTICKET),\"1d\",\"max\")&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var ticketInfo = <-resultChannel
@@ -132,7 +132,7 @@ func OnGetTotalClosedTicket(_tenant, _company, _duration int, result chan string
 			fmt.Println("Recovered in OnGetTotalClosedTicket", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=summarize(sumSeries(stats.gauges.event.totalcount.%d.%d.total.CLOSEDTICKET),\"1d\",\"max\")&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=summarize(sumSeries(stats.gauges.event.ticket.totalcount.%d.%d.total.CLOSEDTICKET),\"1d\",\"max\")&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var ticketInfo = <-resultChannel
@@ -146,7 +146,7 @@ func OnGetDiffClosedVsNew(_tenant, _company, _duration int, result chan string) 
 			fmt.Println("Recovered in OnGetDiffClosedVsNew", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=summarize(diffSeries(stats.gauges.event.totalcount.%d.%d.total.NEWTICKET,stats.gauges.event.totalcount.1.103.total.CLOSEDTICKET),\"1d\",\"max\")&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=summarize(diffSeries(stats.gauges.event.ticket.totalcount.%d.%d.total.NEWTICKET,stats.gauges.event.totalcount.1.103.total.CLOSEDTICKET),\"1d\",\"max\")&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var ticketInfo = <-resultChannel
