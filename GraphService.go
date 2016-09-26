@@ -118,7 +118,7 @@ func OnGetTotalNewTicket(_tenant, _company, _duration int, result chan string) {
 			fmt.Println("Recovered in OnGetTotalNewTicket", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=summarize(sumSeries(stats.gauges.event.totalcount.%d.%d.total.NEWTICKET),\"1d\",\"avg\")&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=summarize(sumSeries(stats.gauges.event.totalcount.%d.%d.total.NEWTICKET),\"1d\",\"max\")&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var ticketInfo = <-resultChannel
@@ -132,7 +132,7 @@ func OnGetTotalClosedTicket(_tenant, _company, _duration int, result chan string
 			fmt.Println("Recovered in OnGetTotalClosedTicket", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=summarize(sumSeries(stats.gauges.event.totalcount.%d.%d.total.CLOSEDTICKET),\"1d\",\"avg\")&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=summarize(sumSeries(stats.gauges.event.totalcount.%d.%d.total.CLOSEDTICKET),\"1d\",\"max\")&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var ticketInfo = <-resultChannel
@@ -146,7 +146,7 @@ func OnGetDiffClosedVsNew(_tenant, _company, _duration int, result chan string) 
 			fmt.Println("Recovered in OnGetDiffClosedVsNew", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=summarize(diffSeries(stats.gauges.event.totalcount.%d.%d.total.NEWTICKET,stats.gauges.event.totalcount.1.103.total.CLOSEDTICKET),\"1d\",\"avg\")&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=summarize(diffSeries(stats.gauges.event.totalcount.%d.%d.total.NEWTICKET,stats.gauges.event.totalcount.1.103.total.CLOSEDTICKET),\"1d\",\"max\")&from=-%dd&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var ticketInfo = <-resultChannel
