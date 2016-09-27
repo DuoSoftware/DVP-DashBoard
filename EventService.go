@@ -216,6 +216,7 @@ func (dashBoardEvent DashBoardEvent) AverageTime(window, param1, param2 string) 
 		go OnGetAverageTime(tenant, company, window, param1, param2, resultChannel)
 		var maxTime = <-resultChannel
 		close(resultChannel)
+		fmt.Println("AverageTime: ", maxTime)
 		return maxTime
 	} else {
 		dashBoardEvent.RB().SetResponseCode(403)

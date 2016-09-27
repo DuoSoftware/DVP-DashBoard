@@ -704,6 +704,9 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 	r := client.Cmd("select", redisDb)
 	errHndlr(r.Err)
 
+	tm := time.Now().Local()
+
+	sessEventSearch := fmt.Sprintf("SESSION:%d:%d:%s:*:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
 	totTimeSearch := fmt.Sprintf("TOTALTIME:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
 	totCountSearch := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
 
@@ -722,6 +725,24 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 	} else {
 		totalTime = 0
 	}
+
+	sessTimeKeyList, _ := client.Cmd("keys", sessEventSearch).List()
+	fmt.Println("totalSessTimeKey: ", len(sessTimeKeyList))
+	fmt.Println(time.Now().Local())
+	if len(sessTimeKeyList) > 0 {
+		sessTemptotal := 0
+		for _, key := range sessTimeKeyList {
+			tmx, _ := client.Cmd("hget", key, "time").Str()
+			tm2, _ := time.Parse(layout, tmx)
+			timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
+
+			if timeDiff > 0 {
+				sessTemptotal = sessTemptotal + timeDiff
+			}
+		}
+		totalTime = totalTime + sessTemptotal
+	}
+	fmt.Println(time.Now().Local())
 
 	totCountKeyList, _ := client.Cmd("keys", totCountSearch).List()
 	if len(totCountKeyList) > 0 {
