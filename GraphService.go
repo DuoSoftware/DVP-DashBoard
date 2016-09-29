@@ -153,3 +153,45 @@ func OnGetDiffClosedVsNew(_tenant, _company, _duration int, result chan string) 
 	close(resultChannel)
 	result <- ticketInfo
 }
+
+func OnGetTotalNewTicketByUser(_tenant, _company, _duration int, _userName string, result chan string) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnGetTotalNewTicket", r)
+		}
+	}()
+	url := fmt.Sprintf("http://%s/render?target=summarize(sumSeries(stats.gauges.event.ticket.totalcount.%d.%d.user_%s.NEWTICKET),\"1d\",\"max\",true)&from=-%dd&format=json", statsDIp, _tenant, _company, _userName, _duration)
+	resultChannel := make(chan string)
+	go IncokeGhaphite(url, resultChannel)
+	var ticketInfo = <-resultChannel
+	close(resultChannel)
+	result <- ticketInfo
+}
+
+func OnGetTotalClosedTicketByUser(_tenant, _company, _duration int, _userName string, result chan string) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnGetTotalClosedTicket", r)
+		}
+	}()
+	url := fmt.Sprintf("http://%s/render?target=summarize(sumSeries(stats.gauges.event.ticket.totalcount.%d.%d.user_%s.CLOSEDTICKET),\"1d\",\"max\",true)&from=-%dd&format=json", statsDIp, _tenant, _company, _userName, _duration)
+	resultChannel := make(chan string)
+	go IncokeGhaphite(url, resultChannel)
+	var ticketInfo = <-resultChannel
+	close(resultChannel)
+	result <- ticketInfo
+}
+
+func OnGetDiffClosedVsNewByUser(_tenant, _company, _duration int, _userName string, result chan string) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnGetDiffClosedVsNew", r)
+		}
+	}()
+	url := fmt.Sprintf("http://%s/render?target=summarize(diffSeries(stats.gauges.event.ticket.totalcount.%d.%d.user_%s.NEWTICKET,stats.gauges.event.totalcount.%d.%d.user_%s.CLOSEDTICKET),\"1d\",\"max\",true)&from=-%dd&format=json", statsDIp, _tenant, _company, _userName, _tenant, _company, _userName, _duration)
+	resultChannel := make(chan string)
+	go IncokeGhaphite(url, resultChannel)
+	var ticketInfo = <-resultChannel
+	close(resultChannel)
+	result <- ticketInfo
+}

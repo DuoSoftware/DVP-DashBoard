@@ -119,15 +119,18 @@ type DashBoardEvent struct {
 }
 
 type DashBoardGraph struct {
-	gorest.RestService `root:"/DashboardGraph/" consumes:"application/json" produces:"application/json"`
-	calls              gorest.EndPoint `method:"GET" path:"/Calls/{duration:int}" output:"string"`
-	channels           gorest.EndPoint `method:"GET" path:"/Channels/{duration:int}" output:"string"`
-	bridge             gorest.EndPoint `method:"GET" path:"/Bridge/{duration:int}" output:"string"`
-	queued             gorest.EndPoint `method:"GET" path:"/Queued/{duration:int}" output:"string"`
-	concurrentqueued   gorest.EndPoint `method:"GET" path:"/ConcurrentQueued/{queue:string}/{duration:int}" output:"string"`
-	newTicket          gorest.EndPoint `method:"GET" path:"/NewTicket/{duration:int}" output:"string"`
-	closedTicket       gorest.EndPoint `method:"GET" path:"/ClosedTicket/{duration:int}" output:"string"`
-	closedVsOpenTicket gorest.EndPoint `method:"GET" path:"/ClosedVsOpenTicket/{duration:int}" output:"string"`
+	gorest.RestService       `root:"/DashboardGraph/" consumes:"application/json" produces:"application/json"`
+	calls                    gorest.EndPoint `method:"GET" path:"/Calls/{duration:int}" output:"string"`
+	channels                 gorest.EndPoint `method:"GET" path:"/Channels/{duration:int}" output:"string"`
+	bridge                   gorest.EndPoint `method:"GET" path:"/Bridge/{duration:int}" output:"string"`
+	queued                   gorest.EndPoint `method:"GET" path:"/Queued/{duration:int}" output:"string"`
+	concurrentqueued         gorest.EndPoint `method:"GET" path:"/ConcurrentQueued/{queue:string}/{duration:int}" output:"string"`
+	newTicket                gorest.EndPoint `method:"GET" path:"/NewTicket/{duration:int}" output:"string"`
+	closedTicket             gorest.EndPoint `method:"GET" path:"/ClosedTicket/{duration:int}" output:"string"`
+	closedVsOpenTicket       gorest.EndPoint `method:"GET" path:"/ClosedVsOpenTicket/{duration:int}" output:"string"`
+	newTicketByUser          gorest.EndPoint `method:"GET" path:"/NewTicketByUser/{duration:int}" output:"string"`
+	closedTicketByUser       gorest.EndPoint `method:"GET" path:"/ClosedTicketByUser/{duration:int}" output:"string"`
+	closedVsOpenTicketByUser gorest.EndPoint `method:"GET" path:"/ClosedVsOpenTicketByUser/{duration:int}" output:"string"`
 }
 
 func (dashboardEvent DashBoardEvent) Event(data EventData) {
@@ -269,7 +272,7 @@ func (dashBoardEvent DashBoardEvent) TotalCount(window, param1, param2 string) i
 }
 
 func (dashBoardGraph DashBoardGraph) Calls(duration int) string {
-	company, tenant, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	company, tenant, _, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
 		go OnGetCalls(tenant, company, duration, resultChannel)
@@ -283,7 +286,7 @@ func (dashBoardGraph DashBoardGraph) Calls(duration int) string {
 }
 
 func (dashBoardGraph DashBoardGraph) Channels(duration int) string {
-	company, tenant, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	company, tenant, _, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
 		go OnGetChannels(tenant, company, duration, resultChannel)
@@ -297,7 +300,7 @@ func (dashBoardGraph DashBoardGraph) Channels(duration int) string {
 }
 
 func (dashBoardGraph DashBoardGraph) Bridge(duration int) string {
-	company, tenant, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	company, tenant, _, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
 		go OnGetBridge(tenant, company, duration, resultChannel)
@@ -311,7 +314,7 @@ func (dashBoardGraph DashBoardGraph) Bridge(duration int) string {
 }
 
 func (dashBoardGraph DashBoardGraph) Queued(duration int) string {
-	company, tenant, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	company, tenant, _, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
 	fmt.Println(company, "::", tenant)
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
@@ -326,7 +329,7 @@ func (dashBoardGraph DashBoardGraph) Queued(duration int) string {
 }
 
 func (dashBoardGraph DashBoardGraph) Concurrentqueued(queue string, duration int) string {
-	company, tenant, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	company, tenant, _, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
 		go OnGetConcurrentQueue(tenant, company, duration, queue, resultChannel)
@@ -340,7 +343,7 @@ func (dashBoardGraph DashBoardGraph) Concurrentqueued(queue string, duration int
 }
 
 func (dashBoardGraph DashBoardGraph) NewTicket(duration int) string {
-	company, tenant, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	company, tenant, _, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
 	fmt.Println(company, "::", tenant)
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
@@ -355,7 +358,7 @@ func (dashBoardGraph DashBoardGraph) NewTicket(duration int) string {
 }
 
 func (dashBoardGraph DashBoardGraph) ClosedTicket(duration int) string {
-	company, tenant, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	company, tenant, _, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
 	fmt.Println(company, "::", tenant)
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
@@ -370,11 +373,56 @@ func (dashBoardGraph DashBoardGraph) ClosedTicket(duration int) string {
 }
 
 func (dashBoardGraph DashBoardGraph) ClosedVsOpenTicket(duration int) string {
-	company, tenant, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	company, tenant, _, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
 	fmt.Println(company, "::", tenant)
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
 		go OnGetDiffClosedVsNew(tenant, company, duration, resultChannel)
+		var graphData = <-resultChannel
+		close(resultChannel)
+		return graphData
+	} else {
+		dashBoardGraph.RB().SetResponseCode(403)
+		return ""
+	}
+}
+
+func (dashBoardGraph DashBoardGraph) NewTicketByUser(duration int) string {
+	company, tenant, iss, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	fmt.Println(company, "::", tenant, "::", iss)
+	if company != 0 && tenant != 0 {
+		resultChannel := make(chan string)
+		go OnGetTotalNewTicketByUser(tenant, company, duration, iss, resultChannel)
+		var graphData = <-resultChannel
+		close(resultChannel)
+		return graphData
+	} else {
+		dashBoardGraph.RB().SetResponseCode(403)
+		return ""
+	}
+}
+
+func (dashBoardGraph DashBoardGraph) ClosedTicketByUser(duration int) string {
+	company, tenant, iss, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	fmt.Println(company, "::", tenant, "::", iss)
+	if company != 0 && tenant != 0 {
+		resultChannel := make(chan string)
+		go OnGetTotalClosedTicketByUser(tenant, company, duration, iss, resultChannel)
+		var graphData = <-resultChannel
+		close(resultChannel)
+		return graphData
+	} else {
+		dashBoardGraph.RB().SetResponseCode(403)
+		return ""
+	}
+}
+
+func (dashBoardGraph DashBoardGraph) ClosedVsOpenTicketByUser(duration int) string {
+	company, tenant, iss, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	fmt.Println(company, "::", tenant, "::", iss)
+	if company != 0 && tenant != 0 {
+		resultChannel := make(chan string)
+		go OnGetDiffClosedVsNewByUser(tenant, company, duration, iss, resultChannel)
 		var graphData = <-resultChannel
 		close(resultChannel)
 		return graphData

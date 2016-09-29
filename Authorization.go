@@ -52,7 +52,7 @@ func FindAction(vs []interface{}, action string) bool {
 //	return Index(vs, t) >= 0
 //}
 
-func decodeJwtDashBoardGraph(dashBoardGraph DashBoardGraph, funcScope, action string) (company, tenant int, veeryMessage Result) {
+func decodeJwtDashBoardGraph(dashBoardGraph DashBoardGraph, funcScope, action string) (company, tenant int, iss string, veeryMessage Result) {
 	tokenVals := strings.Split(dashBoardGraph.Context.Request().Header.Get("authorization"), " ")
 	internalAccessToken := dashBoardGraph.Context.Request().Header.Get("companyinfo")
 	if len(tokenVals) > 1 {
@@ -73,14 +73,16 @@ func decodeJwtDashBoardGraph(dashBoardGraph DashBoardGraph, funcScope, action st
 			scope, actions := FindScope(scopes, funcScope, action)
 			//fmt.Println(scope, ":: ", actions)
 			if scope && actions {
+				iiss := claims["iss"]
+				iss := iiss.(string)
 				if internalAccessToken != "" {
 					ids := strings.Split(internalAccessToken, ":")
 					if len(ids) == 2 {
 						tenant, _ = strconv.Atoi(ids[0])
 						company, _ = strconv.Atoi(ids[1])
-						return company, tenant, ResponseGenerator(true, "Read Companyinfo Success", "", "")
+						return company, tenant, iss, ResponseGenerator(true, "Read Companyinfo Success", "", "")
 					} else {
-						return 0, 0, ResponseGenerator(false, "Invalied Companyinfo", "", "")
+						return 0, 0, iss, ResponseGenerator(false, "Invalied Companyinfo", "", "")
 					}
 				} else {
 					iTenant := claims["tenant"]
@@ -88,20 +90,20 @@ func decodeJwtDashBoardGraph(dashBoardGraph DashBoardGraph, funcScope, action st
 					if iTenant != nil && iCompany != nil {
 						tenant := int(iTenant.(float64))
 						company := int(iCompany.(float64))
-						return company, tenant, ResponseGenerator(true, "Read Companyinfo Success", "", "")
+						return company, tenant, iss, ResponseGenerator(true, "Read Companyinfo Success", "", "")
 					} else {
-						return 0, 0, ResponseGenerator(false, "Invalid company or tenant", "", "")
+						return 0, 0, iss, ResponseGenerator(false, "Invalid company or tenant", "", "")
 					}
 				}
 			} else {
-				return 0, 0, ResponseGenerator(false, "Invalid scopes", "", "")
+				return 0, 0, "", ResponseGenerator(false, "Invalid scopes", "", "")
 			}
 		} else {
 			fmt.Println(err)
-			return 0, 0, ResponseGenerator(false, "Invalid token", "", "")
+			return 0, 0, "", ResponseGenerator(false, "Invalid token", "", "")
 		}
 	} else {
-		return 0, 0, ResponseGenerator(false, "Invalid token", "", "")
+		return 0, 0, "", ResponseGenerator(false, "Invalid token", "", "")
 	}
 }
 
