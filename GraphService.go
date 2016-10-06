@@ -146,7 +146,7 @@ func OnGetDiffClosedVsNew(_tenant, _company, _duration int, result chan string) 
 			fmt.Println("Recovered in OnGetDiffClosedVsNew", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=summarize(diffSeries(stats.gauges.event.ticket.totalcount.%d.%d.total.NEWTICKET,stats.gauges.event.totalcount.%d.%d.total.CLOSEDTICKET),\"1d\",\"max\",true)&from=-%dd&format=json", statsDIp, _tenant, _company, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=summarize(diffSeries(stats.gauges.event.ticket.totalcount.%d.%d.total.NEWTICKET,stats.gauges.event.ticket.totalcount.%d.%d.total.CLOSEDTICKET),\"1d\",\"max\",true)&from=-%dd&format=json", statsDIp, _tenant, _company, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var ticketInfo = <-resultChannel
@@ -188,7 +188,7 @@ func OnGetDiffClosedVsNewByUser(_tenant, _company, _duration int, _userName stri
 			fmt.Println("Recovered in OnGetDiffClosedVsNew", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=summarize(diffSeries(stats.gauges.event.ticket.totalcount.%d.%d.user_%s.NEWTICKET,stats.gauges.event.totalcount.%d.%d.user_%s.CLOSEDTICKET),\"1d\",\"max\",true)&from=-%dd&format=json", statsDIp, _tenant, _company, _userName, _tenant, _company, _userName, _duration)
+	url := fmt.Sprintf("http://%s/render?target=summarize(diffSeries(stats.gauges.event.ticket.totalcount.%d.%d.user_%s.NEWTICKET,stats.gauges.event.ticket.totalcount.%d.%d.user_%s.CLOSEDTICKET),\"1d\",\"max\",true)&from=-%dd&format=json", statsDIp, _tenant, _company, _userName, _tenant, _company, _userName, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var ticketInfo = <-resultChannel

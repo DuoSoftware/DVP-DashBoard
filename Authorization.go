@@ -75,6 +75,8 @@ func decodeJwtDashBoardGraph(dashBoardGraph DashBoardGraph, funcScope, action st
 			if scope && actions {
 				iiss := claims["iss"]
 				iss := iiss.(string)
+				fmt.Println(iiss)
+				fmt.Println(iss)
 				if internalAccessToken != "" {
 					ids := strings.Split(internalAccessToken, ":")
 					if len(ids) == 2 {
