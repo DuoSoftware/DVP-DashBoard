@@ -88,7 +88,7 @@ func OnGetQueued(_tenant, _company, _duration int, result chan string) {
 			fmt.Println("Recovered in OnGetQueued", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=sumSeries(stats.gauges.event.common.concurrent.%d.%d.*.QUEUE)&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=sumSeries(stats.event.common.concurrent.%d.%d.*.QUEUE)&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
@@ -105,6 +105,22 @@ func OnGetConcurrentQueue(_tenant, _company, _duration int, _queue string, resul
 
 	//stats.gauges.event.concurrent.1.3.Queue-3-1-CALLSERVER-CALL-attribute_8-L.QUEUE
 	url := fmt.Sprintf("http://%s/render?target=stats.gauges.event.common.concurrent.%d.%d.%s.QUEUE&from=-%dmin&format=json", statsDIp, _tenant, _company, _queue, _duration)
+	resultChannel := make(chan string)
+	go IncokeGhaphite(url, resultChannel)
+	var queueInfo = <-resultChannel
+	close(resultChannel)
+	result <- queueInfo
+}
+
+func OnGetConcurrentQueueTotal(_tenant, _company, _duration int, result chan string) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnGetQueued", r)
+		}
+	}()
+
+	//stats.gauges.event.concurrent.1.3.Queue-3-1-CALLSERVER-CALL-attribute_8-L.QUEUE
+	url := fmt.Sprintf("http://%s/render?target=sumSeries(stats.gauges.event.common.concurrent.%d.%d.*.QUEUE)&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel

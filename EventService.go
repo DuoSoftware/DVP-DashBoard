@@ -125,6 +125,7 @@ type DashBoardGraph struct {
 	bridge                   gorest.EndPoint `method:"GET" path:"/Bridge/{duration:int}" output:"string"`
 	queued                   gorest.EndPoint `method:"GET" path:"/Queued/{duration:int}" output:"string"`
 	concurrentqueued         gorest.EndPoint `method:"GET" path:"/ConcurrentQueued/{queue:string}/{duration:int}" output:"string"`
+	allConcurrentQueued      gorest.EndPoint `method:"GET" path:"/AllConcurrentQueued/{duration:int}" output:"string"`
 	newTicket                gorest.EndPoint `method:"GET" path:"/NewTicket/{duration:int}" output:"string"`
 	closedTicket             gorest.EndPoint `method:"GET" path:"/ClosedTicket/{duration:int}" output:"string"`
 	closedVsOpenTicket       gorest.EndPoint `method:"GET" path:"/ClosedVsOpenTicket/{duration:int}" output:"string"`
@@ -333,6 +334,20 @@ func (dashBoardGraph DashBoardGraph) Concurrentqueued(queue string, duration int
 	if company != 0 && tenant != 0 {
 		resultChannel := make(chan string)
 		go OnGetConcurrentQueue(tenant, company, duration, queue, resultChannel)
+		var graphData = <-resultChannel
+		close(resultChannel)
+		return graphData
+	} else {
+		dashBoardGraph.RB().SetResponseCode(403)
+		return ""
+	}
+}
+
+func (dashBoardGraph DashBoardGraph) AllConcurrentQueued(duration int) string {
+	company, tenant, _, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
+	if company != 0 && tenant != 0 {
+		resultChannel := make(chan string)
+		go OnGetConcurrentQueueTotal(tenant, company, duration, resultChannel)
 		var graphData = <-resultChannel
 		close(resultChannel)
 		return graphData
