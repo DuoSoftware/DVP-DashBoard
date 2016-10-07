@@ -88,7 +88,7 @@ func OnGetQueued(_tenant, _company, _duration int, result chan string) {
 			fmt.Println("Recovered in OnGetQueued", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=sumSeries(stats.event.common.concurrent.%d.%d.*.QUEUE)&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=sumSeries(stats.gauges.event.common.concurrent.%d.%d.*.QUEUE)&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
