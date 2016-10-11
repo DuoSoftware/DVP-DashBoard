@@ -355,6 +355,10 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 					rinc, _ := client.Cmd("incrby", totTimeEventName, timeDiff).Int()
 					dccount, _ := client.Cmd("decr", concEventName).Int()
 
+					if dccount < 0 {
+						dccount, _ = client.Cmd("incr", concEventName).Int()
+					}
+
 					oldMaxTime, _ := client.Cmd("get", maxTimeEventName).Int()
 					if oldMaxTime < timeDiff {
 						client.Cmd("set", maxTimeEventName, timeDiff)
@@ -681,7 +685,11 @@ func OnGetCurrentCount(_tenant, _company int, _window, _parameter1, _parameter2 
 			value, _ := client.Cmd("get", key).Int()
 			temptotal = temptotal + value
 		}
-		resultChannel <- temptotal
+		if temptotal < 0 {
+			resultChannel <- 0
+		} else {
+			resultChannel <- temptotal
+		}
 
 	} else {
 		resultChannel <- 0
