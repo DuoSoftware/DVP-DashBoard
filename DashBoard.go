@@ -356,6 +356,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 					dccount, _ := client.Cmd("decr", concEventName).Int()
 
 					if dccount < 0 {
+						fmt.Println("reset minus concurrent count:: incr by 1 :: ", concEventName)
 						dccount, _ = client.Cmd("incr", concEventName).Int()
 					}
 
