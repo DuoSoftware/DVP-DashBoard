@@ -46,7 +46,7 @@ func OnGetCalls(_tenant, _company, _duration int, result chan string) {
 			fmt.Println("Recovered in OnGetCalls", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=stats.event.common.concurrent.%d.%d.*.CALLS&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=sumSeries(stats.event.common.concurrent.%d.%d.*.CALLS)&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
@@ -60,7 +60,7 @@ func OnGetChannels(_tenant, _company, _duration int, result chan string) {
 			fmt.Println("Recovered in OnGetChannels", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=stats.event.common.concurrent.%d.%d.*.CALLCHANNELS&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=sumSeries(stats.event.common.concurrent.%d.%d.*.CALLCHANNELS)&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
@@ -74,7 +74,7 @@ func OnGetBridge(_tenant, _company, _duration int, result chan string) {
 			fmt.Println("Recovered in OnGetBridge", r)
 		}
 	}()
-	url := fmt.Sprintf("http://%s/render?target=stats.event.common.concurrent.%d.%d.*.BRIDGE&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
+	url := fmt.Sprintf("http://%s/render?target=sumSeries(stats.event.common.concurrent.%d.%d.*.BRIDGE)&from=-%dmin&format=json", statsDIp, _tenant, _company, _duration)
 	resultChannel := make(chan string)
 	go IncokeGhaphite(url, resultChannel)
 	var queueInfo = <-resultChannel
