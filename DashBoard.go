@@ -299,6 +299,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		totCountHrEventName := fmt.Sprintf("TOTALCOUNTHR:%d:%d:%s:%s:%s:%d:%d", _tenent, _company, window, _parameter1, _parameter2, tm.Hour(), tm.Minute())
 		maxTimeEventName := fmt.Sprintf("MAXTIME:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 		thresholdEventName := fmt.Sprintf("THRESHOLD:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
+		thresholdBreakDownEventName := fmt.Sprintf("THRESHOLDBREAKDOWN:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 
 		if _parameter1 == "" {
 			_parameter1 = "empty"
@@ -348,6 +349,10 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 				tm2, _ := time.Parse(layout, tmx)
 				timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
 
+				if timeDiff < 0 {
+					timeDiff = 0
+				}
+
 				fmt.Println(timeDiff)
 
 				isdel, _ := client.Cmd("del", sessEvents[0]).Int()
@@ -372,6 +377,32 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 						if timeDiff > thValue {
 							thcount, _ := client.Cmd("incr", thresholdEventName).Int()
 							fmt.Println(thresholdEventName, ": ", thcount)
+
+							thcount_2 := thcount * 2
+							thcount_4 := thcount * 4
+							thcount_8 := thcount * 8
+							thcount_10 := thcount * 10
+							thcount_12 := thcount * 12
+
+							if timeDiff > thValue && timeDiff <= thcount_2 {
+								thresholdBreakDown_1 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thValue, thcount_2)
+								client.Cmd("incr", thresholdBreakDown_1)
+							} else if timeDiff > thcount_2 && timeDiff <= thcount_4 {
+								thresholdBreakDown_2 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thcount_2, thcount_4)
+								client.Cmd("incr", thresholdBreakDown_2)
+							} else if timeDiff > thcount_4 && timeDiff <= thcount_8 {
+								thresholdBreakDown_3 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thcount_4, thcount_8)
+								client.Cmd("incr", thresholdBreakDown_3)
+							} else if timeDiff > thcount_8 && timeDiff <= thcount_10 {
+								thresholdBreakDown_3 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thcount_8, thcount_10)
+								client.Cmd("incr", thresholdBreakDown_3)
+							} else if timeDiff > thcount_10 && timeDiff <= thcount_12 {
+								thresholdBreakDown_3 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thcount_10, thcount_12)
+								client.Cmd("incr", thresholdBreakDown_3)
+							} else {
+								thresholdBreakDown_4 := fmt.Sprintf("%s:%d:%s", thresholdBreakDownEventName, thcount_12, "gt")
+								client.Cmd("incr", thresholdBreakDown_4)
+							}
 						}
 					}
 					statClient.Gauge(gaugeConcStatName, dccount)
