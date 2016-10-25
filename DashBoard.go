@@ -378,36 +378,36 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 							thcount, _ := client.Cmd("incr", thresholdEventName).Int()
 							fmt.Println(thresholdEventName, ": ", thcount)
 
-							thcount_2 := thcount * 2
-							thcount_4 := thcount * 4
-							thcount_8 := thcount * 8
-							thcount_10 := thcount * 10
-							thcount_12 := thcount * 12
+							thValue_2 := thValue * 2
+							thValue_4 := thValue * 4
+							thValue_8 := thValue * 8
+							thValue_10 := thValue * 10
+							thValue_12 := thValue * 12
 
-							fmt.Println("thcount_2::", thcount_2)
-							fmt.Println("thcount_4::", thcount_4)
-							fmt.Println("thcount_8::", thcount_8)
-							fmt.Println("thcount_10::", thcount_10)
-							fmt.Println("thcount_12::", thcount_12)
+							fmt.Println("thValue_2::", thValue_2)
+							fmt.Println("thValue_4::", thValue_4)
+							fmt.Println("thValue_8::", thValue_8)
+							fmt.Println("thValue_10::", thValue_10)
+							fmt.Println("thValue_12::", thValue_12)
 
-							if timeDiff > thValue && timeDiff <= thcount_2 {
-								thresholdBreakDown_1 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thValue, thcount_2)
+							if timeDiff > thValue && timeDiff <= thValue_2 {
+								thresholdBreakDown_1 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thValue, thValue_2)
 								client.Cmd("incr", thresholdBreakDown_1)
 								fmt.Println("thresholdBreakDown_1::", thresholdBreakDown_1)
-							} else if timeDiff > thcount_2 && timeDiff <= thcount_4 {
-								thresholdBreakDown_2 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thcount_2, thcount_4)
+							} else if timeDiff > thValue_2 && timeDiff <= thValue_4 {
+								thresholdBreakDown_2 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thValue_2, thValue_4)
 								client.Cmd("incr", thresholdBreakDown_2)
 								fmt.Println("thresholdBreakDown_2::", thresholdBreakDown_2)
-							} else if timeDiff > thcount_4 && timeDiff <= thcount_8 {
-								thresholdBreakDown_3 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thcount_4, thcount_8)
+							} else if timeDiff > thValue_4 && timeDiff <= thValue_8 {
+								thresholdBreakDown_3 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thValue_4, thValue_8)
 								client.Cmd("incr", thresholdBreakDown_3)
 								fmt.Println("thresholdBreakDown_3::", thresholdBreakDown_3)
-							} else if timeDiff > thcount_8 && timeDiff <= thcount_10 {
-								thresholdBreakDown_4 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thcount_8, thcount_10)
+							} else if timeDiff > thValue_8 && timeDiff <= thValue_10 {
+								thresholdBreakDown_4 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thValue_8, thValue_10)
 								client.Cmd("incr", thresholdBreakDown_4)
 								fmt.Println("thresholdBreakDown_4::", thresholdBreakDown_4)
-							} else if timeDiff > thcount_10 && timeDiff <= thcount_12 {
-								thresholdBreakDown_5 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thcount_10, thcount_12)
+							} else if timeDiff > thValue_10 && timeDiff <= thValue_12 {
+								thresholdBreakDown_5 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thValue_10, thValue_12)
 								client.Cmd("incr", thresholdBreakDown_5)
 								fmt.Println("thresholdBreakDown_5::", thresholdBreakDown_5)
 							} else {
