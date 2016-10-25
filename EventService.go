@@ -104,6 +104,17 @@ type SummeryDetail struct {
 	SummaryDate    time.Time
 }
 
+type ThresholdBreakDownDetail struct {
+	Company        int
+	Tenant         int
+	WindowName     string
+	Param1         string
+	Param2         string
+	BreakDown      string
+	ThresholdCount int
+	SummaryDate    time.Time
+}
+
 type DashBoardEvent struct {
 	gorest.RestService `root:"/DashboardEvent/" consumes:"application/json" produces:"application/json"`
 	event              gorest.EndPoint `method:"POST" path:"/Event/" postdata:"EventData"`

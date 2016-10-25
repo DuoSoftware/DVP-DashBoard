@@ -112,6 +112,30 @@ func PersistsSummaryData(_summary SummeryDetail) {
 	db.Close()
 }
 
+func PersistsThresholdBreakDown(_summary ThresholdBreakDownDetail) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in PersistsThresholdBreakDown", r)
+		}
+	}()
+	conStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=disable", pgUser, pgPassword, pgDbname, pgHost, pgPort)
+	db, err := sql.Open("postgres", conStr)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	result, err1 := db.Exec("INSERT INTO \"Dashboard_ThresholdBreakDowns\"(\"Company\", \"Tenant\", \"WindowName\", \"Param1\", \"Param2\", \"BreakDown\", \"ThresholdCount\", \"SummaryDate\", \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", _summary.Company, _summary.Tenant, _summary.WindowName, _summary.Param1, _summary.Param2, _summary.BreakDown, _summary.ThresholdCount, _summary.SummaryDate, time.Now().Local(), time.Now().Local())
+	if err1 != nil {
+		fmt.Println(err1.Error())
+	} else {
+		fmt.Println("PersistsThresholdBreakDown: ", result)
+		lInsertedId, err2 := result.LastInsertId()
+		fmt.Println(err2)
+		fmt.Println("Last inserted Id: ", lInsertedId)
+	}
+	db.Close()
+}
+
 func PersistsMetaData(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _thresholdEnable bool, _thresholdValue int) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -480,6 +504,7 @@ func OnReset() {
 			totCountHr := fmt.Sprintf("TOTALCOUNTHR:*:%s:*", window)
 			maxTimeEventSearch := fmt.Sprintf("MAXTIME:*:%s:*", window)
 			thresholdEventSearch := fmt.Sprintf("THRESHOLD:*:%s:*", window)
+			thresholdBDEventSearch := fmt.Sprintf("THRESHOLDBREAKDOWN:*:%s:*", window)
 
 			snapVal, _ := client.Cmd("keys", snapEventSearch).List()
 			_keysToRemove = AppendListIfMissing(_keysToRemove, snapVal)
@@ -516,6 +541,9 @@ func OnReset() {
 
 			thresholdCountVal, _ := client.Cmd("keys", thresholdEventSearch).List()
 			_keysToRemove = AppendListIfMissing(_keysToRemove, thresholdCountVal)
+
+			thresholdBDCountVal, _ := client.Cmd("keys", thresholdBDEventSearch).List()
+			_keysToRemove = AppendListIfMissing(_keysToRemove, thresholdBDCountVal)
 
 		}
 		tm := time.Now()
@@ -606,6 +634,48 @@ func OnSetDailySummary(_date time.Time) {
 		summery.ThresholdValue = threshold
 		summery.SummaryDate = _date
 		go PersistsSummaryData(summery)
+	}
+}
+
+func OnSetDailyThesholdBreakDown(_date time.Time) {
+	thresholdEventSearch := fmt.Sprintf("THRESHOLDBREAKDOWN:*")
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnSetDailyThesholdBreakDown", r)
+		}
+	}()
+	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	errHndlr(err)
+	defer client.Close()
+	//authServer
+	authE := client.Cmd("auth", redisPassword)
+	errHndlr(authE.Err)
+	// select database
+	r := client.Cmd("select", redisDb)
+	errHndlr(r.Err)
+
+	thresholdEventKeys, _ := client.Cmd("keys", thresholdEventSearch).List()
+	for _, key := range thresholdEventKeys {
+		fmt.Println("Key: ", key)
+		keyItems := strings.Split(key, ":")
+
+		if len(keyItems) >= 8 {
+			summery := ThresholdBreakDownDetail{}
+			tenant, _ := strconv.Atoi(keyItems[1])
+			company, _ := strconv.Atoi(keyItems[2])
+			summery.Tenant = tenant
+			summery.Company = company
+			summery.WindowName = keyItems[3]
+			summery.Param1 = keyItems[4]
+			summery.Param2 = keyItems[5]
+			summery.BreakDown = fmt.Sprintf("%s-%s", keyItems[6], keyItems[7])
+
+			thCount, _ := client.Cmd("get", key).Int()
+			summery.ThresholdCount = thCount
+			summery.SummaryDate = _date
+
+			go PersistsThresholdBreakDown(summery)
+		}
 	}
 }
 

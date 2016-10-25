@@ -71,6 +71,7 @@ func ClearData() {
 		timer := time.NewTimer(timeToWait)
 		<-timer.C
 		OnSetDailySummary(clerTime)
+		OnSetDailyThesholdBreakDown(clerTime)
 		OnReset()
 
 		fmt.Println("----------ClearData Wait after reset----------------------")
