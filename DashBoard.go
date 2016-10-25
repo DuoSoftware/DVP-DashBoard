@@ -411,7 +411,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 								client.Cmd("incr", thresholdBreakDown_5)
 								fmt.Println("thresholdBreakDown_5::", thresholdBreakDown_5)
 							} else {
-								thresholdBreakDown_6 := fmt.Sprintf("%s:%d:%s", thresholdBreakDownEventName, thcount_12, "gt")
+								thresholdBreakDown_6 := fmt.Sprintf("%s:%d:%s", thresholdBreakDownEventName, thValue_12, "gt")
 								client.Cmd("incr", thresholdBreakDown_6)
 								fmt.Println("thresholdBreakDown_6::", thresholdBreakDown_6)
 							}
