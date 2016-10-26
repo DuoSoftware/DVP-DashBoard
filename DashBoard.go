@@ -124,7 +124,7 @@ func PersistsThresholdBreakDown(_summary ThresholdBreakDownDetail) {
 		fmt.Println(err.Error())
 	}
 
-	result, err1 := db.Exec("INSERT INTO \"Dashboard_ThresholdBreakDowns\"(\"Company\", \"Tenant\", \"WindowName\", \"Param1\", \"Param2\", \"BreakDown\", \"ThresholdCount\", \"SummaryDate\", \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", _summary.Company, _summary.Tenant, _summary.WindowName, _summary.Param1, _summary.Param2, _summary.BreakDown, _summary.ThresholdCount, _summary.SummaryDate, time.Now().Local(), time.Now().Local())
+	result, err1 := db.Exec("INSERT INTO \"Dashboard_ThresholdBreakDowns\"(\"Company\", \"Tenant\", \"WindowName\", \"Param1\", \"Param2\", \"BreakDown\", \"ThresholdCount\", \"SummaryDate\", \"Hour\", \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)", _summary.Company, _summary.Tenant, _summary.WindowName, _summary.Param1, _summary.Param2, _summary.BreakDown, _summary.ThresholdCount, _summary.SummaryDate, _summary.Hour, time.Now().Local(), time.Now().Local())
 	if err1 != nil {
 		fmt.Println(err1.Error())
 	} else {
@@ -267,7 +267,12 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 	_inc := fmt.Sprintf("META:%s:%s:%s:COUNT", _class, _type, _category)
 	_useSessionName := fmt.Sprintf("META:%s:%s:%s:USESESSION", _class, _type, _category)
 	_thresholdEnableName := fmt.Sprintf("META:%s:%s:%s:thresholdEnable", _class, _type, _category)
-	tm := time.Now().Local()
+
+	location, _ := time.LoadLocation("Asia/Colombo")
+	fmt.Println("location:: " + location.String())
+
+	tm := time.Now().In(location)
+	fmt.Println("tmNow:: " + tm.String())
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -371,7 +376,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 			if len(sessEvents) > 0 {
 				tmx, _ := client.Cmd("hget", sessEvents[0], "time").Str()
 				tm2, _ := time.Parse(layout, tmx)
-				timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
+				timeDiff := int(tm.Sub(tm2.In(location)).Seconds())
 
 				if timeDiff < 0 {
 					timeDiff = 0
@@ -402,6 +407,8 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 							thcount, _ := client.Cmd("incr", thresholdEventName).Int()
 							fmt.Println(thresholdEventName, ": ", thcount)
 
+							thHour := tm.Hour()
+
 							thValue_2 := thValue * 2
 							thValue_4 := thValue * 4
 							thValue_8 := thValue * 8
@@ -415,27 +422,27 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 							fmt.Println("thValue_12::", thValue_12)
 
 							if timeDiff > thValue && timeDiff <= thValue_2 {
-								thresholdBreakDown_1 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thValue, thValue_2)
+								thresholdBreakDown_1 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue, thValue_2)
 								client.Cmd("incr", thresholdBreakDown_1)
 								fmt.Println("thresholdBreakDown_1::", thresholdBreakDown_1)
 							} else if timeDiff > thValue_2 && timeDiff <= thValue_4 {
-								thresholdBreakDown_2 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thValue_2, thValue_4)
+								thresholdBreakDown_2 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_2, thValue_4)
 								client.Cmd("incr", thresholdBreakDown_2)
 								fmt.Println("thresholdBreakDown_2::", thresholdBreakDown_2)
 							} else if timeDiff > thValue_4 && timeDiff <= thValue_8 {
-								thresholdBreakDown_3 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thValue_4, thValue_8)
+								thresholdBreakDown_3 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_4, thValue_8)
 								client.Cmd("incr", thresholdBreakDown_3)
 								fmt.Println("thresholdBreakDown_3::", thresholdBreakDown_3)
 							} else if timeDiff > thValue_8 && timeDiff <= thValue_10 {
-								thresholdBreakDown_4 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thValue_8, thValue_10)
+								thresholdBreakDown_4 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_8, thValue_10)
 								client.Cmd("incr", thresholdBreakDown_4)
 								fmt.Println("thresholdBreakDown_4::", thresholdBreakDown_4)
 							} else if timeDiff > thValue_10 && timeDiff <= thValue_12 {
-								thresholdBreakDown_5 := fmt.Sprintf("%s:%d:%d", thresholdBreakDownEventName, thValue_10, thValue_12)
+								thresholdBreakDown_5 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_10, thValue_12)
 								client.Cmd("incr", thresholdBreakDown_5)
 								fmt.Println("thresholdBreakDown_5::", thresholdBreakDown_5)
 							} else {
-								thresholdBreakDown_6 := fmt.Sprintf("%s:%d:%s", thresholdBreakDownEventName, thValue_12, "gt")
+								thresholdBreakDown_6 := fmt.Sprintf("%s:%d:%d:%s", thresholdBreakDownEventName, thHour, thValue_12, "gt")
 								client.Cmd("incr", thresholdBreakDown_6)
 								fmt.Println("thresholdBreakDown_6::", thresholdBreakDown_6)
 							}
@@ -444,7 +451,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 					statClient.Gauge(gaugeConcStatName, dccount)
 					statClient.Gauge(totTimeStatName, rinc)
 
-					duration := int64(tm.Local().Sub(tm2.Local()) / time.Millisecond)
+					duration := int64(tm.Sub(tm2.In(location)) / time.Millisecond)
 					statClient.Timing(timeStatName, duration)
 				}
 			}
@@ -659,16 +666,18 @@ func OnSetDailyThesholdBreakDown(_date time.Time) {
 		fmt.Println("Key: ", key)
 		keyItems := strings.Split(key, ":")
 
-		if len(keyItems) >= 8 {
+		if len(keyItems) >= 9 {
 			summery := ThresholdBreakDownDetail{}
 			tenant, _ := strconv.Atoi(keyItems[1])
 			company, _ := strconv.Atoi(keyItems[2])
+			hour, _ := strconv.Atoi(keyItems[6])
 			summery.Tenant = tenant
 			summery.Company = company
 			summery.WindowName = keyItems[3]
 			summery.Param1 = keyItems[4]
 			summery.Param2 = keyItems[5]
-			summery.BreakDown = fmt.Sprintf("%s-%s", keyItems[6], keyItems[7])
+			summery.BreakDown = fmt.Sprintf("%s-%s", keyItems[7], keyItems[8])
+			summery.Hour = hour
 
 			thCount, _ := client.Cmd("get", key).Int()
 			summery.ThresholdCount = thCount

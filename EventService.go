@@ -113,6 +113,7 @@ type ThresholdBreakDownDetail struct {
 	BreakDown      string
 	ThresholdCount int
 	SummaryDate    time.Time
+	Hour           int
 }
 
 type DashBoardEvent struct {
