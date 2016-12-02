@@ -403,11 +403,12 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 					}
 					if threshold != "" {
 						thValue, _ := strconv.Atoi(threshold)
+
+						thHour := tm.Hour()
+
 						if timeDiff > thValue {
 							thcount, _ := client.Cmd("incr", thresholdEventName).Int()
 							fmt.Println(thresholdEventName, ": ", thcount)
-
-							thHour := tm.Hour()
 
 							thValue_2 := thValue * 2
 							thValue_4 := thValue * 4
@@ -446,6 +447,10 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 								client.Cmd("incr", thresholdBreakDown_6)
 								fmt.Println("thresholdBreakDown_6::", thresholdBreakDown_6)
 							}
+						} else {
+							thresholdBreakDown_7 := fmt.Sprintf("%s:%d:%d:%s", thresholdBreakDownEventName, thHour, "lt", thValue)
+							client.Cmd("incr", thresholdBreakDown_7)
+							fmt.Println("thresholdBreakDown_7::", thresholdBreakDown_7)
 						}
 					}
 					statClient.Gauge(gaugeConcStatName, dccount)
