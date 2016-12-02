@@ -161,10 +161,10 @@ func LoadConfiguration() {
 		if redisPort == "" {
 			redisPort = defConfig.RedisPort
 		}
-		if redisDb == 0 || converr != nil {
+		if converr != nil {
 			redisDb = defConfig.RedisDb
 		}
-		if ardsRedisDb == 0 || converr != nil {
+		if converr != nil {
 			ardsRedisDb = defConfig.ArdsRedisDb
 		}
 		if redisPassword == "" {
