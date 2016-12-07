@@ -15,7 +15,7 @@ func main() {
 	LoadConfiguration()
 	InitiateRedis()
 	InitiateStatDClient()
-	go ClearData()
+	ClearData()
 
 	//jwtMiddleware := loadJwtMiddleware()
 	/*
