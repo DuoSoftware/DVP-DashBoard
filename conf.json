@@ -15,5 +15,5 @@
 	"SecurityIp":"45.55.142.207",
 	"SecurityPort":"6389",
 	"SecurityPassword":"DuoS123",
-	"CacheMachenism": "redis"
+	"CacheMachenism": "memory"
 }
