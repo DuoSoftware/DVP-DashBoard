@@ -13,9 +13,14 @@ func main() {
 
 	//fmt.Println("Hello World!")
 	LoadConfiguration()
+
+	if cacheMachenism == "memory" {
+
+		ReloadAllMetaData()
+	}
+
 	InitiateRedis()
 	InitiateStatDClient()
-	ReloadAllMetaData()
 	ClearData()
 
 	//jwtMiddleware := loadJwtMiddleware()
