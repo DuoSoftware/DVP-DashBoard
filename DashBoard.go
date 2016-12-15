@@ -15,6 +15,8 @@ var statClient *StatsdClient
 
 const layout = "2006-01-02T15:04:05Z07:00"
 
+var dashboardMetaInfo []MetaData
+
 //var log = log4go.NewLogger()
 
 func errHndlr(err error) {
@@ -209,6 +211,80 @@ func ReloadMetaData(_class, _type, _category string) bool {
 	return result
 }
 
+func ReloadAllMetaData() bool {
+	fmt.Println("-------------------------ReloadAllMetaData----------------------")
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in ReloadAllMetaData", r)
+		}
+	}()
+	var result bool
+	conStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d", pgUser, pgPassword, pgDbname, pgHost, pgPort)
+	db, err := sql.Open("postgres", conStr)
+	if err != nil {
+		fmt.Println(err.Error())
+		result = false
+	}
+
+	var EventClass string
+	var EventType string
+	var EventCategory string
+	var WindowName string
+	var Count int
+	var FlushEnable bool
+	var UseSession bool
+	var ThresholdEnable bool
+	var ThresholdValue int
+
+	//err1 := db.QueryRow("SELECT \"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\", \"ThresholdEnable\", \"ThresholdValue\" FROM \"Dashboard_MetaData\"").Scan(&EventClass, &EventType, &EventCategory, &WindowName, &Count, &FlushEnable, &UseSession, &ThresholdEnable, &ThresholdValue)
+	dataRows, err1 := db.Query("SELECT \"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\", \"ThresholdEnable\", \"ThresholdValue\" FROM \"Dashboard_MetaData\"")
+	switch {
+	case err1 == sql.ErrNoRows:
+		fmt.Println("No metaData with that ID.")
+		result = false
+	case err1 != nil:
+		fmt.Println(err1.Error())
+		result = false
+	default:
+		dashboardMetaInfo = make([]MetaData, 0)
+		for dataRows.Next() {
+			dataRows.Scan(&EventClass, &EventType, &EventCategory, &WindowName, &Count, &FlushEnable, &UseSession, &ThresholdEnable, &ThresholdValue)
+
+			fmt.Printf("EventClass is %s\n", EventClass)
+			fmt.Printf("EventType is %s\n", EventType)
+			fmt.Printf("EventCategory is %s\n", EventCategory)
+			fmt.Printf("WindowName is %s\n", WindowName)
+			fmt.Printf("Count is %d\n", Count)
+			fmt.Printf("FlushEnable is %t\n", FlushEnable)
+			fmt.Printf("UseSession is %t\n", UseSession)
+			fmt.Printf("ThresholdEnable is %t\n", ThresholdEnable)
+			fmt.Printf("ThresholdValue is %d\n", ThresholdValue)
+
+			if cacheMachenism == "redis" {
+				CacheMetaData(EventClass, EventType, EventCategory, WindowName, Count, FlushEnable, UseSession, ThresholdEnable, ThresholdValue)
+			} else {
+				var mData MetaData
+				mData.EventClass = EventClass
+				mData.EventType = EventType
+				mData.EventCategory = EventCategory
+				mData.Count = Count
+				mData.FlushEnable = FlushEnable
+				mData.ThresholdEnable = ThresholdEnable
+				mData.ThresholdValue = ThresholdValue
+				mData.UseSession = UseSession
+				mData.WindowName = WindowName
+
+				dashboardMetaInfo = append(dashboardMetaInfo, mData)
+			}
+		}
+		dataRows.Close()
+		result = true
+	}
+	db.Close()
+	fmt.Println("DashBoard MetaData:: ", dashboardMetaInfo)
+	return result
+}
+
 func CacheMetaData(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _thresholdEnable bool, _thresholdValue int) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -263,11 +339,6 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 	temp := fmt.Sprintf("Tenant:%d Company:%d Class:%s Type:%s Category:%s Session:%s Param1:%s Param2:%s", _tenent, _company, _class, _type, _category, _session, _parameter1, _parameter2)
 	fmt.Println("OnEvent: ", temp)
 
-	_window := fmt.Sprintf("META:%s:%s:%s:WINDOW", _class, _type, _category)
-	_inc := fmt.Sprintf("META:%s:%s:%s:COUNT", _class, _type, _category)
-	_useSessionName := fmt.Sprintf("META:%s:%s:%s:USESESSION", _class, _type, _category)
-	_thresholdEnableName := fmt.Sprintf("META:%s:%s:%s:thresholdEnable", _class, _type, _category)
-
 	location, _ := time.LoadLocation("Asia/Colombo")
 	fmt.Println("location:: " + location.String())
 
@@ -289,22 +360,47 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 	r := client.Cmd("select", redisDb)
 	errHndlr(r.Err)
 
-	isWindowExist, _ := client.Cmd("exists", _window).Bool()
-	isIncExist, _ := client.Cmd("exists", _inc).Bool()
+	var window, sinc, useSession, threshold string
+	var iinc int
+	var _werr, _ierr, _userr, _thresherr, berr error
 
-	if isWindowExist == false || isIncExist == false {
-		ReloadMetaData(_class, _type, _category)
+	if cacheMachenism == "redis" {
+		fmt.Println("---------------------Use Redis----------------------")
+
+		_window := fmt.Sprintf("META:%s:%s:%s:WINDOW", _class, _type, _category)
+		_inc := fmt.Sprintf("META:%s:%s:%s:COUNT", _class, _type, _category)
+		_useSessionName := fmt.Sprintf("META:%s:%s:%s:USESESSION", _class, _type, _category)
+		_thresholdEnableName := fmt.Sprintf("META:%s:%s:%s:thresholdEnable", _class, _type, _category)
+
+		isWindowExist, _ := client.Cmd("exists", _window).Bool()
+		isIncExist, _ := client.Cmd("exists", _inc).Bool()
+
+		if isWindowExist == false || isIncExist == false {
+			ReloadMetaData(_class, _type, _category)
+		}
+		window, _werr = client.Cmd("get", _window).Str()
+		errHndlr(_werr)
+		sinc, _ierr = client.Cmd("get", _inc).Str()
+		errHndlr(_ierr)
+		useSession, _userr = client.Cmd("get", _useSessionName).Str()
+		errHndlr(_userr)
+		threshold, _thresherr = client.Cmd("get", _thresholdEnableName).Str()
+		errHndlr(_thresherr)
+
+		iinc, berr = strconv.Atoi(sinc)
+
+	} else {
+		fmt.Println("---------------------Use Memoey----------------------")
+		for _, dmi := range dashboardMetaInfo {
+			if dmi.EventClass == _class && dmi.EventType == _type && dmi.EventCategory == _category {
+				window = dmi.WindowName
+				iinc = dmi.Count
+				useSession = strconv.FormatBool(dmi.UseSession)
+				threshold = strconv.Itoa(dmi.ThresholdValue)
+				break
+			}
+		}
 	}
-	window, _werr := client.Cmd("get", _window).Str()
-	errHndlr(_werr)
-	sinc, _ierr := client.Cmd("get", _inc).Str()
-	errHndlr(_ierr)
-	useSession, _userr := client.Cmd("get", _useSessionName).Str()
-	errHndlr(_userr)
-	threshold, _thresherr := client.Cmd("get", _thresholdEnableName).Str()
-	errHndlr(_thresherr)
-
-	iinc, berr := strconv.Atoi(sinc)
 
 	fmt.Println("iinc value is ", iinc)
 

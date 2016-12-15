@@ -14,5 +14,6 @@
 	"PgPort":"SYS_SQL_PORT",
 	"SecurityIp":"SYS_REDIS_HOST",
 	"SecurityPort":"SYS_REDIS_PORT",
-	"SecurityPassword":"SYS_REDIS_PASSWORD"
+	"SecurityPassword":"SYS_REDIS_PASSWORD",
+	"CacheMachenism": "HOST_DASHBOARD_CACHE"
 }

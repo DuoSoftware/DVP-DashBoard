@@ -14,5 +14,6 @@
 	"PgPort":5432,
 	"SecurityIp":"45.55.142.207",
 	"SecurityPort":"6389",
-	"SecurityPassword":"DuoS123"
+	"SecurityPassword":"DuoS123",
+	"CacheMachenism": "memory"
 }

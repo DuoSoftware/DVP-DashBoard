@@ -47,6 +47,7 @@ type Configuration struct {
 	SecurityIp       string
 	SecurityPort     string
 	SecurityPassword string
+	CacheMachenism   string
 }
 
 type EnvConfiguration struct {
@@ -66,6 +67,7 @@ type EnvConfiguration struct {
 	SecurityIp       string
 	SecurityPort     string
 	SecurityPassword string
+	CacheMachenism   string
 }
 
 type Result struct {

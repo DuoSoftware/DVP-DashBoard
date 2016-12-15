@@ -26,6 +26,7 @@ var pgPort int
 var securityIp string
 var securityPort string
 var securityPassword string
+var cacheMachenism string
 
 func GetDirPath() string {
 	envPath := os.Getenv("GO_CONFIG_DIR")
@@ -65,6 +66,7 @@ func GetDefaultConfig() Configuration {
 		defconfiguration.SecurityIp = "45.55.142.207"
 		defconfiguration.SecurityPort = "6389"
 		defconfiguration.SecurityPassword = "DuoS123"
+		defconfiguration.CacheMachenism = "redis"
 	}
 
 	return defconfiguration
@@ -100,6 +102,7 @@ func LoadDefaultConfig() {
 		securityIp = "45.55.142.207"
 		securityPort = "6389"
 		securityPassword = "DuoS123"
+		cacheMachenism = "redis"
 	} else {
 		redisIp = fmt.Sprintf("%s:%s", defconfiguration.RedisIp, defconfiguration.RedisPort)
 		redisPort = defconfiguration.RedisPort
@@ -117,6 +120,7 @@ func LoadDefaultConfig() {
 		securityIp = defconfiguration.SecurityIp
 		securityPort = defconfiguration.SecurityPort
 		securityPassword = defconfiguration.SecurityPassword
+		cacheMachenism = defconfiguration.CacheMachenism
 	}
 }
 
@@ -154,6 +158,7 @@ func LoadConfiguration() {
 		securityIp = os.Getenv(envconfiguration.SecurityIp)
 		securityPort = os.Getenv(envconfiguration.SecurityPort)
 		securityPassword = os.Getenv(envconfiguration.SecurityPassword)
+		cacheMachenism = os.Getenv(envconfiguration.CacheMachenism)
 
 		if redisIp == "" {
 			redisIp = defConfig.RedisIp
@@ -202,6 +207,9 @@ func LoadConfiguration() {
 		}
 		if securityPassword == "" {
 			securityPassword = defConfig.SecurityPassword
+		}
+		if cacheMachenism == "" {
+			cacheMachenism = defConfig.CacheMachenism
 		}
 
 		redisIp = fmt.Sprintf("%s:%s", redisIp, redisPort)
