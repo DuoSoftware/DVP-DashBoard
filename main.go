@@ -3,9 +3,9 @@ package main
 
 import (
 	"fmt"
-	//"github.com/DuoSoftware/gorest"
-	//"github.com/rs/cors"
-	//"net/http"
+	"github.com/DuoSoftware/gorest"
+	"github.com/rs/cors"
+	"net/http"
 	"time"
 )
 
@@ -21,31 +21,31 @@ func main() {
 
 	InitiateRedis()
 	InitiateStatDClient()
-	ClearData()
+	go ClearData()
 
 	//jwtMiddleware := loadJwtMiddleware()
-	/*
-		gorest.RegisterService(new(DashBoardEvent))
-		gorest.RegisterService(new(DashBoardGraph))
-	*/
-	//app := jwtMiddleware.Handler(gorest.Handle())
-	/*
-		c := cors.New(cors.Options{
-			AllowedHeaders: []string{"accept", "authorization"},
-		})
-		handler := c.Handler(gorest.Handle())
-		addr := fmt.Sprintf(":%s", port)
-		s := &http.Server{
-			Addr:           addr,
-			Handler:        handler,
-			ReadTimeout:    10 * time.Second,
-			WriteTimeout:   10 * time.Second,
-			MaxHeaderBytes: 1 << 20,
-		}
 
-		s.SetKeepAlivesEnabled(false)
-		s.ListenAndServe()
-	*/
+	gorest.RegisterService(new(DashBoardEvent))
+	//gorest.RegisterService(new(DashBoardGraph))
+
+	//app := jwtMiddleware.Handler(gorest.Handle())
+
+	c := cors.New(cors.Options{
+		AllowedHeaders: []string{"accept", "authorization"},
+	})
+	handler := c.Handler(gorest.Handle())
+	addr := fmt.Sprintf(":%s", port)
+	s := &http.Server{
+		Addr:           addr,
+		Handler:        handler,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+
+	s.SetKeepAlivesEnabled(false)
+	s.ListenAndServe()
+
 	//http.ListenAndServe(addr, handler)
 
 	////fmt.Scanln()

@@ -123,29 +123,30 @@ type DashBoardEvent struct {
 	event              gorest.EndPoint `method:"POST" path:"/Event/" postdata:"EventData"`
 	meta               gorest.EndPoint `method:"POST" path:"/Meta/" postdata:"MetaData"`
 	reset              gorest.EndPoint `method:"DELETE" path:"/Reset/"`
-	maxWaiting         gorest.EndPoint `method:"GET" path:"/MaxWaiting/{window:string}/{param1:string}/{param2:string}" output:"int"`
-	currentMaxTime     gorest.EndPoint `method:"GET" path:"/CurrentMaxTime/{window:string}/{param1:string}/{param2:string}" output:"int"`
-	currentCount       gorest.EndPoint `method:"GET" path:"/CurrentCount/{window:string}/{param1:string}/{param2:string}" output:"int"`
-	averageTime        gorest.EndPoint `method:"GET" path:"/AverageTime/{window:string}/{param1:string}/{param2:string}" output:"float32"`
-	queueDetails       gorest.EndPoint `method:"GET" path:"/QueueDetails/" output:"[]QueueDetails"`
-	queueSingleDetail  gorest.EndPoint `method:"GET" path:"/QueueSingleDetail/{queueId:string}" output:"QueueDetails"`
-	totalCount         gorest.EndPoint `method:"GET" path:"/TotalCount/{window:string}/{param1:string}/{param2:string}" output:"int"`
+	reloadMetaData     gorest.EndPoint `method:"DELETE" path:"/ReloadMetaData/"`
+	//maxWaiting         gorest.EndPoint `method:"GET" path:"/MaxWaiting/{window:string}/{param1:string}/{param2:string}" output:"int"`
+	//currentMaxTime     gorest.EndPoint `method:"GET" path:"/CurrentMaxTime/{window:string}/{param1:string}/{param2:string}" output:"int"`
+	//currentCount       gorest.EndPoint `method:"GET" path:"/CurrentCount/{window:string}/{param1:string}/{param2:string}" output:"int"`
+	//averageTime        gorest.EndPoint `method:"GET" path:"/AverageTime/{window:string}/{param1:string}/{param2:string}" output:"float32"`
+	//queueDetails       gorest.EndPoint `method:"GET" path:"/QueueDetails/" output:"[]QueueDetails"`
+	//queueSingleDetail  gorest.EndPoint `method:"GET" path:"/QueueSingleDetail/{queueId:string}" output:"QueueDetails"`
+	//totalCount         gorest.EndPoint `method:"GET" path:"/TotalCount/{window:string}/{param1:string}/{param2:string}" output:"int"`
 }
 
 type DashBoardGraph struct {
-	gorest.RestService       `root:"/DashboardGraph/" consumes:"application/json" produces:"application/json"`
-	calls                    gorest.EndPoint `method:"GET" path:"/Calls/{duration:int}" output:"string"`
-	channels                 gorest.EndPoint `method:"GET" path:"/Channels/{duration:int}" output:"string"`
-	bridge                   gorest.EndPoint `method:"GET" path:"/Bridge/{duration:int}" output:"string"`
-	queued                   gorest.EndPoint `method:"GET" path:"/Queued/{duration:int}" output:"string"`
-	concurrentqueued         gorest.EndPoint `method:"GET" path:"/ConcurrentQueued/{queue:string}/{duration:int}" output:"string"`
-	allConcurrentQueued      gorest.EndPoint `method:"GET" path:"/AllConcurrentQueued/{duration:int}" output:"string"`
-	newTicket                gorest.EndPoint `method:"GET" path:"/NewTicket/{duration:int}" output:"string"`
-	closedTicket             gorest.EndPoint `method:"GET" path:"/ClosedTicket/{duration:int}" output:"string"`
-	closedVsOpenTicket       gorest.EndPoint `method:"GET" path:"/ClosedVsOpenTicket/{duration:int}" output:"string"`
-	newTicketByUser          gorest.EndPoint `method:"GET" path:"/NewTicketByUser/{duration:int}" output:"string"`
-	closedTicketByUser       gorest.EndPoint `method:"GET" path:"/ClosedTicketByUser/{duration:int}" output:"string"`
-	closedVsOpenTicketByUser gorest.EndPoint `method:"GET" path:"/ClosedVsOpenTicketByUser/{duration:int}" output:"string"`
+	gorest.RestService `root:"/DashboardGraph/" consumes:"application/json" produces:"application/json"`
+	//calls                    gorest.EndPoint `method:"GET" path:"/Calls/{duration:int}" output:"string"`
+	//channels                 gorest.EndPoint `method:"GET" path:"/Channels/{duration:int}" output:"string"`
+	//bridge                   gorest.EndPoint `method:"GET" path:"/Bridge/{duration:int}" output:"string"`
+	//queued                   gorest.EndPoint `method:"GET" path:"/Queued/{duration:int}" output:"string"`
+	//concurrentqueued         gorest.EndPoint `method:"GET" path:"/ConcurrentQueued/{queue:string}/{duration:int}" output:"string"`
+	//allConcurrentQueued      gorest.EndPoint `method:"GET" path:"/AllConcurrentQueued/{duration:int}" output:"string"`
+	//newTicket                gorest.EndPoint `method:"GET" path:"/NewTicket/{duration:int}" output:"string"`
+	//closedTicket             gorest.EndPoint `method:"GET" path:"/ClosedTicket/{duration:int}" output:"string"`
+	//closedVsOpenTicket       gorest.EndPoint `method:"GET" path:"/ClosedVsOpenTicket/{duration:int}" output:"string"`
+	//newTicketByUser          gorest.EndPoint `method:"GET" path:"/NewTicketByUser/{duration:int}" output:"string"`
+	//closedTicketByUser       gorest.EndPoint `method:"GET" path:"/ClosedTicketByUser/{duration:int}" output:"string"`
+	//closedVsOpenTicketByUser gorest.EndPoint `method:"GET" path:"/ClosedVsOpenTicketByUser/{duration:int}" output:"string"`
 }
 
 func (dashboardEvent DashBoardEvent) Event(data EventData) {
@@ -183,6 +184,13 @@ func (dashboardEvent DashBoardEvent) Reset() {
 
 	go OnReset()
 
+}
+
+func (dashboardEvent DashBoardEvent) ReloadMetaData() {
+
+	const longForm = "Jan 2, 2006 at 3:04pm (MST)"
+
+	go ReloadAllMetaData()
 }
 
 func (dashBoardEvent DashBoardEvent) MaxWaiting(window, param1, param2 string) int {
