@@ -10,6 +10,9 @@ import (
 )
 
 var dirPath string
+var redisPubSubIp string
+var redisPubSubPort string
+var redisPubSubPassword string
 var redisIp string
 var redisPort string
 var redisDb int
@@ -50,6 +53,9 @@ func GetDefaultConfig() Configuration {
 
 	if deferr != nil {
 		fmt.Println("error:", deferr)
+		defconfiguration.RedisPubSubIp = "127.0.0.1"
+		defconfiguration.RedisPubSubPort = "6389"
+		defconfiguration.RedisPubSubPassword = "DuoS123"
 		defconfiguration.RedisIp = "127.0.0.1"
 		defconfiguration.RedisPort = "6389"
 		defconfiguration.RedisDb = 8
@@ -86,6 +92,9 @@ func LoadDefaultConfig() {
 
 	if deferr != nil {
 		fmt.Println("error:", deferr)
+		redisPubSubIp = "127.0.0.1"
+		redisPubSubPort = "6389"
+		redisPubSubPassword = "DuoS123"
 		redisIp = "127.0.0.1"
 		redisPort = "6389"
 		redisDb = 8
@@ -104,7 +113,10 @@ func LoadDefaultConfig() {
 		securityPassword = "DuoS123"
 		cacheMachenism = "redis"
 	} else {
+		redisPubSubIp = fmt.Sprintf("%s:%s", defconfiguration.RedisPubSubIp, defconfiguration.RedisPort)
 		redisIp = fmt.Sprintf("%s:%s", defconfiguration.RedisIp, defconfiguration.RedisPort)
+		redisPubSubPort = defconfiguration.RedisPubSubPort
+		redisPubSubPassword = defconfiguration.RedisPubSubPassword
 		redisPort = defconfiguration.RedisPort
 		redisDb = defconfiguration.RedisDb
 		ardsRedisDb = defconfiguration.ArdsRedisDb
@@ -142,6 +154,9 @@ func LoadConfiguration() {
 	} else {
 		var converr error
 		defConfig := GetDefaultConfig()
+		redisPubSubIp = os.Getenv(envconfiguration.RedisPubSubIp)
+		redisPubSubPort = os.Getenv(envconfiguration.RedisPubSubPort)
+		redisPubSubPassword = os.Getenv(envconfiguration.RedisPubSubPassword)
 		redisIp = os.Getenv(envconfiguration.RedisIp)
 		redisPort = os.Getenv(envconfiguration.RedisPort)
 		redisDb, converr = strconv.Atoi(os.Getenv(envconfiguration.RedisDb))
@@ -160,6 +175,15 @@ func LoadConfiguration() {
 		securityPassword = os.Getenv(envconfiguration.SecurityPassword)
 		cacheMachenism = os.Getenv(envconfiguration.CacheMachenism)
 
+		if redisPubSubIp == "" {
+			redisPubSubIp = defConfig.RedisPubSubIp
+		}
+		if redisPubSubPort == "" {
+			redisPubSubPort = defConfig.RedisPubSubPort
+		}
+		if redisPubSubPassword == "" {
+			redisPubSubPassword = defConfig.RedisPubSubPassword
+		}
 		if redisIp == "" {
 			redisIp = defConfig.RedisIp
 		}
@@ -213,9 +237,11 @@ func LoadConfiguration() {
 		}
 
 		redisIp = fmt.Sprintf("%s:%s", redisIp, redisPort)
+		redisPubSubIp = fmt.Sprintf("%s:%s", redisPubSubIp, redisPubSubPort)
 		securityIp = fmt.Sprintf("%s:%s", securityIp, securityPort)
 	}
 
+	fmt.Println("redisPubSubIp:", redisPubSubIp)
 	fmt.Println("redisIp:", redisIp)
 	fmt.Println("redisDb:", redisDb)
 	fmt.Println("redisDb:", securityIp)

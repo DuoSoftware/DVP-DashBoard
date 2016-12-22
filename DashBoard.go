@@ -43,7 +43,7 @@ func PubSub() {
 			fmt.Println("Recovered in PubSub", r)
 		}
 	}()
-	c2, err := redis.Dial("tcp", redisIp)
+	c2, err := redis.Dial("tcp", redisPubSubIp)
 	errHndlr(err)
 	defer c2.Close()
 	//authServer
@@ -1170,11 +1170,11 @@ func GetQueueName(queueId string) string {
 			fmt.Println("Recovered in GetQueueName", r)
 		}
 	}()
-	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	client, err := redis.DialTimeout("tcp", redisPubSubIp, time.Duration(10)*time.Second)
 	errHndlr(err)
 	defer client.Close()
 	//authServer
-	authE := client.Cmd("auth", redisPassword)
+	authE := client.Cmd("auth", redisPubSubPassword)
 	errHndlr(authE.Err)
 	// select database
 	r := client.Cmd("select", ardsRedisDb)

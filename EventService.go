@@ -31,43 +31,49 @@ type MetaData struct {
 }
 
 type Configuration struct {
-	RedisIp          string
-	RedisPort        string
-	RedisDb          int
-	ArdsRedisDb      int
-	RedisPassword    string
-	Port             string
-	StatsDIp         string
-	StatsDPort       int
-	PgUser           string
-	PgPassword       string
-	PgDbname         string
-	PgHost           string
-	PgPort           int
-	SecurityIp       string
-	SecurityPort     string
-	SecurityPassword string
-	CacheMachenism   string
+	RedisPubSubIp       string
+	RedisPubSubPort     string
+	RedisPubSubPassword string
+	RedisIp             string
+	RedisPort           string
+	RedisDb             int
+	ArdsRedisDb         int
+	RedisPassword       string
+	Port                string
+	StatsDIp            string
+	StatsDPort          int
+	PgUser              string
+	PgPassword          string
+	PgDbname            string
+	PgHost              string
+	PgPort              int
+	SecurityIp          string
+	SecurityPort        string
+	SecurityPassword    string
+	CacheMachenism      string
 }
 
 type EnvConfiguration struct {
-	RedisIp          string
-	RedisPort        string
-	RedisDb          string
-	ArdsRedisDb      string
-	RedisPassword    string
-	Port             string
-	StatsDIp         string
-	StatsDPort       string
-	PgUser           string
-	PgPassword       string
-	PgDbname         string
-	PgHost           string
-	PgPort           string
-	SecurityIp       string
-	SecurityPort     string
-	SecurityPassword string
-	CacheMachenism   string
+	RedisPubSubIp       string
+	RedisPubSubPort     string
+	RedisPubSubPassword string
+	RedisIp             string
+	RedisPort           string
+	RedisDb             string
+	ArdsRedisDb         string
+	RedisPassword       string
+	Port                string
+	StatsDIp            string
+	StatsDPort          string
+	PgUser              string
+	PgPassword          string
+	PgDbname            string
+	PgHost              string
+	PgPort              string
+	SecurityIp          string
+	SecurityPort        string
+	SecurityPassword    string
+	CacheMachenism      string
 }
 
 type Result struct {
