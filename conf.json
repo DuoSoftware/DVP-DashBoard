@@ -3,7 +3,7 @@
 	"RedisPubSubIp":"45.55.142.207",
 	"RedisPubSubPort": "6389",
 	"RedisPubSubPassword":"DuoS123",
-    "RedisIp": "104.131.67.21",
+    "RedisIp": "172.16.11.7",
 	"RedisPort": "6379",
 	"RedisDb": 8,
 	"ArdsRedisDb": 6,
