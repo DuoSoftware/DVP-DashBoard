@@ -595,96 +595,111 @@ func OnReset() {
 	r := client.Cmd("select", redisDb)
 	errHndlr(r.Err)
 
-	val, _ := client.Cmd("keys", _searchName).List()
 	_windowList := make([]string, 0)
 	_keysToRemove := make([]string, 0)
 	_loginSessions := make([]string, 0)
 	_productivitySessions := make([]string, 0)
-	lenth := len(val)
-	fmt.Println(lenth)
-	if lenth > 0 {
-		for _, value := range val {
-			tmx, _ := client.Cmd("get", value).Str()
 
-			_windowList = AppendIfMissing(_windowList, tmx)
-		}
+	if cacheMachenism == "redis" {
 
-		for _, window := range _windowList {
+		val, _ := client.Cmd("keys", _searchName).List()
+		lenth := len(val)
+		fmt.Println(lenth)
+		if lenth > 0 {
+			for _, value := range val {
+				tmx, _ := client.Cmd("get", value).Str()
 
-			fmt.Println("WindowList_: ", window)
-
-			snapEventSearch := fmt.Sprintf("SNAPSHOT:*:%s:*", window)
-			snapHourlyEventSearch := fmt.Sprintf("SNAPSHOTHOURLY:*:%s:*", window)
-			concEventSearch := fmt.Sprintf("CONCURRENT:*:%s:*", window)
-			sessEventSearch := fmt.Sprintf("SESSION:*:%s:*", window)
-			totTimeEventSearch := fmt.Sprintf("TOTALTIME:*:%s:*", window)
-			totCountEventSearch := fmt.Sprintf("TOTALCOUNT:*:%s:*", window)
-			totCountHr := fmt.Sprintf("TOTALCOUNTHR:*:%s:*", window)
-			maxTimeEventSearch := fmt.Sprintf("MAXTIME:*:%s:*", window)
-			thresholdEventSearch := fmt.Sprintf("THRESHOLD:*:%s:*", window)
-			thresholdBDEventSearch := fmt.Sprintf("THRESHOLDBREAKDOWN:*:%s:*", window)
-
-			snapVal, _ := client.Cmd("keys", snapEventSearch).List()
-			_keysToRemove = AppendListIfMissing(_keysToRemove, snapVal)
-
-			snapHourlyVal, _ := client.Cmd("keys", snapHourlyEventSearch).List()
-			_keysToRemove = AppendListIfMissing(_keysToRemove, snapHourlyVal)
-
-			concVal, _ := client.Cmd("keys", concEventSearch).List()
-			_keysToRemove = AppendListIfMissing(_keysToRemove, concVal)
-
-			sessVal, _ := client.Cmd("keys", sessEventSearch).List()
-			for _, sess := range sessVal {
-				sessItems := strings.Split(sess, ":")
-				if len(sessItems) >= 4 && sessItems[3] == "LOGIN" {
-					_loginSessions = AppendIfMissing(_loginSessions, sess)
-				} else if len(sessItems) >= 4 && sessItems[3] == "PRODUCTIVITY" {
-					_productivitySessions = AppendIfMissing(_productivitySessions, sess)
-				} else {
-					_keysToRemove = AppendIfMissing(_keysToRemove, sess)
-				}
+				_windowList = AppendIfMissing(_windowList, tmx)
 			}
 
-			totTimeVal, _ := client.Cmd("keys", totTimeEventSearch).List()
-			_keysToRemove = AppendListIfMissing(_keysToRemove, totTimeVal)
-
-			totCountVal, _ := client.Cmd("keys", totCountEventSearch).List()
-			_keysToRemove = AppendListIfMissing(_keysToRemove, totCountVal)
-
-			totCountHrVal, _ := client.Cmd("keys", totCountHr).List()
-			_keysToRemove = AppendListIfMissing(_keysToRemove, totCountHrVal)
-
-			maxTimeVal, _ := client.Cmd("keys", maxTimeEventSearch).List()
-			_keysToRemove = AppendListIfMissing(_keysToRemove, maxTimeVal)
-
-			thresholdCountVal, _ := client.Cmd("keys", thresholdEventSearch).List()
-			_keysToRemove = AppendListIfMissing(_keysToRemove, thresholdCountVal)
-
-			thresholdBDCountVal, _ := client.Cmd("keys", thresholdBDEventSearch).List()
-			_keysToRemove = AppendListIfMissing(_keysToRemove, thresholdBDCountVal)
-
 		}
-		tm := time.Now()
-		for _, remove := range _keysToRemove {
-			fmt.Println("remove_: ", remove)
-			client.Cmd("del", remove)
-		}
-		for _, session := range _loginSessions {
-			fmt.Println("readdSession: ", session)
-			client.Cmd("hset", session, "time", tm.Format(layout))
-			sessItemsL := strings.Split(session, ":")
-			if len(sessItemsL) >= 7 {
-				LtotTimeEventName := fmt.Sprintf("TOTALTIME:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5], sessItemsL[6])
-				LtotCountEventName := fmt.Sprintf("TOTALCOUNT:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5], sessItemsL[6])
-				client.Cmd("set", LtotTimeEventName, 0)
-				client.Cmd("set", LtotCountEventName, 0)
+
+	} else {
+		fmt.Println("---------------------Use Memoey----------------------")
+		for _, dmi := range dashboardMetaInfo {
+			if dmi.FlushEnable == true {
+				_windowList = AppendIfMissing(_windowList, dmi.WindowName)
 			}
 		}
-		/*for _, prosession := range _productivitySessions {
-			fmt.Println("readdSession: ", prosession)
-			client.Cmd("hset", prosession, "time", tm.Format(layout))
-		}*/
+
+		fmt.Println("Windoes To Flush:: ", _windowList)
 	}
+
+	for _, window := range _windowList {
+
+		fmt.Println("WindowList_: ", window)
+
+		snapEventSearch := fmt.Sprintf("SNAPSHOT:*:%s:*", window)
+		snapHourlyEventSearch := fmt.Sprintf("SNAPSHOTHOURLY:*:%s:*", window)
+		concEventSearch := fmt.Sprintf("CONCURRENT:*:%s:*", window)
+		sessEventSearch := fmt.Sprintf("SESSION:*:%s:*", window)
+		totTimeEventSearch := fmt.Sprintf("TOTALTIME:*:%s:*", window)
+		totCountEventSearch := fmt.Sprintf("TOTALCOUNT:*:%s:*", window)
+		totCountHr := fmt.Sprintf("TOTALCOUNTHR:*:%s:*", window)
+		maxTimeEventSearch := fmt.Sprintf("MAXTIME:*:%s:*", window)
+		thresholdEventSearch := fmt.Sprintf("THRESHOLD:*:%s:*", window)
+		thresholdBDEventSearch := fmt.Sprintf("THRESHOLDBREAKDOWN:*:%s:*", window)
+
+		snapVal, _ := client.Cmd("keys", snapEventSearch).List()
+		_keysToRemove = AppendListIfMissing(_keysToRemove, snapVal)
+
+		snapHourlyVal, _ := client.Cmd("keys", snapHourlyEventSearch).List()
+		_keysToRemove = AppendListIfMissing(_keysToRemove, snapHourlyVal)
+
+		concVal, _ := client.Cmd("keys", concEventSearch).List()
+		_keysToRemove = AppendListIfMissing(_keysToRemove, concVal)
+
+		sessVal, _ := client.Cmd("keys", sessEventSearch).List()
+		for _, sess := range sessVal {
+			sessItems := strings.Split(sess, ":")
+			if len(sessItems) >= 4 && sessItems[3] == "LOGIN" {
+				_loginSessions = AppendIfMissing(_loginSessions, sess)
+			} else if len(sessItems) >= 4 && sessItems[3] == "PRODUCTIVITY" {
+				_productivitySessions = AppendIfMissing(_productivitySessions, sess)
+			} else {
+				_keysToRemove = AppendIfMissing(_keysToRemove, sess)
+			}
+		}
+
+		totTimeVal, _ := client.Cmd("keys", totTimeEventSearch).List()
+		_keysToRemove = AppendListIfMissing(_keysToRemove, totTimeVal)
+
+		totCountVal, _ := client.Cmd("keys", totCountEventSearch).List()
+		_keysToRemove = AppendListIfMissing(_keysToRemove, totCountVal)
+
+		totCountHrVal, _ := client.Cmd("keys", totCountHr).List()
+		_keysToRemove = AppendListIfMissing(_keysToRemove, totCountHrVal)
+
+		maxTimeVal, _ := client.Cmd("keys", maxTimeEventSearch).List()
+		_keysToRemove = AppendListIfMissing(_keysToRemove, maxTimeVal)
+
+		thresholdCountVal, _ := client.Cmd("keys", thresholdEventSearch).List()
+		_keysToRemove = AppendListIfMissing(_keysToRemove, thresholdCountVal)
+
+		thresholdBDCountVal, _ := client.Cmd("keys", thresholdBDEventSearch).List()
+		_keysToRemove = AppendListIfMissing(_keysToRemove, thresholdBDCountVal)
+
+	}
+	tm := time.Now()
+	for _, remove := range _keysToRemove {
+		fmt.Println("remove_: ", remove)
+		client.Cmd("del", remove)
+	}
+	for _, session := range _loginSessions {
+		fmt.Println("readdSession: ", session)
+		client.Cmd("hset", session, "time", tm.Format(layout))
+		sessItemsL := strings.Split(session, ":")
+		if len(sessItemsL) >= 7 {
+			LtotTimeEventName := fmt.Sprintf("TOTALTIME:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5], sessItemsL[6])
+			LtotCountEventName := fmt.Sprintf("TOTALCOUNT:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5], sessItemsL[6])
+			client.Cmd("set", LtotTimeEventName, 0)
+			client.Cmd("set", LtotCountEventName, 0)
+		}
+	}
+	/*for _, prosession := range _productivitySessions {
+		fmt.Println("readdSession: ", prosession)
+		client.Cmd("hset", prosession, "time", tm.Format(layout))
+	}*/
 }
 
 func OnSetDailySummary(_date time.Time) {
