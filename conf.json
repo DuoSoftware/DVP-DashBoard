@@ -1,14 +1,22 @@
 {
 	"Port":"2226",
-    "RedisIp": "45.55.142.207",
-	"RedisPort": "6389",
+	"RedisPubSubIp":"45.55.142.207",
+	"RedisPubSubPort": "6389",
+	"RedisPubSubPassword":"DuoS123",
+    "RedisIp": "104.131.67.21",
+	"RedisPort": "6379",
 	"RedisDb": 8,
+	"ArdsRedisDb": 6,
 	"RedisPassword":"DuoS123",
 	"StatsDIp":"45.55.142.207",
 	"StatsDPort":8125,
 	"PgUser":"duo",
 	"pgPassword":"DuoS123",
-	"PgDbname":"dvpdb",
-	"PgHost":"localhost",
-	"PgPort":5432
+	"PgDbname":"duo",
+	"PgHost":"104.236.231.11",
+	"PgPort":5432,
+	"SecurityIp":"45.55.142.207",
+	"SecurityPort":"6389",
+	"SecurityPassword":"DuoS123",
+	"CacheMachenism": "memory"
 }
