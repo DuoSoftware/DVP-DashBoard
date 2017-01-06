@@ -336,6 +336,14 @@ func OnMeta(_class, _type, _category, _window string, count int, _flushEnable, _
 
 func OnEvent(_tenent, _company int, _class, _type, _category, _session, _parameter1, _parameter2 string) {
 
+	if _parameter2 == "" || _parameter2 == "*" {
+		fmt.Println("Use Default Param2")
+		_parameter2 = "param2"
+	}
+	if _parameter1 == "" || _parameter1 == "*" {
+		fmt.Println("Use Default Param1")
+		_parameter1 = "param1"
+	}
 	temp := fmt.Sprintf("Tenant:%d Company:%d Class:%s Type:%s Category:%s Session:%s Param1:%s Param2:%s", _tenent, _company, _class, _type, _category, _session, _parameter1, _parameter2)
 	fmt.Println("OnEvent: ", temp)
 
@@ -423,20 +431,30 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		//	log.Close()
 		//}
 
-		snapEventName := fmt.Sprintf("SNAPSHOT:%d:%d:%s:%s:%s:%s:%d:%d", _tenent, _company, window, _class, _type, _category, tm.Hour(), tm.Minute())
-		snapHourlyEventName := fmt.Sprintf("SNAPSHOTHOURLY:%d:%d:%s:%s:%s:%s:%d", _tenent, _company, window, _class, _type, _category, tm.Hour())
-		concEventName := fmt.Sprintf("CONCURRENT:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
+		//snapEventName := fmt.Sprintf("SNAPSHOT:%d:%d:%s:%s:%s:%s:%d:%d", _tenent, _company, window, _class, _type, _category, tm.Hour(), tm.Minute())
+		//snapHourlyEventName := fmt.Sprintf("SNAPSHOTHOURLY:%d:%d:%s:%s:%s:%s:%d", _tenent, _company, window, _class, _type, _category, tm.Hour())
+
 		sessEventName := fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s", _tenent, _company, window, _session, _parameter1, _parameter2)
+		concEventName := fmt.Sprintf("CONCURRENT:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 		totTimeEventName := fmt.Sprintf("TOTALTIME:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 		totCountEventName := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
+
 		totCountHrEventName := fmt.Sprintf("TOTALCOUNTHR:%d:%d:%s:%s:%s:%d:%d", _tenent, _company, window, _parameter1, _parameter2, tm.Hour(), tm.Minute())
 		maxTimeEventName := fmt.Sprintf("MAXTIME:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 		thresholdEventName := fmt.Sprintf("THRESHOLD:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 		thresholdBreakDownEventName := fmt.Sprintf("THRESHOLDBREAKDOWN:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 
-		if _parameter1 == "" {
-			_parameter1 = "empty"
-		}
+		concEventNameWithoutParams := fmt.Sprintf("CONCURRENTWOPARAMS:%d:%d:%s", _tenent, _company, window)
+		totTimeEventNameWithoutParams := fmt.Sprintf("TOTALTIMEWOPARAMS:%d:%d:%s", _tenent, _company, window)
+		totCountEventNameWithoutParams := fmt.Sprintf("TOTALCOUNTWOPARAMS:%d:%d:%s", _tenent, _company, window)
+
+		concEventNameWithSingleParam := fmt.Sprintf("CONCURRENTWSPARAM:%d:%d:%s:%s", _tenent, _company, window, _parameter1)
+		totTimeEventNameWithSingleParam := fmt.Sprintf("TOTALTIMEWSPARAM:%d:%d:%s:%s", _tenent, _company, window, _parameter1)
+		totCountEventNameWithSingleParam := fmt.Sprintf("TOTALCOUNTWSPARAM:%d:%d:%s:%s", _tenent, _company, window, _parameter1)
+
+		//if _parameter1 == "" {
+		//	_parameter1 = "empty"
+		//}
 
 		var statsDPath string
 		switch _class {
@@ -455,8 +473,8 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		totCountStatName := fmt.Sprintf("event.%s.totalcount.%d.%d.%s.%s", statsDPath, _tenent, _company, _parameter1, window)
 		totTimeStatName := fmt.Sprintf("event.%s.totaltime.%d.%d.%s.%s", statsDPath, _tenent, _company, _parameter1, window)
 
-		client.Cmd("incr", snapEventName)
-		client.Cmd("incr", snapHourlyEventName)
+		//client.Cmd("incr", snapEventName)
+		//client.Cmd("incr", snapHourlyEventName)
 
 		if iinc > 0 {
 			if useSession == "true" {
@@ -464,6 +482,13 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 			}
 			ccount, _ := client.Cmd("incr", concEventName).Int()
 			tcount, _ := client.Cmd("incr", totCountEventName).Int()
+
+			client.Cmd("incr", concEventNameWithoutParams).Int()
+			client.Cmd("incr", totCountEventNameWithoutParams).Int()
+
+			client.Cmd("incr", concEventNameWithSingleParam).Int()
+			client.Cmd("incr", totCountEventNameWithSingleParam).Int()
+
 			client.Cmd("incr", totCountHrEventName)
 
 			fmt.Println("tcount ", tcount)
@@ -491,11 +516,18 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 				isdel, _ := client.Cmd("del", sessEvents[0]).Int()
 				if isdel == 1 {
 					rinc, _ := client.Cmd("incrby", totTimeEventName, timeDiff).Int()
+					client.Cmd("incrby", totTimeEventNameWithoutParams, timeDiff).Int()
+					client.Cmd("incrby", totTimeEventNameWithSingleParam, timeDiff).Int()
+
 					dccount, _ := client.Cmd("decr", concEventName).Int()
+					client.Cmd("decr", concEventNameWithoutParams).Int()
+					client.Cmd("decr", concEventNameWithSingleParam).Int()
 
 					if dccount < 0 {
 						fmt.Println("reset minus concurrent count:: incr by 1 :: ", concEventName)
 						dccount, _ = client.Cmd("incr", concEventName).Int()
+						client.Cmd("incr", concEventNameWithoutParams).Int()
+						client.Cmd("incr", concEventNameWithSingleParam).Int()
 					}
 
 					oldMaxTime, _ := client.Cmd("get", maxTimeEventName).Int()
