@@ -719,11 +719,14 @@ func OnReset() {
 		thresholdBDCountVal, _ := client.Cmd("keys", thresholdBDEventSearch).List()
 		_keysToRemove = AppendListIfMissing(_keysToRemove, thresholdBDCountVal)
 
-		_keysToRemove = AppendIfMissing(_keysToRemove, concEventNameWithoutParams)
+		cewop, _ := client.Cmd("keys", concEventNameWithoutParams).List()
+		_keysToRemove = AppendListIfMissing(_keysToRemove, cewop)
 
-		_keysToRemove = AppendIfMissing(_keysToRemove, totTimeEventNameWithoutParams)
+		ttwop, _ := client.Cmd("keys", totTimeEventNameWithoutParams).List()
+		_keysToRemove = AppendListIfMissing(_keysToRemove, ttwop)
 
-		_keysToRemove = AppendIfMissing(_keysToRemove, totCountEventNameWithoutParams)
+		tcewop, _ := client.Cmd("keys", totCountEventNameWithoutParams).List()
+		_keysToRemove = AppendListIfMissing(_keysToRemove, tcewop)
 
 		cewsp, _ := client.Cmd("keys", concEventNameWithSingleParam).List()
 		_keysToRemove = AppendListIfMissing(_keysToRemove, cewsp)
