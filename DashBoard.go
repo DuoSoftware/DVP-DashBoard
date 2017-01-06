@@ -750,8 +750,17 @@ func OnReset() {
 		if len(sessItemsL) >= 7 {
 			LtotTimeEventName := fmt.Sprintf("TOTALTIME:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5], sessItemsL[6])
 			LtotCountEventName := fmt.Sprintf("TOTALCOUNT:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5], sessItemsL[6])
+			LtotTimeEventNameWithoutParams := fmt.Sprintf("TOTALTIMEWOPARAMS:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3])
+			LtotCountEventNameWithoutParams := fmt.Sprintf("TOTALCOUNTWOPARAMS:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3])
+			LtotTimeEventNameWithSingleParam := fmt.Sprintf("TOTALTIMEWSPARAM:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5])
+			LtotCountEventNameWithSingleParam := fmt.Sprintf("TOTALCOUNTWSPARAM:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5])
+
 			client.Cmd("set", LtotTimeEventName, 0)
 			client.Cmd("set", LtotCountEventName, 0)
+			client.Cmd("set", LtotTimeEventNameWithoutParams, 0)
+			client.Cmd("set", LtotCountEventNameWithoutParams, 0)
+			client.Cmd("set", LtotTimeEventNameWithSingleParam, 0)
+			client.Cmd("set", LtotCountEventNameWithSingleParam, 0)
 		}
 	}
 	/*for _, prosession := range _productivitySessions {
