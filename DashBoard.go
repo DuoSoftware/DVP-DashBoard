@@ -672,9 +672,9 @@ func OnReset() {
 		thresholdEventSearch := fmt.Sprintf("THRESHOLD:*:%s:*", window)
 		thresholdBDEventSearch := fmt.Sprintf("THRESHOLDBREAKDOWN:*:%s:*", window)
 
-		concEventNameWithoutParams := fmt.Sprintf("CONCURRENTWOPARAMS:*:%s:*", window)
-		totTimeEventNameWithoutParams := fmt.Sprintf("TOTALTIMEWOPARAMS:*:%s:*", window)
-		totCountEventNameWithoutParams := fmt.Sprintf("TOTALCOUNTWOPARAMS:*:%s:*", window)
+		concEventNameWithoutParams := fmt.Sprintf("CONCURRENTWOPARAMS:*:%s", window)
+		totTimeEventNameWithoutParams := fmt.Sprintf("TOTALTIMEWOPARAMS:*:%s", window)
+		totCountEventNameWithoutParams := fmt.Sprintf("TOTALCOUNTWOPARAMS:*:%s", window)
 
 		concEventNameWithSingleParam := fmt.Sprintf("CONCURRENTWSPARAM:*:%s:*", window)
 		totTimeEventNameWithSingleParam := fmt.Sprintf("TOTALTIMEWSPARAM:*:%s:*", window)
@@ -719,14 +719,11 @@ func OnReset() {
 		thresholdBDCountVal, _ := client.Cmd("keys", thresholdBDEventSearch).List()
 		_keysToRemove = AppendListIfMissing(_keysToRemove, thresholdBDCountVal)
 
-		cewop, _ := client.Cmd("keys", concEventNameWithoutParams).List()
-		_keysToRemove = AppendListIfMissing(_keysToRemove, cewop)
+		_keysToRemove = AppendIfMissing(_keysToRemove, concEventNameWithoutParams)
 
-		ttwop, _ := client.Cmd("keys", totTimeEventNameWithoutParams).List()
-		_keysToRemove = AppendListIfMissing(_keysToRemove, ttwop)
+		_keysToRemove = AppendIfMissing(_keysToRemove, totTimeEventNameWithoutParams)
 
-		tcewop, _ := client.Cmd("keys", totCountEventNameWithoutParams).List()
-		_keysToRemove = AppendListIfMissing(_keysToRemove, tcewop)
+		_keysToRemove = AppendIfMissing(_keysToRemove, totCountEventNameWithoutParams)
 
 		cewsp, _ := client.Cmd("keys", concEventNameWithSingleParam).List()
 		_keysToRemove = AppendListIfMissing(_keysToRemove, cewsp)
