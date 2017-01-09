@@ -29,6 +29,11 @@ var pgPort int
 var securityIp string
 var securityPort string
 var securityPassword string
+var mongoIp string
+var mongoPort string
+var mongoDbname string
+var mongoPassword string
+var mongoUser string
 var cacheMachenism string
 
 func GetDirPath() string {
@@ -72,6 +77,11 @@ func GetDefaultConfig() Configuration {
 		defconfiguration.SecurityIp = "45.55.142.207"
 		defconfiguration.SecurityPort = "6389"
 		defconfiguration.SecurityPassword = "DuoS123"
+		defconfiguration.MongoIp = "45.55.142.207"
+		defconfiguration.MongoPort = "27017"
+		defconfiguration.MongoDbname = "dvpdb"
+		defconfiguration.MongoPassword = "DuoS123"
+		defconfiguration.MongoUser = "duo"
 		defconfiguration.CacheMachenism = "redis"
 	}
 
@@ -111,6 +121,11 @@ func LoadDefaultConfig() {
 		securityIp = "45.55.142.207"
 		securityPort = "6389"
 		securityPassword = "DuoS123"
+		mongoIp = "45.55.142.207"
+		mongoPort = "27017"
+		mongoDbname = "dvpdb"
+		mongoPassword = "DuoS123"
+		mongoUser = "duo"
 		cacheMachenism = "redis"
 	} else {
 		redisPubSubIp = fmt.Sprintf("%s:%s", defconfiguration.RedisPubSubIp, defconfiguration.RedisPort)
@@ -132,6 +147,11 @@ func LoadDefaultConfig() {
 		securityIp = defconfiguration.SecurityIp
 		securityPort = defconfiguration.SecurityPort
 		securityPassword = defconfiguration.SecurityPassword
+		mongoIp = defconfiguration.MongoIp
+		mongoPort = defconfiguration.MongoPort
+		mongoDbname = defconfiguration.MongoDbname
+		mongoPassword = defconfiguration.MongoPassword
+		mongoUser = defconfiguration.MongoUser
 		cacheMachenism = defconfiguration.CacheMachenism
 	}
 }
@@ -173,6 +193,11 @@ func LoadConfiguration() {
 		securityIp = os.Getenv(envconfiguration.SecurityIp)
 		securityPort = os.Getenv(envconfiguration.SecurityPort)
 		securityPassword = os.Getenv(envconfiguration.SecurityPassword)
+		mongoIp = os.Getenv(envconfiguration.MongoIp)
+		mongoPort = os.Getenv(envconfiguration.MongoPort)
+		mongoDbname = os.Getenv(envconfiguration.MongoDbname)
+		mongoPassword = os.Getenv(envconfiguration.MongoPassword)
+		mongoUser = os.Getenv(envconfiguration.MongoUser)
 		cacheMachenism = os.Getenv(envconfiguration.CacheMachenism)
 
 		if redisPubSubIp == "" {
@@ -231,6 +256,21 @@ func LoadConfiguration() {
 		}
 		if securityPassword == "" {
 			securityPassword = defConfig.SecurityPassword
+		}
+		if mongoIp == "" {
+			mongoIp = defConfig.MongoIp
+		}
+		if mongoPort == "" {
+			mongoPort = defConfig.MongoPort
+		}
+		if mongoDbname == "" {
+			mongoDbname = defConfig.MongoDbname
+		}
+		if mongoUser == "" {
+			mongoUser = defConfig.MongoUser
+		}
+		if mongoPassword == "" {
+			mongoPassword = defConfig.MongoPassword
 		}
 		if cacheMachenism == "" {
 			cacheMachenism = defConfig.CacheMachenism

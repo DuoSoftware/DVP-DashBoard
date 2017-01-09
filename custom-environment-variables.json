@@ -18,5 +18,10 @@
 	"SecurityIp":"SYS_REDIS_HOST",
 	"SecurityPort":"SYS_REDIS_PORT",
 	"SecurityPassword":"SYS_REDIS_PASSWORD",
+	"MongoIp":"SYS_MONGO_HOST",
+    "MongoPort":"SYS_MONGO_PORT",
+    "MongoDbname":"SYS_MONGO_DB",
+    "MongoPassword":"SYS_MONGO_PASSWORD",
+    "MongoUser":"SYS_MONGO_USER",
 	"CacheMachenism": "HOST_DASHBOARD_CACHE"
 }

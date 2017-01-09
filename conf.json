@@ -18,5 +18,10 @@
 	"SecurityIp":"45.55.142.207",
 	"SecurityPort":"6389",
 	"SecurityPassword":"DuoS123",
+	"MongoIp":"45.55.142.207",
+    "MongoPort":"27017",
+    "MongoDbname":"dvpdb",
+    "MongoPassword":"DuoS123",
+    "MongoUser":"duo",
 	"CacheMachenism": "memory"
 }

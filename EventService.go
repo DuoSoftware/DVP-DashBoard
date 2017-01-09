@@ -26,6 +26,7 @@ type MetaData struct {
 	Count           int
 	FlushEnable     bool
 	UseSession      bool
+	PersistSession  bool
 	ThresholdEnable bool
 	ThresholdValue  int
 }
@@ -50,6 +51,11 @@ type Configuration struct {
 	SecurityIp          string
 	SecurityPort        string
 	SecurityPassword    string
+	MongoIp             string
+	MongoPort           string
+	MongoDbname         string
+	MongoPassword       string
+	MongoUser           string
 	CacheMachenism      string
 }
 
@@ -73,6 +79,11 @@ type EnvConfiguration struct {
 	SecurityIp          string
 	SecurityPort        string
 	SecurityPassword    string
+	MongoIp             string
+	MongoPort           string
+	MongoDbname         string
+	MongoPassword       string
+	MongoUser           string
 	CacheMachenism      string
 }
 
@@ -122,6 +133,16 @@ type ThresholdBreakDownDetail struct {
 	ThresholdCount int
 	SummaryDate    time.Time
 	Hour           int
+}
+
+type SessionPersistence struct {
+	Tenant  int
+	Company int
+	Window  string
+	Session string
+	Param1  string
+	Param2  string
+	Time    string
 }
 
 type DashBoardEvent struct {
@@ -178,7 +199,7 @@ func (dashboardEvent DashBoardEvent) Meta(data MetaData) {
 	fmt.Println(data.EventType)
 	fmt.Println(data.EventCategory)
 
-	go OnMeta(data.EventClass, data.EventType, data.EventCategory, data.WindowName, data.Count, data.FlushEnable, data.UseSession, data.ThresholdEnable, data.ThresholdValue)
+	go OnMeta(data.EventClass, data.EventType, data.EventCategory, data.WindowName, data.Count, data.FlushEnable, data.UseSession, data.PersistSession, data.ThresholdEnable, data.ThresholdValue)
 
 	return
 

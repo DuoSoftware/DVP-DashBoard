@@ -138,7 +138,7 @@ func PersistsThresholdBreakDown(_summary ThresholdBreakDownDetail) {
 	db.Close()
 }
 
-func PersistsMetaData(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _thresholdEnable bool, _thresholdValue int) {
+func PersistsMetaData(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _persistSession, _thresholdEnable bool, _thresholdValue int) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in PersistsMetaData", r)
@@ -150,7 +150,7 @@ func PersistsMetaData(_class, _type, _category, _window string, count int, _flus
 		fmt.Println(err.Error())
 	}
 
-	result, err1 := db.Exec("INSERT INTO \"Dashboard_MetaData\"(\"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\", \"ThresholdEnable\", \"ThresholdValue\", \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)", _class, _type, _category, _window, count, _flushEnable, _useSession, _thresholdEnable, _thresholdValue, time.Now().Local(), time.Now().Local())
+	result, err1 := db.Exec("INSERT INTO \"Dashboard_MetaData\"(\"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\", \"PersistSession\", \"ThresholdEnable\", \"ThresholdValue\", \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)", _class, _type, _category, _window, count, _flushEnable, _useSession, _persistSession, _thresholdEnable, _thresholdValue, time.Now().Local(), time.Now().Local())
 	if err1 != nil {
 		fmt.Println(err1.Error())
 	} else {
@@ -182,11 +182,12 @@ func ReloadMetaData(_class, _type, _category string) bool {
 	var WindowName string
 	var Count int
 	var FlushEnable bool
+	var PersistSession bool
 	var UseSession bool
 	var ThresholdEnable bool
 	var ThresholdValue int
 
-	err1 := db.QueryRow("SELECT \"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\", \"ThresholdEnable\", \"ThresholdValue\" FROM \"Dashboard_MetaData\" WHERE \"EventClass\"=$1 AND \"EventType\"=$2 AND \"EventCategory\"=$3", _class, _type, _category).Scan(&EventClass, &EventType, &EventCategory, &WindowName, &Count, &FlushEnable, &UseSession, &ThresholdEnable, &ThresholdValue)
+	err1 := db.QueryRow("SELECT \"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\", \"PersistSession\", \"ThresholdEnable\", \"ThresholdValue\" FROM \"Dashboard_MetaData\" WHERE \"EventClass\"=$1 AND \"EventType\"=$2 AND \"EventCategory\"=$3", _class, _type, _category).Scan(&EventClass, &EventType, &EventCategory, &WindowName, &Count, &FlushEnable, &UseSession, &PersistSession, &ThresholdEnable, &ThresholdValue)
 	switch {
 	case err1 == sql.ErrNoRows:
 		fmt.Println("No metaData with that ID.")
@@ -202,9 +203,10 @@ func ReloadMetaData(_class, _type, _category string) bool {
 		fmt.Printf("Count is %d\n", Count)
 		fmt.Printf("FlushEnable is %t\n", FlushEnable)
 		fmt.Printf("UseSession is %t\n", UseSession)
+		fmt.Printf("PersistSession is %t\n", PersistSession)
 		fmt.Printf("ThresholdEnable is %t\n", ThresholdEnable)
 		fmt.Printf("ThresholdValue is %d\n", ThresholdValue)
-		CacheMetaData(EventClass, EventType, EventCategory, WindowName, Count, FlushEnable, UseSession, ThresholdEnable, ThresholdValue)
+		CacheMetaData(EventClass, EventType, EventCategory, WindowName, Count, FlushEnable, UseSession, PersistSession, ThresholdEnable, ThresholdValue)
 		result = true
 	}
 	db.Close()
@@ -232,12 +234,13 @@ func ReloadAllMetaData() bool {
 	var WindowName string
 	var Count int
 	var FlushEnable bool
+	var PersistSession bool
 	var UseSession bool
 	var ThresholdEnable bool
 	var ThresholdValue int
 
 	//err1 := db.QueryRow("SELECT \"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\", \"ThresholdEnable\", \"ThresholdValue\" FROM \"Dashboard_MetaData\"").Scan(&EventClass, &EventType, &EventCategory, &WindowName, &Count, &FlushEnable, &UseSession, &ThresholdEnable, &ThresholdValue)
-	dataRows, err1 := db.Query("SELECT \"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\", \"ThresholdEnable\", \"ThresholdValue\" FROM \"Dashboard_MetaData\"")
+	dataRows, err1 := db.Query("SELECT \"EventClass\", \"EventType\", \"EventCategory\", \"WindowName\", \"Count\", \"FlushEnable\", \"UseSession\", \"PersistSession\", \"ThresholdEnable\", \"ThresholdValue\" FROM \"Dashboard_MetaData\"")
 	switch {
 	case err1 == sql.ErrNoRows:
 		fmt.Println("No metaData with that ID.")
@@ -248,7 +251,7 @@ func ReloadAllMetaData() bool {
 	default:
 		dashboardMetaInfo = make([]MetaData, 0)
 		for dataRows.Next() {
-			dataRows.Scan(&EventClass, &EventType, &EventCategory, &WindowName, &Count, &FlushEnable, &UseSession, &ThresholdEnable, &ThresholdValue)
+			dataRows.Scan(&EventClass, &EventType, &EventCategory, &WindowName, &Count, &FlushEnable, &UseSession, &PersistSession, &ThresholdEnable, &ThresholdValue)
 
 			fmt.Printf("EventClass is %s\n", EventClass)
 			fmt.Printf("EventType is %s\n", EventType)
@@ -257,11 +260,12 @@ func ReloadAllMetaData() bool {
 			fmt.Printf("Count is %d\n", Count)
 			fmt.Printf("FlushEnable is %t\n", FlushEnable)
 			fmt.Printf("UseSession is %t\n", UseSession)
+			fmt.Printf("PersistSession is %t\n", PersistSession)
 			fmt.Printf("ThresholdEnable is %t\n", ThresholdEnable)
 			fmt.Printf("ThresholdValue is %d\n", ThresholdValue)
 
 			if cacheMachenism == "redis" {
-				CacheMetaData(EventClass, EventType, EventCategory, WindowName, Count, FlushEnable, UseSession, ThresholdEnable, ThresholdValue)
+				CacheMetaData(EventClass, EventType, EventCategory, WindowName, Count, FlushEnable, UseSession, PersistSession, ThresholdEnable, ThresholdValue)
 			} else {
 				var mData MetaData
 				mData.EventClass = EventClass
@@ -272,6 +276,7 @@ func ReloadAllMetaData() bool {
 				mData.ThresholdEnable = ThresholdEnable
 				mData.ThresholdValue = ThresholdValue
 				mData.UseSession = UseSession
+				mData.PersistSession = PersistSession
 				mData.WindowName = WindowName
 
 				dashboardMetaInfo = append(dashboardMetaInfo, mData)
@@ -285,7 +290,7 @@ func ReloadAllMetaData() bool {
 	return result
 }
 
-func CacheMetaData(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _thresholdEnable bool, _thresholdValue int) {
+func CacheMetaData(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _persistSession, _thresholdEnable bool, _thresholdValue int) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in CacheMetaData", r)
@@ -295,6 +300,7 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 	_incName := fmt.Sprintf("META:%s:%s:%s:COUNT", _class, _type, _category)
 	_flushName := fmt.Sprintf("META:%s:%s:%s:FLUSH", _class, _type, _category)
 	_useSessionName := fmt.Sprintf("META:%s:%s:%s:USESESSION", _class, _type, _category)
+	_persistSessionName := fmt.Sprintf("META:%s:%s:%s:PERSISTSESSION", _class, _type, _category)
 	_thresholdEnableName := fmt.Sprintf("META:%s:%s:%s:thresholdEnable", _class, _type, _category)
 
 	defer func() {
@@ -325,13 +331,14 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 	}
 
 	client.Cmd("setnx", _useSessionName, strconv.FormatBool(_useSession))
+	client.Cmd("setnx", _persistSessionName, strconv.FormatBool(_persistSession))
 	client.Cmd("setnx", _windowName, _window)
 	client.Cmd("setnx", _incName, strconv.Itoa(count))
 }
 
-func OnMeta(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _thresholdEnable bool, _thresholdValue int) {
-	CacheMetaData(_class, _type, _category, _window, count, _flushEnable, _useSession, _thresholdEnable, _thresholdValue)
-	PersistsMetaData(_class, _type, _category, _window, count, _flushEnable, _useSession, _thresholdEnable, _thresholdValue)
+func OnMeta(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _persistSession, _thresholdEnable bool, _thresholdValue int) {
+	CacheMetaData(_class, _type, _category, _window, count, _flushEnable, _useSession, _persistSession, _thresholdEnable, _thresholdValue)
+	PersistsMetaData(_class, _type, _category, _window, count, _flushEnable, _useSession, _persistSession, _thresholdEnable, _thresholdValue)
 }
 
 func OnEvent(_tenent, _company int, _class, _type, _category, _session, _parameter1, _parameter2 string) {
@@ -368,10 +375,10 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 	r := client.Cmd("select", redisDb)
 	errHndlr(r.Err)
 
-	var window, sinc, useSession, threshold string
+	var window, sinc, useSession, persistSession, threshold string
 	var iinc int
 	var thresholdEnabled bool
-	var _werr, _ierr, _userr, _thresherr, berr error
+	var _werr, _ierr, _userr, _peerr, _thresherr, berr error
 
 	if cacheMachenism == "redis" {
 		fmt.Println("---------------------Use Redis----------------------")
@@ -379,6 +386,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		_window := fmt.Sprintf("META:%s:%s:%s:WINDOW", _class, _type, _category)
 		_inc := fmt.Sprintf("META:%s:%s:%s:COUNT", _class, _type, _category)
 		_useSessionName := fmt.Sprintf("META:%s:%s:%s:USESESSION", _class, _type, _category)
+		_persistSessionName := fmt.Sprintf("META:%s:%s:%s:PERSISTSESSION", _class, _type, _category)
 		_thresholdEnableName := fmt.Sprintf("META:%s:%s:%s:thresholdEnable", _class, _type, _category)
 
 		isWindowExist, _ := client.Cmd("exists", _window).Bool()
@@ -393,6 +401,8 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		errHndlr(_ierr)
 		useSession, _userr = client.Cmd("get", _useSessionName).Str()
 		errHndlr(_userr)
+		persistSession, _peerr = client.Cmd("get", _persistSessionName).Str()
+		errHndlr(_peerr)
 		threshold, _thresherr = client.Cmd("get", _thresholdEnableName).Str()
 		errHndlr(_thresherr)
 
@@ -411,6 +421,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 				window = dmi.WindowName
 				iinc = dmi.Count
 				useSession = strconv.FormatBool(dmi.UseSession)
+				persistSession = strconv.FormatBool(dmi.PersistSession)
 				threshold = strconv.Itoa(dmi.ThresholdValue)
 				thresholdEnabled = dmi.ThresholdEnable
 				break
@@ -478,7 +489,11 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 		if iinc > 0 {
 			if useSession == "true" {
-				client.Cmd("hset", sessEventName, "time", tm.Format(layout))
+				if persistSession == "true" {
+					PersistSessionInfo(_tenent, _company, window, _session, _parameter1, _parameter2, tm.Format(layout))
+				} else {
+					client.Cmd("hset", sessEventName, "time", tm.Format(layout))
+				}
 			}
 			ccount, _ := client.Cmd("incr", concEventName).Int()
 			tcount, _ := client.Cmd("incr", totCountEventName).Int()
@@ -500,11 +515,13 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 			fmt.Println("tcount ", tcount)
 
 		} else {
-			sessEventSearch := fmt.Sprintf("SESSION:%d:%d:%s:%s:*", _tenent, _company, window, _session)
-			sessEvents, _ := client.Cmd("keys", sessEventSearch).List()
-			if len(sessEvents) > 0 {
-				tmx, _ := client.Cmd("hget", sessEvents[0], "time").Str()
-				tm2, _ := time.Parse(layout, tmx)
+			//sessEventSearch := fmt.Sprintf("SESSION:%d:%d:%s:%s:*", _tenent, _company, window, _session)
+			//sessEvents, _ := client.Cmd("keys", sessEventSearch).List()
+			//if len(sessEvents) > 0 {
+			//tmx, _ := client.Cmd("hget", sessEvents[0], "time").Str()
+			sessionKey, timeValue := FindDashboardSession(_tenent, _company, window, _session, persistSession)
+			if sessionKey != "" {
+				tm2, _ := time.Parse(layout, timeValue)
 				timeDiff := int(tm.Sub(tm2.In(location)).Seconds())
 
 				if timeDiff < 0 {
@@ -513,7 +530,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 				fmt.Println(timeDiff)
 
-				isdel, _ := client.Cmd("del", sessEvents[0]).Int()
+				isdel := RemoveDashboardSession(_tenent, _company, window, _session, sessionKey, persistSession)
 				if isdel == 1 {
 					rinc, _ := client.Cmd("incrby", totTimeEventName, timeDiff).Int()
 					client.Cmd("incrby", totTimeEventNameWithoutParams, timeDiff).Int()
@@ -1269,5 +1286,66 @@ func GetQueueName(queueId string) string {
 		return queueId
 	} else {
 		return queueName
+	}
+}
+
+func FindDashboardSession(_tenant, _company int, _window, _session, _persistSession string) (sessionKey, timeValue string) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in FindDashboardSession", r)
+		}
+	}()
+
+	if _persistSession == "true" {
+		sessionKey, timeValue = FindPersistedSession(_tenant, _company, _window, _session)
+		return
+	} else {
+		client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+		errHndlr(err)
+		defer client.Close()
+		//authServer
+		authE := client.Cmd("auth", redisPassword)
+		errHndlr(authE.Err)
+		// select database
+		r := client.Cmd("select", redisDb)
+		errHndlr(r.Err)
+
+		sessEventSearch := fmt.Sprintf("SESSION:%d:%d:%s:%s:*", _tenant, _company, _window, _session)
+		sessEvents, _ := client.Cmd("keys", sessEventSearch).List()
+		if len(sessEvents) > 0 {
+			tmx, _ := client.Cmd("hget", sessEvents[0], "time").Str()
+
+			sessionKey = sessEvents[0]
+			timeValue = tmx
+		}
+
+		return
+	}
+}
+
+func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey, _persistSession string) (result int) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in FindDashboardSession", r)
+		}
+	}()
+
+	if _persistSession == "true" {
+		result = DeletePersistedSession(_tenant, _company, _window, _session)
+		return
+	} else {
+		client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+		errHndlr(err)
+		defer client.Close()
+		//authServer
+		authE := client.Cmd("auth", redisPassword)
+		errHndlr(authE.Err)
+		// select database
+		r := client.Cmd("select", redisDb)
+		errHndlr(r.Err)
+
+		iDel, _ := client.Cmd("del", sessionKey).Int()
+		result = iDel
+		return
 	}
 }
