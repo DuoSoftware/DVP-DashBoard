@@ -654,7 +654,7 @@ func OnReset() {
 
 	if cacheMachenism == "redis" {
 
-		val, _ := client.Cmd("keys", _searchName).List()
+		val := ScanAndGetKeys(_searchName)
 		lenth := len(val)
 		fmt.Println(lenth)
 		if lenth > 0 {
@@ -707,13 +707,13 @@ func OnReset() {
 		//snapHourlyVal, _ := client.Cmd("keys", snapHourlyEventSearch).List()
 		//_keysToRemove = AppendListIfMissing(_keysToRemove, snapHourlyVal)
 
-		concVal, _ := client.Cmd("keys", concEventSearch).List()
+		concVal := ScanAndGetKeys(concEventSearch)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, concVal)
 
-		sessParamsVal, _ := client.Cmd("keys", sessParamsEventSearch).List()
+		sessParamsVal := ScanAndGetKeys(sessParamsEventSearch)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, sessParamsVal)
 
-		sessVal, _ := client.Cmd("keys", sessEventSearch).List()
+		sessVal := ScanAndGetKeys(sessEventSearch)
 		for _, sess := range sessVal {
 			sessItems := strings.Split(sess, ":")
 			if len(sessItems) >= 4 && sessItems[3] == "LOGIN" {
@@ -725,40 +725,40 @@ func OnReset() {
 			}
 		}
 
-		totTimeVal, _ := client.Cmd("keys", totTimeEventSearch).List()
+		totTimeVal := ScanAndGetKeys(totTimeEventSearch)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, totTimeVal)
 
-		totCountVal, _ := client.Cmd("keys", totCountEventSearch).List()
+		totCountVal := ScanAndGetKeys(totCountEventSearch)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, totCountVal)
 
-		totCountHrVal, _ := client.Cmd("keys", totCountHr).List()
+		totCountHrVal := ScanAndGetKeys(totCountHr)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, totCountHrVal)
 
-		maxTimeVal, _ := client.Cmd("keys", maxTimeEventSearch).List()
+		maxTimeVal := ScanAndGetKeys(maxTimeEventSearch)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, maxTimeVal)
 
-		thresholdCountVal, _ := client.Cmd("keys", thresholdEventSearch).List()
+		thresholdCountVal := ScanAndGetKeys(thresholdEventSearch)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, thresholdCountVal)
 
-		thresholdBDCountVal, _ := client.Cmd("keys", thresholdBDEventSearch).List()
+		thresholdBDCountVal := ScanAndGetKeys(thresholdBDEventSearch)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, thresholdBDCountVal)
 
-		cewop, _ := client.Cmd("keys", concEventNameWithoutParams).List()
+		cewop := ScanAndGetKeys(concEventNameWithoutParams)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, cewop)
 
-		ttwop, _ := client.Cmd("keys", totTimeEventNameWithoutParams).List()
+		ttwop := ScanAndGetKeys(totTimeEventNameWithoutParams)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, ttwop)
 
-		tcewop, _ := client.Cmd("keys", totCountEventNameWithoutParams).List()
+		tcewop := ScanAndGetKeys(totCountEventNameWithoutParams)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, tcewop)
 
-		cewsp, _ := client.Cmd("keys", concEventNameWithSingleParam).List()
+		cewsp := ScanAndGetKeys(concEventNameWithSingleParam)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, cewsp)
 
-		ttwsp, _ := client.Cmd("keys", totTimeEventNameWithSingleParam).List()
+		ttwsp := ScanAndGetKeys(totTimeEventNameWithSingleParam)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, ttwsp)
 
-		tcwsp, _ := client.Cmd("keys", totCountEventNameWithSingleParam).List()
+		tcwsp := ScanAndGetKeys(totCountEventNameWithSingleParam)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, tcwsp)
 
 	}
@@ -812,7 +812,7 @@ func OnSetDailySummary(_date time.Time) {
 	r := client.Cmd("select", redisDb)
 	errHndlr(r.Err)
 
-	totalEventKeys, _ := client.Cmd("keys", totCountEventSearch).List()
+	totalEventKeys := ScanAndGetKeys(totCountEventSearch)
 	for _, key := range totalEventKeys {
 		fmt.Println("Key: ", key)
 		keyItems := strings.Split(key, ":")
@@ -828,7 +828,7 @@ func OnSetDailySummary(_date time.Time) {
 		currentTime := 0
 		if summery.WindowName == "LOGIN" {
 			sessEventSearch := fmt.Sprintf("SESSION:%d:%d:%s:*:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
-			sessEvents, _ := client.Cmd("keys", sessEventSearch).List()
+			sessEvents := ScanAndGetKeys(sessEventSearch)
 			if len(sessEvents) > 0 {
 				tmx, _ := client.Cmd("hget", sessEvents[0], "time").Str()
 				tm2, _ := time.Parse(layout, tmx)
@@ -880,7 +880,7 @@ func OnSetDailyThesholdBreakDown(_date time.Time) {
 	r := client.Cmd("select", redisDb)
 	errHndlr(r.Err)
 
-	thresholdEventKeys, _ := client.Cmd("keys", thresholdEventSearch).List()
+	thresholdEventKeys := ScanAndGetKeys(thresholdEventSearch)
 	for _, key := range thresholdEventKeys {
 		fmt.Println("Key: ", key)
 		keyItems := strings.Split(key, ":")
@@ -1358,4 +1358,42 @@ func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey
 		result = iDel
 		return
 	}
+}
+
+func ScanAndGetKeys(pattern string) []string {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in ScanAndGetKeys", r)
+		}
+	}()
+
+	matchingKeys := make([]string, 0)
+
+	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	errHndlr(err)
+	defer client.Close()
+	//authServer
+	authE := client.Cmd("auth", redisPassword)
+	errHndlr(authE.Err)
+	// select database
+	r := client.Cmd("select", redisDb)
+	errHndlr(r.Err)
+	sIndex := 0
+	for {
+		scanResult := client.Cmd("scan", sIndex, "MATCH", pattern, "count", 1000).Elems
+		if len(scanResult) == 2 {
+			keyList, _ := scanResult[1].List()
+			matchingKeys = AppendListIfMissing(matchingKeys, keyList)
+			sIndex, _ = scanResult[0].Int()
+			if sIndex == 0 {
+				fmt.Println("end scan")
+				break
+			}
+		} else {
+			fmt.Println("end scan with error")
+			break
+		}
+	}
+
+	return matchingKeys
 }
