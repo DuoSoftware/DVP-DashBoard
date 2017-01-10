@@ -446,6 +446,8 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		//snapHourlyEventName := fmt.Sprintf("SNAPSHOTHOURLY:%d:%d:%s:%s:%s:%s:%d", _tenent, _company, window, _class, _type, _category, tm.Hour())
 
 		sessEventName := fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s", _tenent, _company, window, _session, _parameter1, _parameter2)
+		sessParamEventName := fmt.Sprintf("SESSIONPARAMS:%d:%d:%s:%s", _tenent, _company, window, _session)
+
 		concEventName := fmt.Sprintf("CONCURRENT:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 		totTimeEventName := fmt.Sprintf("TOTALTIME:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
 		totCountEventName := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:%s:%s", _tenent, _company, window, _parameter1, _parameter2)
@@ -493,6 +495,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 					PersistSessionInfo(_tenent, _company, window, _session, _parameter1, _parameter2, tm.Format(layout))
 				} else {
 					client.Cmd("hset", sessEventName, "time", tm.Format(layout))
+					client.Cmd("hmset", sessParamEventName, "param1", _parameter1, "param2", _parameter2)
 				}
 			}
 			ccount, _ := client.Cmd("incr", concEventName).Int()
@@ -682,6 +685,7 @@ func OnReset() {
 		//snapHourlyEventSearch := fmt.Sprintf("SNAPSHOTHOURLY:*:%s:*", window)
 		concEventSearch := fmt.Sprintf("CONCURRENT:*:%s:*", window)
 		sessEventSearch := fmt.Sprintf("SESSION:*:%s:*", window)
+		sessParamsEventSearch := fmt.Sprintf("SESSIONPARAMS:*:%s:*", window)
 		totTimeEventSearch := fmt.Sprintf("TOTALTIME:*:%s:*", window)
 		totCountEventSearch := fmt.Sprintf("TOTALCOUNT:*:%s:*", window)
 		totCountHr := fmt.Sprintf("TOTALCOUNTHR:*:%s:*", window)
@@ -705,6 +709,9 @@ func OnReset() {
 
 		concVal, _ := client.Cmd("keys", concEventSearch).List()
 		_keysToRemove = AppendListIfMissing(_keysToRemove, concVal)
+
+		sessParamsVal, _ := client.Cmd("keys", sessParamsEventSearch).List()
+		_keysToRemove = AppendListIfMissing(_keysToRemove, sessParamsVal)
 
 		sessVal, _ := client.Cmd("keys", sessEventSearch).List()
 		for _, sess := range sessVal {
@@ -765,6 +772,7 @@ func OnReset() {
 		client.Cmd("hset", session, "time", tm.Format(layout))
 		sessItemsL := strings.Split(session, ":")
 		if len(sessItemsL) >= 7 {
+			LsessParamEventName := fmt.Sprintf("SESSIONPARAMS:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[4])
 			LtotTimeEventName := fmt.Sprintf("TOTALTIME:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5], sessItemsL[6])
 			LtotCountEventName := fmt.Sprintf("TOTALCOUNT:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5], sessItemsL[6])
 			LtotTimeEventNameWithoutParams := fmt.Sprintf("TOTALTIMEWOPARAMS:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3])
@@ -772,6 +780,7 @@ func OnReset() {
 			LtotTimeEventNameWithSingleParam := fmt.Sprintf("TOTALTIMEWSPARAM:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5])
 			LtotCountEventNameWithSingleParam := fmt.Sprintf("TOTALCOUNTWSPARAM:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5])
 
+			client.Cmd("hmset", LsessParamEventName, "param1", sessItemsL[5], "param2", sessItemsL[6])
 			client.Cmd("set", LtotTimeEventName, 0)
 			client.Cmd("set", LtotCountEventName, 0)
 			client.Cmd("set", LtotTimeEventNameWithoutParams, 0)
@@ -1310,14 +1319,15 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 		r := client.Cmd("select", redisDb)
 		errHndlr(r.Err)
 
-		sessEventSearch := fmt.Sprintf("SESSION:%d:%d:%s:%s:*", _tenant, _company, _window, _session)
-		sessEvents, _ := client.Cmd("keys", sessEventSearch).List()
-		if len(sessEvents) > 0 {
-			tmx, _ := client.Cmd("hget", sessEvents[0], "time").Str()
-
-			sessionKey = sessEvents[0]
+		sessParamsEventKey := fmt.Sprintf("SESSIONPARAMS:%d:%d:%s:%s", _tenant, _company, _window, _session)
+		paramList, _ := client.Cmd("hmget", sessParamsEventKey, "param1", "param2").List()
+		if len(paramList) >= 2 {
+			sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s", _tenant, _company, _window, _session, paramList[0], paramList[1])
+			tmx, _ := client.Cmd("hget", sessionKey, "time").Str()
 			timeValue = tmx
 		}
+
+		client.Cmd("del", sessParamsEventKey)
 
 		return
 	}
