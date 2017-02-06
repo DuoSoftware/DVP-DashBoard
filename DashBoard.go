@@ -1316,7 +1316,7 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 	}()
 
 	if _persistSession == "true" {
-		sessionKey, timeValue = FindPersistedSession(_tenant, _company, _window, _session)
+		sessionKey, timeValue, param1, param2 = FindPersistedSession(_tenant, _company, _window, _session)
 		return
 	} else {
 		client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
