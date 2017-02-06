@@ -46,7 +46,7 @@ func PersistSessionInfo(tenant, company int, window, dashboardSession, param1, p
 	}
 }
 
-func FindPersistedSession(tenant, company int, window, dashboardSession string) (sessionKey, timeValue string) {
+func FindPersistedSession(tenant, company int, window, dashboardSession string) (sessionKey, timeValue, param1, param2 string) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in FindPersistedSession", r)
@@ -74,6 +74,8 @@ func FindPersistedSession(tenant, company int, window, dashboardSession string) 
 		fmt.Println("SessionPersistenceInfo :", result)
 		timeValue = result.Time
 		sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s", result.Tenant, result.Company, result.Window, result.Session, result.Param1, result.Param2)
+		param1 = result.Param1
+		param2 = result.Param2
 	}
 	return
 }

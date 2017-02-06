@@ -522,7 +522,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 			//sessEvents, _ := client.Cmd("keys", sessEventSearch).List()
 			//if len(sessEvents) > 0 {
 			//tmx, _ := client.Cmd("hget", sessEvents[0], "time").Str()
-			sessionKey, timeValue := FindDashboardSession(_tenent, _company, window, _session, persistSession)
+			sessionKey, timeValue, sParam1, sParam2 := FindDashboardSession(_tenent, _company, window, _session, persistSession)
 			if sessionKey != "" {
 				tm2, _ := time.Parse(layout, timeValue)
 				timeDiff := int(tm.Sub(tm2.In(location)).Seconds())
@@ -535,6 +535,16 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 				isdel := RemoveDashboardSession(_tenent, _company, window, _session, sessionKey, persistSession)
 				if isdel == 1 {
+
+					concEventName = fmt.Sprintf("CONCURRENT:%d:%d:%s:%s:%s", _tenent, _company, window, sParam1, sParam2)
+					totTimeEventName = fmt.Sprintf("TOTALTIME:%d:%d:%s:%s:%s", _tenent, _company, window, sParam1, sParam2)
+					maxTimeEventName = fmt.Sprintf("MAXTIME:%d:%d:%s:%s:%s", _tenent, _company, window, sParam1, sParam2)
+					thresholdEventName = fmt.Sprintf("THRESHOLD:%d:%d:%s:%s:%s", _tenent, _company, window, sParam1, sParam2)
+					thresholdBreakDownEventName = fmt.Sprintf("THRESHOLDBREAKDOWN:%d:%d:%s:%s:%s", _tenent, _company, window, sParam1, sParam2)
+
+					concEventNameWithSingleParam = fmt.Sprintf("CONCURRENTWSPARAM:%d:%d:%s:%s", _tenent, _company, window, sParam1)
+					totTimeEventNameWithSingleParam = fmt.Sprintf("TOTALTIMEWSPARAM:%d:%d:%s:%s", _tenent, _company, window, sParam1)
+
 					rinc, _ := client.Cmd("incrby", totTimeEventName, timeDiff).Int()
 					client.Cmd("incrby", totTimeEventNameWithoutParams, timeDiff).Int()
 					client.Cmd("incrby", totTimeEventNameWithSingleParam, timeDiff).Int()
@@ -1298,7 +1308,7 @@ func GetQueueName(queueId string) string {
 	}
 }
 
-func FindDashboardSession(_tenant, _company int, _window, _session, _persistSession string) (sessionKey, timeValue string) {
+func FindDashboardSession(_tenant, _company int, _window, _session, _persistSession string) (sessionKey, timeValue, param1, param2 string) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in FindDashboardSession", r)
@@ -1325,6 +1335,8 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 			sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s", _tenant, _company, _window, _session, paramList[0], paramList[1])
 			tmx, _ := client.Cmd("hget", sessionKey, "time").Str()
 			timeValue = tmx
+			param1 = paramList[0]
+			param2 = paramList[1]
 		}
 
 		client.Cmd("del", sessParamsEventKey)
