@@ -465,6 +465,10 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		totTimeEventNameWithSingleParam := fmt.Sprintf("TOTALTIMEWSPARAM:%d:%d:%s:%s", _tenent, _company, window, _parameter1)
 		totCountEventNameWithSingleParam := fmt.Sprintf("TOTALCOUNTWSPARAM:%d:%d:%s:%s", _tenent, _company, window, _parameter1)
 
+		concEventNameWithLastParam := fmt.Sprintf("CONCURRENTWLPARAM:%d:%d:%s:%s", _tenent, _company, window, _parameter2)
+		totTimeEventNameWithLastParam := fmt.Sprintf("TOTALTIMEWLPARAM:%d:%d:%s:%s", _tenent, _company, window, _parameter2)
+		totCountEventNameWithLastParam := fmt.Sprintf("TOTALCOUNTWLPARAM:%d:%d:%s:%s", _tenent, _company, window, _parameter2)
+
 		//if _parameter1 == "" {
 		//	_parameter1 = "empty"
 		//}
@@ -507,6 +511,9 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 			client.Cmd("incr", concEventNameWithSingleParam).Int()
 			client.Cmd("incr", totCountEventNameWithSingleParam).Int()
 
+			client.Cmd("incr", concEventNameWithLastParam).Int()
+			client.Cmd("incr", totCountEventNameWithLastParam).Int()
+
 			client.Cmd("incr", totCountHrEventName)
 
 			fmt.Println("tcount ", tcount)
@@ -545,19 +552,25 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 					concEventNameWithSingleParam = fmt.Sprintf("CONCURRENTWSPARAM:%d:%d:%s:%s", _tenent, _company, window, sParam1)
 					totTimeEventNameWithSingleParam = fmt.Sprintf("TOTALTIMEWSPARAM:%d:%d:%s:%s", _tenent, _company, window, sParam1)
 
+					concEventNameWithLastParam = fmt.Sprintf("CONCURRENTWLPARAM:%d:%d:%s:%s", _tenent, _company, window, sParam2)
+					totTimeEventNameWithLastParam = fmt.Sprintf("TOTALTIMEWLPARAM:%d:%d:%s:%s", _tenent, _company, window, sParam2)
+
 					rinc, _ := client.Cmd("incrby", totTimeEventName, timeDiff).Int()
 					client.Cmd("incrby", totTimeEventNameWithoutParams, timeDiff).Int()
 					client.Cmd("incrby", totTimeEventNameWithSingleParam, timeDiff).Int()
+					client.Cmd("incrby", totTimeEventNameWithLastParam, timeDiff).Int()
 
 					dccount, _ := client.Cmd("decr", concEventName).Int()
 					client.Cmd("decr", concEventNameWithoutParams).Int()
 					client.Cmd("decr", concEventNameWithSingleParam).Int()
+					client.Cmd("decr", concEventNameWithLastParam).Int()
 
 					if dccount < 0 {
 						fmt.Println("reset minus concurrent count:: incr by 1 :: ", concEventName)
 						dccount, _ = client.Cmd("incr", concEventName).Int()
 						client.Cmd("incr", concEventNameWithoutParams).Int()
 						client.Cmd("incr", concEventNameWithSingleParam).Int()
+						client.Cmd("incr", concEventNameWithLastParam).Int()
 					}
 
 					oldMaxTime, _ := client.Cmd("get", maxTimeEventName).Int()
@@ -711,6 +724,10 @@ func OnReset() {
 		totTimeEventNameWithSingleParam := fmt.Sprintf("TOTALTIMEWSPARAM:*:%s:*", window)
 		totCountEventNameWithSingleParam := fmt.Sprintf("TOTALCOUNTWSPARAM:*:%s:*", window)
 
+		concEventNameWithLastParam := fmt.Sprintf("CONCURRENTWLPARAM:*:%s:*", window)
+		totTimeEventNameWithLastParam := fmt.Sprintf("TOTALTIMEWLPARAM:*:%s:*", window)
+		totCountEventNameWithLastParam := fmt.Sprintf("TOTALCOUNTWLPARAM:*:%s:*", window)
+
 		//snapVal, _ := client.Cmd("keys", snapEventSearch).List()
 		//_keysToRemove = AppendListIfMissing(_keysToRemove, snapVal)
 
@@ -771,6 +788,15 @@ func OnReset() {
 		tcwsp := ScanAndGetKeys(totCountEventNameWithSingleParam)
 		_keysToRemove = AppendListIfMissing(_keysToRemove, tcwsp)
 
+		cewlp := ScanAndGetKeys(concEventNameWithLastParam)
+		_keysToRemove = AppendListIfMissing(_keysToRemove, cewlp)
+
+		ttwlp := ScanAndGetKeys(totTimeEventNameWithLastParam)
+		_keysToRemove = AppendListIfMissing(_keysToRemove, ttwlp)
+
+		tcwlp := ScanAndGetKeys(totCountEventNameWithLastParam)
+		_keysToRemove = AppendListIfMissing(_keysToRemove, tcwlp)
+
 	}
 	tm := time.Now()
 	for _, remove := range _keysToRemove {
@@ -789,6 +815,8 @@ func OnReset() {
 			LtotCountEventNameWithoutParams := fmt.Sprintf("TOTALCOUNTWOPARAMS:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3])
 			LtotTimeEventNameWithSingleParam := fmt.Sprintf("TOTALTIMEWSPARAM:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5])
 			LtotCountEventNameWithSingleParam := fmt.Sprintf("TOTALCOUNTWSPARAM:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[5])
+			LtotTimeEventNameWithLastParam := fmt.Sprintf("TOTALTIMEWLPARAM:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[6])
+			LtotCountEventNameWithLastParam := fmt.Sprintf("TOTALCOUNTWLPARAM:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[6])
 
 			client.Cmd("hmset", LsessParamEventName, "param1", sessItemsL[5], "param2", sessItemsL[6])
 			client.Cmd("set", LtotTimeEventName, 0)
@@ -797,6 +825,8 @@ func OnReset() {
 			client.Cmd("set", LtotCountEventNameWithoutParams, 0)
 			client.Cmd("set", LtotTimeEventNameWithSingleParam, 0)
 			client.Cmd("set", LtotCountEventNameWithSingleParam, 0)
+			client.Cmd("set", LtotTimeEventNameWithLastParam, 0)
+			client.Cmd("set", LtotCountEventNameWithLastParam, 0)
 		}
 	}
 	/*for _, prosession := range _productivitySessions {
