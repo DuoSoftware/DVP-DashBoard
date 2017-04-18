@@ -2,10 +2,10 @@
 
 FROM golang
 
-RUN go get gopkg.in/DuoSoftware/DVP-DashBoard.v2
+RUN go get gopkg.in/DuoSoftware/DVP-DashBoard.v2/DashBoard
 
-RUN go install gopkg.in/DuoSoftware/DVP-DashBoard.v2
+RUN go install gopkg.in/DuoSoftware/DVP-DashBoard.v2/DashBoard
 
-ENTRYPOINT /go/bin/DVP-DashBoard
+ENTRYPOINT /go/bin/DashBoard
 
 EXPOSE 8841
