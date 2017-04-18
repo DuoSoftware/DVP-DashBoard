@@ -4,7 +4,7 @@ FROM golang
 
 RUN go get gopkg.in/DuoSoftware/DVP-DashBoard.v2/DashBoard
 
-RUN go install gopkg.inm/DuoSoftware/DVP-DashBoard.v2/Dashboard
+RUN go install gopkg.in/DuoSoftware/DVP-DashBoard.v2/Dashboard
 
 ENTRYPOINT /go/bin/DVP-DashBoard
 
