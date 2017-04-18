@@ -2,9 +2,9 @@
 
 FROM golang
 
-RUN go get github.com/DuoSoftware/DVP-DashBoard
+RUN go get gopkg.in/DuoSoftware/DVP-DashBoard.v2/DashBoard
 
-RUN go install github.com/DuoSoftware/DVP-DashBoard
+RUN go install gopkg.inm/DuoSoftware/DVP-DashBoard.v2/Dashboard
 
 ENTRYPOINT /go/bin/DVP-DashBoard
 
