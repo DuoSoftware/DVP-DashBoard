@@ -35,6 +35,9 @@ var mongoDbname string
 var mongoPassword string
 var mongoUser string
 var cacheMachenism string
+var dashboardServiceHost string
+var dashboardServicePort string
+var accessToken string
 
 func GetDirPath() string {
 	envPath := os.Getenv("GO_CONFIG_DIR")
@@ -83,6 +86,9 @@ func GetDefaultConfig() Configuration {
 		defconfiguration.MongoPassword = "DuoS123"
 		defconfiguration.MongoUser = "duo"
 		defconfiguration.CacheMachenism = "redis"
+		defconfiguration.DashboardServiceHost = "127.0.0.1"
+		defconfiguration.DashboardServicePort = "8874"
+		defconfiguration.AccessToken = ""
 	}
 
 	return defconfiguration
@@ -127,6 +133,9 @@ func LoadDefaultConfig() {
 		mongoPassword = "DuoS123"
 		mongoUser = "duo"
 		cacheMachenism = "redis"
+		dashboardServiceHost = "127.0.0.1"
+		dashboardServicePort = "8874"
+		accessToken = ""
 	} else {
 		redisPubSubIp = fmt.Sprintf("%s:%s", defconfiguration.RedisPubSubIp, defconfiguration.RedisPort)
 		redisIp = fmt.Sprintf("%s:%s", defconfiguration.RedisIp, defconfiguration.RedisPort)
@@ -153,6 +162,9 @@ func LoadDefaultConfig() {
 		mongoPassword = defconfiguration.MongoPassword
 		mongoUser = defconfiguration.MongoUser
 		cacheMachenism = defconfiguration.CacheMachenism
+		dashboardServiceHost = defconfiguration.DashboardServiceHost
+		dashboardServicePort = defconfiguration.DashboardServicePort
+		accessToken = defconfiguration.AccessToken
 	}
 }
 
@@ -199,6 +211,9 @@ func LoadConfiguration() {
 		mongoPassword = os.Getenv(envconfiguration.MongoPassword)
 		mongoUser = os.Getenv(envconfiguration.MongoUser)
 		cacheMachenism = os.Getenv(envconfiguration.CacheMachenism)
+		dashboardServiceHost = os.Getenv(envconfiguration.DashboardServiceHost)
+		dashboardServicePort = os.Getenv(envconfiguration.DashboardServicePort)
+		accessToken = os.Getenv(envconfiguration.AccessToken)
 
 		if redisPubSubIp == "" {
 			redisPubSubIp = defConfig.RedisPubSubIp
@@ -274,6 +289,15 @@ func LoadConfiguration() {
 		}
 		if cacheMachenism == "" {
 			cacheMachenism = defConfig.CacheMachenism
+		}
+		if dashboardServiceHost == "" {
+			dashboardServiceHost = defConfig.DashboardServiceHost
+		}
+		if dashboardServicePort == "" {
+			dashboardServicePort = defConfig.DashboardServicePort
+		}
+		if accessToken == "" {
+			accessToken = defConfig.AccessToken
 		}
 
 		redisIp = fmt.Sprintf("%s:%s", redisIp, redisPort)

@@ -23,5 +23,8 @@
     "MongoDbname":"SYS_MONGO_DB",
     "MongoPassword":"SYS_MONGO_PASSWORD",
     "MongoUser":"SYS_MONGO_USER",
-	"CacheMachenism": "HOST_DASHBOARD_CACHE"
+	"CacheMachenism": "HOST_DASHBOARD_CACHE",
+	"DashboardServiceHost": "SYS_DASHBOARDSERVICE_HOST",
+	"DashboardServicePort": "SYS_DASHBOARDSERVICE_PORT",
+	"AccessToken":"HOST_TOKEN"
 }
