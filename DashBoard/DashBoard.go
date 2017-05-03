@@ -16,6 +16,7 @@ import (
 )
 
 var redisPool *pool.Pool
+var redisPubPool *pool.Pool
 var statClient *StatsdClient
 
 const layout = "2006-01-02T15:04:05Z07:00"
@@ -40,7 +41,8 @@ func InitiateStatDClient() {
 
 func InitiateRedis() {
 	var err error
-	redisPool, err = pool.NewPool("tcp", redisPubSubIp, 10)
+	redisPool, err = pool.NewPool("tcp", redisIp, 10)
+	redisPubPool, err = pool.NewPool("tcp", redisPubSubIp, 10)
 	if err != nil {
 		errHndlr(err)
 	}
@@ -54,9 +56,9 @@ func PubSub() {
 			fmt.Println("Recovered in PubSub", r)
 		}
 	}()
-	c2, err := redisPool.Get()
+	c2, err := redisPubPool.Get()
 	errHndlr(err)
-	defer redisPool.Put(c2)
+	defer redisPubPool.Put(c2)
 	//authServer
 	authE := c2.Cmd("auth", redisPassword)
 	errHndlr(authE.Err)
