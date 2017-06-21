@@ -1,12 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
-	//"github.com/fzzy/radix/extra/pool"
-	"bytes"
+	"github.com/fzzy/radix/extra/pool"
 	"github.com/fzzy/radix/extra/pubsub"
-	"github.com/fzzy/radix/redis"
+	//"github.com/fzzy/radix/redis"
 	_ "github.com/lib/pq"
 	"net"
 	"net/http"
@@ -15,8 +15,8 @@ import (
 	"time"
 )
 
-//var redisPool *pool.Pool
-//var redisPubPool *pool.Pool
+var redisPool *pool.Pool
+var redisPubPool *pool.Pool
 var statClient *StatsdClient
 
 const layout = "2006-01-02T15:04:05Z07:00"
@@ -40,12 +40,12 @@ func InitiateStatDClient() {
 }
 
 func InitiateRedis() {
-	//var err error
-	//redisPool, err = pool.NewPool("tcp", redisIp, 10)
-	//redisPubPool, err = pool.NewPool("tcp", redisPubSubIp, 10)
-	//if err != nil {
-	//	errHndlr(err)
-	//}
+	var err error
+	redisPool, err = pool.NewPool("tcp", redisIp, 10)
+	redisPubPool, err = pool.NewPool("tcp", redisPubSubIp, 10)
+	if err != nil {
+		errHndlr(err)
+	}
 
 	go PubSub()
 }
@@ -56,13 +56,13 @@ func PubSub() {
 			fmt.Println("Recovered in PubSub", r)
 		}
 	}()
-	//c2, err := redisPubPool.Get()
-	//errHndlr(err)
-	//defer redisPubPool.Put(c2)
-
-	c2, err := redis.Dial("tcp", redisPubSubIp)
+	c2, err := redisPubPool.Get()
 	errHndlr(err)
-	defer c2.Close()
+	defer redisPubPool.Put(c2)
+
+	//c2, err := redis.Dial("tcp", redisPubSubIp)
+	//errHndlr(err)
+	//defer c2.Close()
 
 	//authServer
 	authE := c2.Cmd("auth", redisPassword)
@@ -326,13 +326,13 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 	//		fmt.Println("Recovered in OnMeta", r)
 	//	}
 	//}()
-	//client, err := redisPool.Get()
-	//errHndlr(err)
-	//defer redisPool.Put(client)
-
-	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	client, err := redisPool.Get()
 	errHndlr(err)
-	defer client.Close()
+	defer redisPool.Put(client)
+
+	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	//errHndlr(err)
+	//defer client.Close()
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
@@ -388,14 +388,14 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 			fmt.Println("Recovered in OnEvent", r)
 		}
 	}()
-	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
-	//client, err := redisPool.Get()
-	//errHndlr(err)
-	//defer redisPool.Put(client)
 
-	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	client, err := redisPool.Get()
 	errHndlr(err)
-	defer client.Close()
+	defer redisPool.Put(client)
+
+	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	//errHndlr(err)
+	//defer client.Close()
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
@@ -693,13 +693,13 @@ func OnReset() {
 			fmt.Println("Recovered in OnReset", r)
 		}
 	}()
-	//client, err := redisPool.Get()
-	//errHndlr(err)
-	//defer redisPool.Put(client)
-
-	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	client, err := redisPool.Get()
 	errHndlr(err)
-	defer client.Close()
+	defer redisPool.Put(client)
+
+	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	//errHndlr(err)
+	//defer client.Close()
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
@@ -880,13 +880,13 @@ func OnSetDailySummary(_date time.Time) {
 			fmt.Println("Recovered in OnReset", r)
 		}
 	}()
-	//client, err := redisPool.Get()
-	//errHndlr(err)
-	//defer redisPool.Put(client)
-
-	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	client, err := redisPool.Get()
 	errHndlr(err)
-	defer client.Close()
+	defer redisPool.Put(client)
+
+	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	//errHndlr(err)
+	//defer client.Close()
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
@@ -953,13 +953,13 @@ func OnSetDailyThesholdBreakDown(_date time.Time) {
 			fmt.Println("Recovered in OnSetDailyThesholdBreakDown", r)
 		}
 	}()
-	//client, err := redisPool.Get()
-	//errHndlr(err)
-	//defer redisPool.Put(client)
-
-	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	client, err := redisPool.Get()
 	errHndlr(err)
-	defer client.Close()
+	defer redisPool.Put(client)
+
+	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	//errHndlr(err)
+	//defer client.Close()
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
@@ -1028,13 +1028,13 @@ func OnGetMaxTime(_tenant, _company int, _window, _parameter1, _parameter2 strin
 			fmt.Println("Recovered in OnGetMaxTime", r)
 		}
 	}()
-	//client, err := redisPool.Get()
-	//errHndlr(err)
-	//defer redisPool.Put(client)
-
-	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	client, err := redisPool.Get()
 	errHndlr(err)
-	defer client.Close()
+	defer redisPool.Put(client)
+
+	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	//errHndlr(err)
+	//defer client.Close()
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
@@ -1066,13 +1066,13 @@ func OnGetCurrentMaxTime(_tenant, _company int, _window, _parameter1, _parameter
 			fmt.Println("Recovered in OnGetCurrentMaxTime", r)
 		}
 	}()
-	//client, err := redisPool.Get()
-	//errHndlr(err)
-	//defer redisPool.Put(client)
-
-	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	client, err := redisPool.Get()
 	errHndlr(err)
-	defer client.Close()
+	defer redisPool.Put(client)
+
+	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	//errHndlr(err)
+	//defer client.Close()
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
@@ -1107,13 +1107,13 @@ func OnGetCurrentCount(_tenant, _company int, _window, _parameter1, _parameter2 
 			fmt.Println("Recovered in OnGetCurrentCount", r)
 		}
 	}()
-	//client, err := redisPool.Get()
-	//errHndlr(err)
-	//defer redisPool.Put(client)
-
-	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	client, err := redisPool.Get()
 	errHndlr(err)
-	defer client.Close()
+	defer redisPool.Put(client)
+
+	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	//errHndlr(err)
+	//defer client.Close()
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
@@ -1147,13 +1147,13 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 			fmt.Println("Recovered in OnGetAverageTime", r)
 		}
 	}()
-	//client, err := redisPool.Get()
-	//errHndlr(err)
-	//defer redisPool.Put(client)
-
-	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	client, err := redisPool.Get()
 	errHndlr(err)
-	defer client.Close()
+	defer redisPool.Put(client)
+
+	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	//errHndlr(err)
+	//defer client.Close()
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
@@ -1233,13 +1233,13 @@ func OnGetTotalCount(_tenant, _company int, _window, _parameter1, _parameter2 st
 			fmt.Println("Recovered in OnGetTotalCount", r)
 		}
 	}()
-	//client, err := redisPool.Get()
-	//errHndlr(err)
-	//defer redisPool.Put(client)
-
-	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	client, err := redisPool.Get()
 	errHndlr(err)
-	defer client.Close()
+	defer redisPool.Put(client)
+
+	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	//errHndlr(err)
+	//defer client.Close()
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
@@ -1270,13 +1270,13 @@ func OnGetQueueDetails(_tenant, _company int, resultChannel chan []QueueDetails)
 		}
 	}()
 
-	//client, err := redisPool.Get()
-	//errHndlr(err)
-	//defer redisPool.Put(client)
-
-	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	client, err := redisPool.Get()
 	errHndlr(err)
-	defer client.Close()
+	defer redisPool.Put(client)
+
+	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	//errHndlr(err)
+	//defer client.Close()
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
@@ -1396,13 +1396,13 @@ func GetQueueName(queueId string) string {
 			fmt.Println("Recovered in GetQueueName", r)
 		}
 	}()
-	//client, err := redisPool.Get()
-	//errHndlr(err)
-	//defer redisPool.Put(client)
-
-	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	client, err := redisPool.Get()
 	errHndlr(err)
-	defer client.Close()
+	defer redisPool.Put(client)
+
+	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	//errHndlr(err)
+	//defer client.Close()
 
 	//authServer
 	authE := client.Cmd("auth", redisPubSubPassword)
@@ -1432,13 +1432,13 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 		sessionKey, timeValue, param1, param2 = FindPersistedSession(_tenant, _company, _window, _session)
 		return
 	} else {
-		//client, err := redisPool.Get()
-		//errHndlr(err)
-		//defer redisPool.Put(client)
-
-		client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+		client, err := redisPool.Get()
 		errHndlr(err)
-		defer client.Close()
+		defer redisPool.Put(client)
+
+		//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+		//errHndlr(err)
+		//defer client.Close()
 
 		//authServer
 		authE := client.Cmd("auth", redisPassword)
@@ -1474,13 +1474,13 @@ func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey
 		result = DeletePersistedSession(_tenant, _company, _window, _session)
 		return
 	} else {
-		//client, err := redisPool.Get()
-		//errHndlr(err)
-		//defer redisPool.Put(client)
-
-		client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+		client, err := redisPool.Get()
 		errHndlr(err)
-		defer client.Close()
+		defer redisPool.Put(client)
+
+		//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+		//errHndlr(err)
+		//defer client.Close()
 
 		//authServer
 		authE := client.Cmd("auth", redisPassword)
@@ -1504,13 +1504,13 @@ func ScanAndGetKeys(pattern string) []string {
 
 	matchingKeys := make([]string, 0)
 
-	//client, err := redisPool.Get()
-	//errHndlr(err)
-	//defer redisPool.Put(client)
-
-	client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	client, err := redisPool.Get()
 	errHndlr(err)
-	defer client.Close()
+	defer redisPool.Put(client)
+
+	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
+	//errHndlr(err)
+	//defer client.Close()
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
