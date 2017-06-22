@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/auth0/go-jwt-middleware"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/fzzy/radix/redis"
+	"github.com/mediocregopher/radix.v2/redis"
 	//"github.com/gorilla/context"
 	"strconv"
 	"strings"

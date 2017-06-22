@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
-	"github.com/fzzy/radix/extra/pool"
-	"github.com/fzzy/radix/extra/pubsub"
-	//"github.com/fzzy/radix/redis"
 	_ "github.com/lib/pq"
+	"github.com/mediocregopher/radix.v2/pool"
+	"github.com/mediocregopher/radix.v2/pubsub"
+	"github.com/mediocregopher/radix.v2/redis"
+	"github.com/mediocregopher/radix.v2/util"
 	"net"
 	"net/http"
 	"strconv"
@@ -16,7 +17,8 @@ import (
 )
 
 var redisPool *pool.Pool
-var redisPubPool *pool.Pool
+
+//var redisPubPool *pool.Pool
 var statClient *StatsdClient
 
 const layout = "2006-01-02T15:04:05Z07:00"
@@ -40,9 +42,27 @@ func InitiateStatDClient() {
 }
 
 func InitiateRedis() {
+
 	var err error
-	redisPool, err = pool.NewPool("tcp", redisIp, 50)
-	redisPubPool, err = pool.NewPool("tcp", redisPubSubIp, 10)
+
+	df := func(network, addr string) (*redis.Client, error) {
+		client, err := redis.Dial(network, addr)
+		if err != nil {
+			return nil, err
+		}
+		if err = client.Cmd("AUTH", redisPassword).Err; err != nil {
+			client.Close()
+			return nil, err
+		}
+		if err = client.Cmd("select", redisDb).Err; err != nil {
+			client.Close()
+			return nil, err
+		}
+		return client, nil
+	}
+
+	redisPool, err = pool.NewCustom("tcp", redisIp, 10, df)
+
 	if err != nil {
 		errHndlr("InitiatePool", err)
 	}
@@ -56,13 +76,13 @@ func PubSub() {
 			fmt.Println("Recovered in PubSub", r)
 		}
 	}()
-	c2, err := redisPubPool.Get()
-	errHndlr("getConnFromPool", err)
-	defer redisPubPool.Put(c2)
+	//c2, err := redisPubPool.Get()
+	//errHndlr("getConnFromPool", err)
+	//defer redisPubPool.Put(c2)
 
-	//c2, err := redis.Dial("tcp", redisPubSubIp)
-	//errHndlr(err)
-	//defer c2.Close()
+	c2, err := redis.Dial("tcp", redisPubSubIp)
+	errHndlr("Dial tcp", err)
+	defer c2.Close()
 
 	//authServer
 	authE := c2.Cmd("auth", redisPassword)
@@ -321,44 +341,37 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 	_persistSessionName := fmt.Sprintf("META:%s:%s:%s:PERSISTSESSION", _class, _type, _category)
 	_thresholdEnableName := fmt.Sprintf("META:%s:%s:%s:thresholdEnable", _class, _type, _category)
 
-	//defer func() {
-	//	if r := recover(); r != nil {
-	//		fmt.Println("Recovered in OnMeta", r)
-	//	}
-	//}()
-	client, err := redisPool.Get()
-	errHndlr("getConnFromPool", err)
+	//client, err := redisPool.Get()
+	//errHndlr("getConnFromPool", err)
 	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
 	//defer client.Close()
 
-	//authServer
+	/*//authServer
 	authE := client.Cmd("auth", redisPassword)
 	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr("selectDb", r.Err)
-
-	defer redisPool.CarefullyPut(client, &r.Err)
+	errHndlr("selectDb", r.Err)*/
 
 	if _flushEnable == true {
-		client.Cmd("setnx", _flushName, _window)
+		redisPool.Cmd("setnx", _flushName, _window)
 	} else {
-		client.Cmd("del", _flushName)
+		redisPool.Cmd("del", _flushName)
 	}
 
 	if _thresholdEnable == true {
-		client.Cmd("setnx", _thresholdEnableName, _thresholdValue)
+		redisPool.Cmd("setnx", _thresholdEnableName, _thresholdValue)
 	} else {
-		client.Cmd("del", _thresholdEnableName)
+		redisPool.Cmd("del", _thresholdEnableName)
 	}
 
-	client.Cmd("setnx", _useSessionName, strconv.FormatBool(_useSession))
-	client.Cmd("setnx", _persistSessionName, strconv.FormatBool(_persistSession))
-	client.Cmd("setnx", _windowName, _window)
-	client.Cmd("setnx", _incName, strconv.Itoa(count))
+	redisPool.Cmd("setnx", _useSessionName, strconv.FormatBool(_useSession))
+	redisPool.Cmd("setnx", _persistSessionName, strconv.FormatBool(_persistSession))
+	redisPool.Cmd("setnx", _windowName, _window)
+	redisPool.Cmd("setnx", _incName, strconv.Itoa(count))
 }
 
 func OnMeta(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _persistSession, _thresholdEnable bool, _thresholdValue int) {
@@ -391,22 +404,20 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		}
 	}()
 
-	client, err := redisPool.Get()
-	errHndlr("getConnFromPool", err)
+	//client, err := redisPool.Get()
+	//errHndlr("getConnFromPool", err)
 	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
 	//defer client.Close()
 
-	//authServer
+	/*//authServer
 	authE := client.Cmd("auth", redisPassword)
 	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr("selectDb", r.Err)
-
-	defer redisPool.CarefullyPut(client, &r.Err)
+	errHndlr("selectDb", r.Err)*/
 
 	var window, sinc, useSession, persistSession, threshold string
 	var iinc int
@@ -422,21 +433,21 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		_persistSessionName := fmt.Sprintf("META:%s:%s:%s:PERSISTSESSION", _class, _type, _category)
 		_thresholdEnableName := fmt.Sprintf("META:%s:%s:%s:thresholdEnable", _class, _type, _category)
 
-		isWindowExist, _ := client.Cmd("exists", _window).Bool()
-		isIncExist, _ := client.Cmd("exists", _inc).Bool()
+		isWindowExist, _ := redisPool.Cmd("exists", _window).Int()
+		isIncExist, _ := redisPool.Cmd("exists", _inc).Int()
 
-		if isWindowExist == false || isIncExist == false {
+		if isWindowExist == 0 || isIncExist == 0 {
 			ReloadMetaData(_class, _type, _category)
 		}
-		window, _werr = client.Cmd("get", _window).Str()
+		window, _werr = redisPool.Cmd("get", _window).Str()
 		errHndlr("cmdGet", _werr)
-		sinc, _ierr = client.Cmd("get", _inc).Str()
+		sinc, _ierr = redisPool.Cmd("get", _inc).Str()
 		errHndlr("cmdGet", _ierr)
-		useSession, _userr = client.Cmd("get", _useSessionName).Str()
+		useSession, _userr = redisPool.Cmd("get", _useSessionName).Str()
 		errHndlr("cmdGet", _userr)
-		persistSession, _peerr = client.Cmd("get", _persistSessionName).Str()
+		persistSession, _peerr = redisPool.Cmd("get", _persistSessionName).Str()
 		errHndlr("cmdGet", _peerr)
-		threshold, _thresherr = client.Cmd("get", _thresholdEnableName).Str()
+		threshold, _thresherr = redisPool.Cmd("get", _thresholdEnableName).Str()
 		errHndlr("cmdGet", _thresherr)
 
 		if threshold != "" {
@@ -531,23 +542,23 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 				if persistSession == "true" {
 					PersistSessionInfo(_tenent, _company, window, _session, _parameter1, _parameter2, tm.Format(layout))
 				} else {
-					client.Cmd("hset", sessEventName, "time", tm.Format(layout))
-					client.Cmd("hmset", sessParamEventName, "param1", _parameter1, "param2", _parameter2)
+					redisPool.Cmd("hset", sessEventName, "time", tm.Format(layout))
+					redisPool.Cmd("hmset", sessParamEventName, "param1", _parameter1, "param2", _parameter2)
 				}
 			}
-			ccount, _ := client.Cmd("incr", concEventName).Int()
-			tcount, _ := client.Cmd("incr", totCountEventName).Int()
+			ccount, _ := redisPool.Cmd("incr", concEventName).Int()
+			tcount, _ := redisPool.Cmd("incr", totCountEventName).Int()
 
-			client.Cmd("incr", concEventNameWithoutParams).Int()
-			client.Cmd("incr", totCountEventNameWithoutParams).Int()
+			redisPool.Cmd("incr", concEventNameWithoutParams).Int()
+			redisPool.Cmd("incr", totCountEventNameWithoutParams).Int()
 
-			client.Cmd("incr", concEventNameWithSingleParam).Int()
-			client.Cmd("incr", totCountEventNameWithSingleParam).Int()
+			redisPool.Cmd("incr", concEventNameWithSingleParam).Int()
+			redisPool.Cmd("incr", totCountEventNameWithSingleParam).Int()
 
-			client.Cmd("incr", concEventNameWithLastParam).Int()
-			client.Cmd("incr", totCountEventNameWithLastParam).Int()
+			redisPool.Cmd("incr", concEventNameWithLastParam).Int()
+			redisPool.Cmd("incr", totCountEventNameWithLastParam).Int()
 
-			client.Cmd("incr", totCountHrEventName)
+			redisPool.Cmd("incr", totCountHrEventName)
 
 			fmt.Println("tcount ", tcount)
 			fmt.Println("ccount ", ccount)
@@ -590,27 +601,27 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 					concEventNameWithLastParam = fmt.Sprintf("CONCURRENTWLPARAM:%d:%d:%s:%s", _tenent, _company, window, sParam2)
 					totTimeEventNameWithLastParam = fmt.Sprintf("TOTALTIMEWLPARAM:%d:%d:%s:%s", _tenent, _company, window, sParam2)
 
-					rinc, _ := client.Cmd("incrby", totTimeEventName, timeDiff).Int()
-					client.Cmd("incrby", totTimeEventNameWithoutParams, timeDiff).Int()
-					client.Cmd("incrby", totTimeEventNameWithSingleParam, timeDiff).Int()
-					client.Cmd("incrby", totTimeEventNameWithLastParam, timeDiff).Int()
+					rinc, _ := redisPool.Cmd("incrby", totTimeEventName, timeDiff).Int()
+					redisPool.Cmd("incrby", totTimeEventNameWithoutParams, timeDiff).Int()
+					redisPool.Cmd("incrby", totTimeEventNameWithSingleParam, timeDiff).Int()
+					redisPool.Cmd("incrby", totTimeEventNameWithLastParam, timeDiff).Int()
 
-					dccount, _ := client.Cmd("decr", concEventName).Int()
-					client.Cmd("decr", concEventNameWithoutParams).Int()
-					client.Cmd("decr", concEventNameWithSingleParam).Int()
-					client.Cmd("decr", concEventNameWithLastParam).Int()
+					dccount, _ := redisPool.Cmd("decr", concEventName).Int()
+					redisPool.Cmd("decr", concEventNameWithoutParams).Int()
+					redisPool.Cmd("decr", concEventNameWithSingleParam).Int()
+					redisPool.Cmd("decr", concEventNameWithLastParam).Int()
 
 					if dccount < 0 {
 						fmt.Println("reset minus concurrent count:: incr by 1 :: ", concEventName)
-						dccount, _ = client.Cmd("incr", concEventName).Int()
-						client.Cmd("incr", concEventNameWithoutParams).Int()
-						client.Cmd("incr", concEventNameWithSingleParam).Int()
-						client.Cmd("incr", concEventNameWithLastParam).Int()
+						dccount, _ = redisPool.Cmd("incr", concEventName).Int()
+						redisPool.Cmd("incr", concEventNameWithoutParams).Int()
+						redisPool.Cmd("incr", concEventNameWithSingleParam).Int()
+						redisPool.Cmd("incr", concEventNameWithLastParam).Int()
 					}
 
-					oldMaxTime, _ := client.Cmd("get", maxTimeEventName).Int()
+					oldMaxTime, _ := redisPool.Cmd("get", maxTimeEventName).Int()
 					if oldMaxTime < timeDiff {
-						client.Cmd("set", maxTimeEventName, timeDiff)
+						redisPool.Cmd("set", maxTimeEventName, timeDiff)
 					}
 					if window != "QUEUE" {
 						statClient.Decrement(countConcStatName)
@@ -622,7 +633,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 							thHour := tm.Hour()
 
 							if timeDiff > thValue {
-								thcount, _ := client.Cmd("incr", thresholdEventName).Int()
+								thcount, _ := redisPool.Cmd("incr", thresholdEventName).Int()
 								fmt.Println(thresholdEventName, ": ", thcount)
 
 								thValue_2 := thValue * 2
@@ -639,32 +650,32 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 								if timeDiff > thValue && timeDiff <= thValue_2 {
 									thresholdBreakDown_1 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue, thValue_2)
-									client.Cmd("incr", thresholdBreakDown_1)
+									redisPool.Cmd("incr", thresholdBreakDown_1)
 									fmt.Println("thresholdBreakDown_1::", thresholdBreakDown_1)
 								} else if timeDiff > thValue_2 && timeDiff <= thValue_4 {
 									thresholdBreakDown_2 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_2, thValue_4)
-									client.Cmd("incr", thresholdBreakDown_2)
+									redisPool.Cmd("incr", thresholdBreakDown_2)
 									fmt.Println("thresholdBreakDown_2::", thresholdBreakDown_2)
 								} else if timeDiff > thValue_4 && timeDiff <= thValue_8 {
 									thresholdBreakDown_3 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_4, thValue_8)
-									client.Cmd("incr", thresholdBreakDown_3)
+									redisPool.Cmd("incr", thresholdBreakDown_3)
 									fmt.Println("thresholdBreakDown_3::", thresholdBreakDown_3)
 								} else if timeDiff > thValue_8 && timeDiff <= thValue_10 {
 									thresholdBreakDown_4 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_8, thValue_10)
-									client.Cmd("incr", thresholdBreakDown_4)
+									redisPool.Cmd("incr", thresholdBreakDown_4)
 									fmt.Println("thresholdBreakDown_4::", thresholdBreakDown_4)
 								} else if timeDiff > thValue_10 && timeDiff <= thValue_12 {
 									thresholdBreakDown_5 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_10, thValue_12)
-									client.Cmd("incr", thresholdBreakDown_5)
+									redisPool.Cmd("incr", thresholdBreakDown_5)
 									fmt.Println("thresholdBreakDown_5::", thresholdBreakDown_5)
 								} else {
 									thresholdBreakDown_6 := fmt.Sprintf("%s:%d:%d:%s", thresholdBreakDownEventName, thHour, thValue_12, "gt")
-									client.Cmd("incr", thresholdBreakDown_6)
+									redisPool.Cmd("incr", thresholdBreakDown_6)
 									fmt.Println("thresholdBreakDown_6::", thresholdBreakDown_6)
 								}
 							} else {
 								thresholdBreakDown_7 := fmt.Sprintf("%s:%d:%s:%d", thresholdBreakDownEventName, thHour, "lt", thValue)
-								client.Cmd("incr", thresholdBreakDown_7)
+								redisPool.Cmd("incr", thresholdBreakDown_7)
 								fmt.Println("thresholdBreakDown_7::", thresholdBreakDown_7)
 							}
 						}
@@ -697,22 +708,20 @@ func OnReset() {
 			fmt.Println("Recovered in OnReset", r)
 		}
 	}()
-	client, err := redisPool.Get()
-	errHndlr("redisPoolGet", err)
+	//client, err := redisPool.Get()
+	//errHndlr("redisPoolGet", err)
 	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
 	//defer client.Close()
 
-	//authServer
+	/*//authServer
 	authE := client.Cmd("auth", redisPassword)
 	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr("selectDb", r.Err)
-
-	defer redisPool.CarefullyPut(client, &r.Err)
+	errHndlr("selectDb", r.Err)*/
 
 	_windowList := make([]string, 0)
 	_keysToRemove := make([]string, 0)
@@ -726,7 +735,7 @@ func OnReset() {
 		fmt.Println(lenth)
 		if lenth > 0 {
 			for _, value := range val {
-				tmx, _ := client.Cmd("get", value).Str()
+				tmx, _ := redisPool.Cmd("get", value).Str()
 
 				_windowList = AppendIfMissing(_windowList, tmx)
 			}
@@ -845,11 +854,11 @@ func OnReset() {
 	tm := time.Now()
 	for _, remove := range _keysToRemove {
 		fmt.Println("remove_: ", remove)
-		client.Cmd("del", remove)
+		redisPool.Cmd("del", remove)
 	}
 	for _, session := range _loginSessions {
 		fmt.Println("readdSession: ", session)
-		client.Cmd("hset", session, "time", tm.Format(layout))
+		redisPool.Cmd("hset", session, "time", tm.Format(layout))
 		sessItemsL := strings.Split(session, ":")
 		if len(sessItemsL) >= 7 {
 			LsessParamEventName := fmt.Sprintf("SESSIONPARAMS:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[4])
@@ -862,15 +871,15 @@ func OnReset() {
 			LtotTimeEventNameWithLastParam := fmt.Sprintf("TOTALTIMEWLPARAM:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[6])
 			LtotCountEventNameWithLastParam := fmt.Sprintf("TOTALCOUNTWLPARAM:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[6])
 
-			client.Cmd("hmset", LsessParamEventName, "param1", sessItemsL[5], "param2", sessItemsL[6])
-			client.Cmd("set", LtotTimeEventName, 0)
-			client.Cmd("set", LtotCountEventName, 0)
-			client.Cmd("set", LtotTimeEventNameWithoutParams, 0)
-			client.Cmd("set", LtotCountEventNameWithoutParams, 0)
-			client.Cmd("set", LtotTimeEventNameWithSingleParam, 0)
-			client.Cmd("set", LtotCountEventNameWithSingleParam, 0)
-			client.Cmd("set", LtotTimeEventNameWithLastParam, 0)
-			client.Cmd("set", LtotCountEventNameWithLastParam, 0)
+			redisPool.Cmd("hmset", LsessParamEventName, "param1", sessItemsL[5], "param2", sessItemsL[6])
+			redisPool.Cmd("set", LtotTimeEventName, 0)
+			redisPool.Cmd("set", LtotCountEventName, 0)
+			redisPool.Cmd("set", LtotTimeEventNameWithoutParams, 0)
+			redisPool.Cmd("set", LtotCountEventNameWithoutParams, 0)
+			redisPool.Cmd("set", LtotTimeEventNameWithSingleParam, 0)
+			redisPool.Cmd("set", LtotCountEventNameWithSingleParam, 0)
+			redisPool.Cmd("set", LtotTimeEventNameWithLastParam, 0)
+			redisPool.Cmd("set", LtotCountEventNameWithLastParam, 0)
 		}
 	}
 	/*for _, prosession := range _productivitySessions {
@@ -886,22 +895,20 @@ func OnSetDailySummary(_date time.Time) {
 			fmt.Println("Recovered in OnReset", r)
 		}
 	}()
-	client, err := redisPool.Get()
-	errHndlr("redisPollGet", err)
+	//client, err := redisPool.Get()
+	//errHndlr("redisPollGet", err)
 	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
 	//defer client.Close()
 
-	//authServer
+	/*//authServer
 	authE := client.Cmd("auth", redisPassword)
 	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr("selectDb", r.Err)
-
-	defer redisPool.CarefullyPut(client, &r.Err)
+	errHndlr("selectDb", r.Err)*/
 
 	totalEventKeys := ScanAndGetKeys(totCountEventSearch)
 	for _, key := range totalEventKeys {
@@ -921,7 +928,7 @@ func OnSetDailySummary(_date time.Time) {
 			sessEventSearch := fmt.Sprintf("SESSION:%d:%d:%s:*:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
 			sessEvents := ScanAndGetKeys(sessEventSearch)
 			if len(sessEvents) > 0 {
-				tmx, _ := client.Cmd("hget", sessEvents[0], "time").Str()
+				tmx, _ := redisPool.Cmd("hget", sessEvents[0], "time").Str()
 				tm2, _ := time.Parse(layout, tmx)
 				currentTime = int(_date.Sub(tm2.Local()).Seconds())
 				fmt.Println("currentTime: ", currentTime)
@@ -935,10 +942,10 @@ func OnSetDailySummary(_date time.Time) {
 		fmt.Println("maxTimeEventName: ", maxTimeEventName)
 		fmt.Println("thresholdEventName: ", thresholdEventName)
 
-		totCount, _ := client.Cmd("get", key).Int()
-		totTime, _ := client.Cmd("get", totTimeEventName).Int()
-		maxTime, _ := client.Cmd("get", maxTimeEventName).Int()
-		threshold, _ := client.Cmd("get", thresholdEventName).Int()
+		totCount, _ := redisPool.Cmd("get", key).Int()
+		totTime, _ := redisPool.Cmd("get", totTimeEventName).Int()
+		maxTime, _ := redisPool.Cmd("get", maxTimeEventName).Int()
+		threshold, _ := redisPool.Cmd("get", thresholdEventName).Int()
 
 		fmt.Println("totCount: ", totCount)
 		fmt.Println("totTime: ", totTime)
@@ -961,22 +968,20 @@ func OnSetDailyThesholdBreakDown(_date time.Time) {
 			fmt.Println("Recovered in OnSetDailyThesholdBreakDown", r)
 		}
 	}()
-	client, err := redisPool.Get()
-	errHndlr("redisPoolGet", err)
+	//client, err := redisPool.Get()
+	//errHndlr("redisPoolGet", err)
 	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
 	//defer client.Close()
 
-	//authServer
+	/*//authServer
 	authE := client.Cmd("auth", redisPassword)
 	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr("selectDb", r.Err)
-
-	defer redisPool.CarefullyPut(client, &r.Err)
+	errHndlr("selectDb", r.Err)*/
 
 	thresholdEventKeys := ScanAndGetKeys(thresholdEventSearch)
 	for _, key := range thresholdEventKeys {
@@ -996,7 +1001,7 @@ func OnSetDailyThesholdBreakDown(_date time.Time) {
 			summery.BreakDown = fmt.Sprintf("%s-%s", keyItems[7], keyItems[8])
 			summery.Hour = hour
 
-			thCount, _ := client.Cmd("get", key).Int()
+			thCount, _ := redisPool.Cmd("get", key).Int()
 			summery.ThresholdCount = thCount
 			summery.SummaryDate = _date
 
@@ -1038,29 +1043,27 @@ func OnGetMaxTime(_tenant, _company int, _window, _parameter1, _parameter2 strin
 			fmt.Println("Recovered in OnGetMaxTime", r)
 		}
 	}()
-	client, err := redisPool.Get()
-	errHndlr("redisPoolGet", err)
+	//client, err := redisPool.Get()
+	//errHndlr("redisPoolGet", err)
 	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
 	//defer client.Close()
 
-	//authServer
+	/*//authServer
 	authE := client.Cmd("auth", redisPassword)
 	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr("selectDb", r.Err)
-
-	defer redisPool.CarefullyPut(client, &r.Err)
+	errHndlr("selectDb", r.Err)*/
 
 	maxtimeSearch := fmt.Sprintf("MAXTIME:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
-	keyList, _ := client.Cmd("keys", maxtimeSearch).List()
+	keyList, _ := redisPool.Cmd("keys", maxtimeSearch).List()
 	if len(keyList) > 0 {
 		tempMaxTime := 0
 		for _, key := range keyList {
-			value, _ := client.Cmd("get", key).Int()
+			value, _ := redisPool.Cmd("get", key).Int()
 			if tempMaxTime < value {
 				tempMaxTime = value
 			}
@@ -1078,30 +1081,28 @@ func OnGetCurrentMaxTime(_tenant, _company int, _window, _parameter1, _parameter
 			fmt.Println("Recovered in OnGetCurrentMaxTime", r)
 		}
 	}()
-	client, err := redisPool.Get()
-	errHndlr("redispoolGet", err)
+	//client, err := redisPool.Get()
+	//errHndlr("redispoolGet", err)
 	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
 	//defer client.Close()
 
-	//authServer
+	/*//authServer
 	authE := client.Cmd("auth", redisPassword)
 	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr("selectDb", r.Err)
-
-	defer redisPool.CarefullyPut(client, &r.Err)
+	errHndlr("selectDb", r.Err)*/
 
 	maxtimeSearch := fmt.Sprintf("SESSION:%d:%d:%s:*:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
-	keyList, _ := client.Cmd("keys", maxtimeSearch).List()
+	keyList, _ := redisPool.Cmd("keys", maxtimeSearch).List()
 	if len(keyList) > 0 {
 		tempMaxTime := 0
 		tm := time.Now()
 		for _, key := range keyList {
-			tmx, _ := client.Cmd("hget", key, "time").Str()
+			tmx, _ := redisPool.Cmd("hget", key, "time").Str()
 			tm2, _ := time.Parse(layout, tmx)
 			timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
 			if tempMaxTime < timeDiff {
@@ -1121,29 +1122,27 @@ func OnGetCurrentCount(_tenant, _company int, _window, _parameter1, _parameter2 
 			fmt.Println("Recovered in OnGetCurrentCount", r)
 		}
 	}()
-	client, err := redisPool.Get()
-	errHndlr("redisPoolGet", err)
+	//client, err := redisPool.Get()
+	//errHndlr("redisPoolGet", err)
 	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
 	//defer client.Close()
 
-	//authServer
+	/*//authServer
 	authE := client.Cmd("auth", redisPassword)
 	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr("selectDb", r.Err)
-
-	defer redisPool.CarefullyPut(client, &r.Err)
+	errHndlr("selectDb", r.Err)*/
 
 	concurrentSearch := fmt.Sprintf("CONCURRENT:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
-	keyList, _ := client.Cmd("keys", concurrentSearch).List()
+	keyList, _ := redisPool.Cmd("keys", concurrentSearch).List()
 	if len(keyList) > 0 {
 		temptotal := 0
 		for _, key := range keyList {
-			value, _ := client.Cmd("get", key).Int()
+			value, _ := redisPool.Cmd("get", key).Int()
 			temptotal = temptotal + value
 		}
 		if temptotal < 0 {
@@ -1163,22 +1162,20 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 			fmt.Println("Recovered in OnGetAverageTime", r)
 		}
 	}()
-	client, err := redisPool.Get()
-	errHndlr("redisPoolGet", err)
+	//client, err := redisPool.Get()
+	//errHndlr("redisPoolGet", err)
 	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
 	//defer client.Close()
 
-	//authServer
+	/*//authServer
 	authE := client.Cmd("auth", redisPassword)
 	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr("selectDb", r.Err)
-
-	defer redisPool.CarefullyPut(client, &r.Err)
+	errHndlr("selectDb", r.Err)*/
 
 	tm := time.Now().Local()
 
@@ -1189,11 +1186,11 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 	totalTime := 0
 	totalCount := 0
 
-	totTimeKeyList, _ := client.Cmd("keys", totTimeSearch).List()
+	totTimeKeyList, _ := redisPool.Cmd("keys", totTimeSearch).List()
 	if len(totTimeKeyList) > 0 {
 		temptotal := 0
 		for _, key := range totTimeKeyList {
-			value, _ := client.Cmd("get", key).Int()
+			value, _ := redisPool.Cmd("get", key).Int()
 			temptotal = temptotal + value
 		}
 		totalTime = temptotal
@@ -1202,13 +1199,13 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 		totalTime = 0
 	}
 
-	sessTimeKeyList, _ := client.Cmd("keys", sessEventSearch).List()
+	sessTimeKeyList, _ := redisPool.Cmd("keys", sessEventSearch).List()
 	fmt.Println("totalSessTimeKey: ", len(sessTimeKeyList))
 	fmt.Println(time.Now().Local())
 	if len(sessTimeKeyList) > 0 {
 		sessTemptotal := 0
 		for _, key := range sessTimeKeyList {
-			tmx, _ := client.Cmd("hget", key, "time").Str()
+			tmx, _ := redisPool.Cmd("hget", key, "time").Str()
 			tm2, _ := time.Parse(layout, tmx)
 			timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
 
@@ -1220,11 +1217,11 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 	}
 	fmt.Println(time.Now().Local())
 
-	totCountKeyList, _ := client.Cmd("keys", totCountSearch).List()
+	totCountKeyList, _ := redisPool.Cmd("keys", totCountSearch).List()
 	if len(totCountKeyList) > 0 {
 		temptotal := 0
 		for _, key := range totCountKeyList {
-			value, _ := client.Cmd("get", key).Int()
+			value, _ := redisPool.Cmd("get", key).Int()
 			temptotal = temptotal + value
 		}
 		totalCount = temptotal
@@ -1251,29 +1248,27 @@ func OnGetTotalCount(_tenant, _company int, _window, _parameter1, _parameter2 st
 			fmt.Println("Recovered in OnGetTotalCount", r)
 		}
 	}()
-	client, err := redisPool.Get()
-	errHndlr("redisPoolGet", err)
+	//client, err := redisPool.Get()
+	//errHndlr("redisPoolGet", err)
 	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
 	//defer client.Close()
 
-	//authServer
+	/*//authServer
 	authE := client.Cmd("auth", redisPassword)
 	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr("selectDb", r.Err)
-
-	defer redisPool.CarefullyPut(client, &r.Err)
+	errHndlr("selectDb", r.Err)*/
 
 	totalSearch := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
-	keyList, _ := client.Cmd("keys", totalSearch).List()
+	keyList, _ := redisPool.Cmd("keys", totalSearch).List()
 	if len(keyList) > 0 {
 		temptotal := 0
 		for _, key := range keyList {
-			value, _ := client.Cmd("get", key).Int()
+			value, _ := redisPool.Cmd("get", key).Int()
 			temptotal = temptotal + value
 		}
 		resultChannel <- temptotal
@@ -1290,25 +1285,23 @@ func OnGetQueueDetails(_tenant, _company int, resultChannel chan []QueueDetails)
 		}
 	}()
 
-	client, err := redisPool.Get()
-	errHndlr("redisPoolGet", err)
+	//client, err := redisPool.Get()
+	//errHndlr("redisPoolGet", err)
 	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
 	//defer client.Close()
 
-	//authServer
+	/*//authServer
 	authE := client.Cmd("auth", redisPassword)
 	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr("selectDb", r.Err)
-
-	defer redisPool.CarefullyPut(client, &r.Err)
+	errHndlr("selectDb", r.Err)*/
 
 	queueSearch := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:*", _tenant, _company, "QUEUE")
-	keyList, _ := client.Cmd("keys", queueSearch).List()
+	keyList, _ := redisPool.Cmd("keys", queueSearch).List()
 	if len(keyList) > 0 {
 		queueIdList := make([]string, 0)
 		for _, key := range keyList {
@@ -1418,25 +1411,23 @@ func GetQueueName(queueId string) string {
 			fmt.Println("Recovered in GetQueueName", r)
 		}
 	}()
-	client, err := redisPool.Get()
-	errHndlr("redisPoolGet", err)
+	//client, err := redisPool.Get()
+	//errHndlr("redisPoolGet", err)
 	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
 	//defer client.Close()
 
-	//authServer
+	/*//authServer
 	authE := client.Cmd("auth", redisPubSubPassword)
 	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", ardsRedisDb)
-	errHndlr("selectDb", r.Err)
-
-	defer redisPool.CarefullyPut(client, &r.Err)
+	errHndlr("selectDb", r.Err)*/
 
 	qId := strings.Replace(queueId, "-", ":", -1)
-	queueName, _ := client.Cmd("hget", "QueueNameHash", qId).Str()
+	queueName, _ := redisPool.Cmd("hget", "QueueNameHash", qId).Str()
 	fmt.Println("queueName: ", queueName)
 	if queueName == "" {
 		return queueId
@@ -1456,34 +1447,32 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 		sessionKey, timeValue, param1, param2 = FindPersistedSession(_tenant, _company, _window, _session)
 		return
 	} else {
-		client, err := redisPool.Get()
-		errHndlr("redisPoolGet", err)
+		//client, err := redisPool.Get()
+		//errHndlr("redisPoolGet", err)
 		//defer redisPool.Put(client)
 
 		//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 		//errHndlr(err)
 		//defer client.Close()
 
-		//authServer
+		/*//authServer
 		authE := client.Cmd("auth", redisPassword)
 		errHndlr("auth", authE.Err)
 		// select database
 		r := client.Cmd("select", redisDb)
-		errHndlr("selectDb", r.Err)
-
-		defer redisPool.CarefullyPut(client, &r.Err)
+		errHndlr("selectDb", r.Err)*/
 
 		sessParamsEventKey := fmt.Sprintf("SESSIONPARAMS:%d:%d:%s:%s", _tenant, _company, _window, _session)
-		paramList, _ := client.Cmd("hmget", sessParamsEventKey, "param1", "param2").List()
+		paramList, _ := redisPool.Cmd("hmget", sessParamsEventKey, "param1", "param2").List()
 		if len(paramList) >= 2 {
 			sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s", _tenant, _company, _window, _session, paramList[0], paramList[1])
-			tmx, _ := client.Cmd("hget", sessionKey, "time").Str()
+			tmx, _ := redisPool.Cmd("hget", sessionKey, "time").Str()
 			timeValue = tmx
 			param1 = paramList[0]
 			param2 = paramList[1]
 		}
 
-		client.Cmd("del", sessParamsEventKey)
+		redisPool.Cmd("del", sessParamsEventKey)
 
 		return
 	}
@@ -1500,24 +1489,22 @@ func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey
 		result = DeletePersistedSession(_tenant, _company, _window, _session)
 		return
 	} else {
-		client, err := redisPool.Get()
-		errHndlr("redisPoolGet", err)
+		//client, err := redisPool.Get()
+		//errHndlr("redisPoolGet", err)
 		//defer redisPool.Put(client)
 
 		//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 		//errHndlr(err)
 		//defer client.Close()
 
-		//authServer
+		/*//authServer
 		authE := client.Cmd("auth", redisPassword)
 		errHndlr("auth", authE.Err)
 		// select database
 		r := client.Cmd("select", redisDb)
-		errHndlr("selectDb", r.Err)
+		errHndlr("selectDb", r.Err)*/
 
-		defer redisPool.CarefullyPut(client, &r.Err)
-
-		iDel, _ := client.Cmd("del", sessionKey).Int()
+		iDel, _ := redisPool.Cmd("del", sessionKey).Int()
 		result = iDel
 		return
 	}
@@ -1532,39 +1519,48 @@ func ScanAndGetKeys(pattern string) []string {
 
 	matchingKeys := make([]string, 0)
 
-	client, err := redisPool.Get()
-	errHndlr("redisPoolGet", err)
+	//client, err := redisPool.Get()
+	//errHndlr("redisPoolGet", err)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
 	//defer client.Close()
 
-	//authServer
+	/*//authServer
 	authE := client.Cmd("auth", redisPassword)
 	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr("selectDb", r.Err)
+	errHndlr("selectDb", r.Err)*/
 
-	defer redisPool.CarefullyPut(client, &r.Err)
+	fmt.Println("Start ScanAndGetKeys:: ", pattern)
+	scanResult := util.NewScanner(redisPool, util.ScanOpts{Command: "SCAN", Pattern: pattern, Count: 1000})
 
-	sIndex := 0
-	for {
-		scanResult := client.Cmd("scan", sIndex, "MATCH", pattern, "count", 1000).Elems
-		if len(scanResult) == 2 {
-			keyList, _ := scanResult[1].List()
-			matchingKeys = AppendListIfMissing(matchingKeys, keyList)
-			sIndex, _ = scanResult[0].Int()
-			if sIndex == 0 {
-				fmt.Println("end scan")
-				break
-			}
-		} else {
-			fmt.Println("end scan with error")
-			break
-		}
+	for scanResult.HasNext() {
+		//fmt.Println("next:", scanResult.Next())
+		matchingKeys = AppendIfMissing(matchingKeys, scanResult.Next())
 	}
+	//if err := scanResult.Err(); err != nil {
+	//	log.Fatal(err)
+	//}
 
+	//sIndex := 0
+	//for {
+	//	scanResult := redisPool.Cmd("scan", sIndex, "MATCH", pattern, "count", 1000).Elems
+	//	if len(scanResult) == 2 {
+	//		keyList, _ := scanResult[1].List()
+	//		matchingKeys = AppendListIfMissing(matchingKeys, keyList)
+	//		sIndex, _ = scanResult[0].Int()
+	//		if sIndex == 0 {
+	//			fmt.Println("end scan")
+	//			break
+	//		}
+	//	} else {
+	//		fmt.Println("end scan with error")
+	//		break
+	//	}
+	//}
+	fmt.Println("Scan Result:: ", matchingKeys)
 	return matchingKeys
 }
 
