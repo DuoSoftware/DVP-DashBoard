@@ -61,7 +61,7 @@ func InitiateRedis() {
 		return client, nil
 	}
 
-	redisPool, err = pool.NewCustom("tcp", redisIp, 10, df)
+	redisPool, err = pool.NewCustom("tcp", redisIp, 50, df)
 
 	if err != nil {
 		errHndlr("InitiatePool", err)
@@ -357,21 +357,21 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 	errHndlr("selectDb", r.Err)*/
 
 	if _flushEnable == true {
-		redisPool.Cmd("setnx", _flushName, _window)
+		errHndlr("Cmd", redisPool.Cmd("setnx", _flushName, _window).Err)
 	} else {
-		redisPool.Cmd("del", _flushName)
+		errHndlr("Cmd", redisPool.Cmd("del", _flushName).Err)
 	}
 
 	if _thresholdEnable == true {
-		redisPool.Cmd("setnx", _thresholdEnableName, _thresholdValue)
+		errHndlr("Cmd", redisPool.Cmd("setnx", _thresholdEnableName, _thresholdValue).Err)
 	} else {
-		redisPool.Cmd("del", _thresholdEnableName)
+		errHndlr("Cmd", redisPool.Cmd("del", _thresholdEnableName).Err)
 	}
 
-	redisPool.Cmd("setnx", _useSessionName, strconv.FormatBool(_useSession))
-	redisPool.Cmd("setnx", _persistSessionName, strconv.FormatBool(_persistSession))
-	redisPool.Cmd("setnx", _windowName, _window)
-	redisPool.Cmd("setnx", _incName, strconv.Itoa(count))
+	errHndlr("Cmd", redisPool.Cmd("setnx", _useSessionName, strconv.FormatBool(_useSession)).Err)
+	errHndlr("Cmd", redisPool.Cmd("setnx", _persistSessionName, strconv.FormatBool(_persistSession)).Err)
+	errHndlr("Cmd", redisPool.Cmd("setnx", _windowName, _window).Err)
+	errHndlr("Cmd", redisPool.Cmd("setnx", _incName, strconv.Itoa(count)).Err)
 }
 
 func OnMeta(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _persistSession, _thresholdEnable bool, _thresholdValue int) {
@@ -433,8 +433,10 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		_persistSessionName := fmt.Sprintf("META:%s:%s:%s:PERSISTSESSION", _class, _type, _category)
 		_thresholdEnableName := fmt.Sprintf("META:%s:%s:%s:thresholdEnable", _class, _type, _category)
 
-		isWindowExist, _ := redisPool.Cmd("exists", _window).Int()
-		isIncExist, _ := redisPool.Cmd("exists", _inc).Int()
+		isWindowExist, windowExistErr := redisPool.Cmd("exists", _window).Int()
+		errHndlr("Cmd", windowExistErr)
+		isIncExist, incExistErr := redisPool.Cmd("exists", _inc).Int()
+		errHndlr("Cmd", incExistErr)
 
 		if isWindowExist == 0 || isIncExist == 0 {
 			ReloadMetaData(_class, _type, _category)
@@ -542,23 +544,31 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 				if persistSession == "true" {
 					PersistSessionInfo(_tenent, _company, window, _session, _parameter1, _parameter2, tm.Format(layout))
 				} else {
-					redisPool.Cmd("hset", sessEventName, "time", tm.Format(layout))
-					redisPool.Cmd("hmset", sessParamEventName, "param1", _parameter1, "param2", _parameter2)
+					errHndlr("Cmd", redisPool.Cmd("hset", sessEventName, "time", tm.Format(layout)).Err)
+					errHndlr("Cmd", redisPool.Cmd("hmset", sessParamEventName, "param1", _parameter1, "param2", _parameter2).Err)
 				}
 			}
-			ccount, _ := redisPool.Cmd("incr", concEventName).Int()
-			tcount, _ := redisPool.Cmd("incr", totCountEventName).Int()
+			ccount, ccountErr := redisPool.Cmd("incr", concEventName).Int()
+			errHndlr("Cmd", ccountErr)
+			tcount, tcountErr := redisPool.Cmd("incr", totCountEventName).Int()
+			errHndlr("Cmd", tcountErr)
 
-			redisPool.Cmd("incr", concEventNameWithoutParams).Int()
-			redisPool.Cmd("incr", totCountEventNameWithoutParams).Int()
+			_, err1 := redisPool.Cmd("incr", concEventNameWithoutParams).Int()
+			errHndlr("Cmd", err1)
+			_, err2 := redisPool.Cmd("incr", totCountEventNameWithoutParams).Int()
+			errHndlr("Cmd", err2)
 
-			redisPool.Cmd("incr", concEventNameWithSingleParam).Int()
-			redisPool.Cmd("incr", totCountEventNameWithSingleParam).Int()
+			_, err3 := redisPool.Cmd("incr", concEventNameWithSingleParam).Int()
+			errHndlr("Cmd", err3)
+			_, err4 := redisPool.Cmd("incr", totCountEventNameWithSingleParam).Int()
+			errHndlr("Cmd", err4)
 
-			redisPool.Cmd("incr", concEventNameWithLastParam).Int()
-			redisPool.Cmd("incr", totCountEventNameWithLastParam).Int()
+			_, err5 := redisPool.Cmd("incr", concEventNameWithLastParam).Int()
+			errHndlr("Cmd", err5)
+			_, err6 := redisPool.Cmd("incr", totCountEventNameWithLastParam).Int()
+			errHndlr("Cmd", err6)
 
-			redisPool.Cmd("incr", totCountHrEventName)
+			errHndlr("Cmd", redisPool.Cmd("incr", totCountHrEventName).Err)
 
 			fmt.Println("tcount ", tcount)
 			fmt.Println("ccount ", ccount)
@@ -601,27 +611,41 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 					concEventNameWithLastParam = fmt.Sprintf("CONCURRENTWLPARAM:%d:%d:%s:%s", _tenent, _company, window, sParam2)
 					totTimeEventNameWithLastParam = fmt.Sprintf("TOTALTIMEWLPARAM:%d:%d:%s:%s", _tenent, _company, window, sParam2)
 
-					rinc, _ := redisPool.Cmd("incrby", totTimeEventName, timeDiff).Int()
-					redisPool.Cmd("incrby", totTimeEventNameWithoutParams, timeDiff).Int()
-					redisPool.Cmd("incrby", totTimeEventNameWithSingleParam, timeDiff).Int()
-					redisPool.Cmd("incrby", totTimeEventNameWithLastParam, timeDiff).Int()
+					rinc, rincErr := redisPool.Cmd("incrby", totTimeEventName, timeDiff).Int()
+					_, err2 := redisPool.Cmd("incrby", totTimeEventNameWithoutParams, timeDiff).Int()
+					_, err3 := redisPool.Cmd("incrby", totTimeEventNameWithSingleParam, timeDiff).Int()
+					_, err4 := redisPool.Cmd("incrby", totTimeEventNameWithLastParam, timeDiff).Int()
 
-					dccount, _ := redisPool.Cmd("decr", concEventName).Int()
-					redisPool.Cmd("decr", concEventNameWithoutParams).Int()
-					redisPool.Cmd("decr", concEventNameWithSingleParam).Int()
-					redisPool.Cmd("decr", concEventNameWithLastParam).Int()
+					dccount, dccountErr := redisPool.Cmd("decr", concEventName).Int()
+					_, err5 := redisPool.Cmd("decr", concEventNameWithoutParams).Int()
+					_, err6 := redisPool.Cmd("decr", concEventNameWithSingleParam).Int()
+					_, err7 := redisPool.Cmd("decr", concEventNameWithLastParam).Int()
+
+					errHndlr("Cmd", rincErr)
+					errHndlr("Cmd", err2)
+					errHndlr("Cmd", err3)
+					errHndlr("Cmd", err4)
+					errHndlr("Cmd", dccountErr)
+					errHndlr("Cmd", err5)
+					errHndlr("Cmd", err6)
+					errHndlr("Cmd", err7)
 
 					if dccount < 0 {
 						fmt.Println("reset minus concurrent count:: incr by 1 :: ", concEventName)
-						dccount, _ = redisPool.Cmd("incr", concEventName).Int()
-						redisPool.Cmd("incr", concEventNameWithoutParams).Int()
-						redisPool.Cmd("incr", concEventNameWithSingleParam).Int()
-						redisPool.Cmd("incr", concEventNameWithLastParam).Int()
+						dccount, dccountErr = redisPool.Cmd("incr", concEventName).Int()
+						_, err8 := redisPool.Cmd("incr", concEventNameWithoutParams).Int()
+						_, err9 := redisPool.Cmd("incr", concEventNameWithSingleParam).Int()
+						_, err10 := redisPool.Cmd("incr", concEventNameWithLastParam).Int()
+						errHndlr("Cmd", dccountErr)
+						errHndlr("Cmd", err8)
+						errHndlr("Cmd", err9)
+						errHndlr("Cmd", err10)
 					}
 
-					oldMaxTime, _ := redisPool.Cmd("get", maxTimeEventName).Int()
+					oldMaxTime, oldMaxTimeErr := redisPool.Cmd("get", maxTimeEventName).Int()
+					errHndlr("Cmd", oldMaxTimeErr)
 					if oldMaxTime < timeDiff {
-						redisPool.Cmd("set", maxTimeEventName, timeDiff)
+						errHndlr("Cmd", redisPool.Cmd("set", maxTimeEventName, timeDiff).Err)
 					}
 					if window != "QUEUE" {
 						statClient.Decrement(countConcStatName)
@@ -633,7 +657,8 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 							thHour := tm.Hour()
 
 							if timeDiff > thValue {
-								thcount, _ := redisPool.Cmd("incr", thresholdEventName).Int()
+								thcount, thcountErr := redisPool.Cmd("incr", thresholdEventName).Int()
+								errHndlr("Cmd", thcountErr)
 								fmt.Println(thresholdEventName, ": ", thcount)
 
 								thValue_2 := thValue * 2
@@ -650,32 +675,32 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 								if timeDiff > thValue && timeDiff <= thValue_2 {
 									thresholdBreakDown_1 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue, thValue_2)
-									redisPool.Cmd("incr", thresholdBreakDown_1)
+									errHndlr("Cmd", redisPool.Cmd("incr", thresholdBreakDown_1).Err)
 									fmt.Println("thresholdBreakDown_1::", thresholdBreakDown_1)
 								} else if timeDiff > thValue_2 && timeDiff <= thValue_4 {
 									thresholdBreakDown_2 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_2, thValue_4)
-									redisPool.Cmd("incr", thresholdBreakDown_2)
+									errHndlr("Cmd", redisPool.Cmd("incr", thresholdBreakDown_2).Err)
 									fmt.Println("thresholdBreakDown_2::", thresholdBreakDown_2)
 								} else if timeDiff > thValue_4 && timeDiff <= thValue_8 {
 									thresholdBreakDown_3 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_4, thValue_8)
-									redisPool.Cmd("incr", thresholdBreakDown_3)
+									errHndlr("Cmd", redisPool.Cmd("incr", thresholdBreakDown_3).Err)
 									fmt.Println("thresholdBreakDown_3::", thresholdBreakDown_3)
 								} else if timeDiff > thValue_8 && timeDiff <= thValue_10 {
 									thresholdBreakDown_4 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_8, thValue_10)
-									redisPool.Cmd("incr", thresholdBreakDown_4)
+									errHndlr("Cmd", redisPool.Cmd("incr", thresholdBreakDown_4).Err)
 									fmt.Println("thresholdBreakDown_4::", thresholdBreakDown_4)
 								} else if timeDiff > thValue_10 && timeDiff <= thValue_12 {
 									thresholdBreakDown_5 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_10, thValue_12)
-									redisPool.Cmd("incr", thresholdBreakDown_5)
+									errHndlr("Cmd", redisPool.Cmd("incr", thresholdBreakDown_5).Err)
 									fmt.Println("thresholdBreakDown_5::", thresholdBreakDown_5)
 								} else {
 									thresholdBreakDown_6 := fmt.Sprintf("%s:%d:%d:%s", thresholdBreakDownEventName, thHour, thValue_12, "gt")
-									redisPool.Cmd("incr", thresholdBreakDown_6)
+									errHndlr("Cmd", redisPool.Cmd("incr", thresholdBreakDown_6).Err)
 									fmt.Println("thresholdBreakDown_6::", thresholdBreakDown_6)
 								}
 							} else {
 								thresholdBreakDown_7 := fmt.Sprintf("%s:%d:%s:%d", thresholdBreakDownEventName, thHour, "lt", thValue)
-								redisPool.Cmd("incr", thresholdBreakDown_7)
+								errHndlr("Cmd", redisPool.Cmd("incr", thresholdBreakDown_7).Err)
 								fmt.Println("thresholdBreakDown_7::", thresholdBreakDown_7)
 							}
 						}
@@ -735,7 +760,8 @@ func OnReset() {
 		fmt.Println(lenth)
 		if lenth > 0 {
 			for _, value := range val {
-				tmx, _ := redisPool.Cmd("get", value).Str()
+				tmx, tmxErr := redisPool.Cmd("get", value).Str()
+				errHndlr("Cmd", tmxErr)
 
 				_windowList = AppendIfMissing(_windowList, tmx)
 			}
@@ -854,11 +880,11 @@ func OnReset() {
 	tm := time.Now()
 	for _, remove := range _keysToRemove {
 		fmt.Println("remove_: ", remove)
-		redisPool.Cmd("del", remove)
+		errHndlr("Cmd", redisPool.Cmd("del", remove).Err)
 	}
 	for _, session := range _loginSessions {
 		fmt.Println("readdSession: ", session)
-		redisPool.Cmd("hset", session, "time", tm.Format(layout))
+		errHndlr("Cmd", redisPool.Cmd("hset", session, "time", tm.Format(layout)).Err)
 		sessItemsL := strings.Split(session, ":")
 		if len(sessItemsL) >= 7 {
 			LsessParamEventName := fmt.Sprintf("SESSIONPARAMS:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[4])
@@ -871,15 +897,15 @@ func OnReset() {
 			LtotTimeEventNameWithLastParam := fmt.Sprintf("TOTALTIMEWLPARAM:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[6])
 			LtotCountEventNameWithLastParam := fmt.Sprintf("TOTALCOUNTWLPARAM:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[6])
 
-			redisPool.Cmd("hmset", LsessParamEventName, "param1", sessItemsL[5], "param2", sessItemsL[6])
-			redisPool.Cmd("set", LtotTimeEventName, 0)
-			redisPool.Cmd("set", LtotCountEventName, 0)
-			redisPool.Cmd("set", LtotTimeEventNameWithoutParams, 0)
-			redisPool.Cmd("set", LtotCountEventNameWithoutParams, 0)
-			redisPool.Cmd("set", LtotTimeEventNameWithSingleParam, 0)
-			redisPool.Cmd("set", LtotCountEventNameWithSingleParam, 0)
-			redisPool.Cmd("set", LtotTimeEventNameWithLastParam, 0)
-			redisPool.Cmd("set", LtotCountEventNameWithLastParam, 0)
+			errHndlr("Cmd", redisPool.Cmd("hmset", LsessParamEventName, "param1", sessItemsL[5], "param2", sessItemsL[6]).Err)
+			errHndlr("Cmd", redisPool.Cmd("set", LtotTimeEventName, 0).Err)
+			errHndlr("Cmd", redisPool.Cmd("set", LtotCountEventName, 0).Err)
+			errHndlr("Cmd", redisPool.Cmd("set", LtotTimeEventNameWithoutParams, 0).Err)
+			errHndlr("Cmd", redisPool.Cmd("set", LtotCountEventNameWithoutParams, 0).Err)
+			errHndlr("Cmd", redisPool.Cmd("set", LtotTimeEventNameWithSingleParam, 0).Err)
+			errHndlr("Cmd", redisPool.Cmd("set", LtotCountEventNameWithSingleParam, 0).Err)
+			errHndlr("Cmd", redisPool.Cmd("set", LtotTimeEventNameWithLastParam, 0).Err)
+			errHndlr("Cmd", redisPool.Cmd("set", LtotCountEventNameWithLastParam, 0).Err)
 		}
 	}
 	/*for _, prosession := range _productivitySessions {
@@ -928,7 +954,8 @@ func OnSetDailySummary(_date time.Time) {
 			sessEventSearch := fmt.Sprintf("SESSION:%d:%d:%s:*:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
 			sessEvents := ScanAndGetKeys(sessEventSearch)
 			if len(sessEvents) > 0 {
-				tmx, _ := redisPool.Cmd("hget", sessEvents[0], "time").Str()
+				tmx, tmxErr := redisPool.Cmd("hget", sessEvents[0], "time").Str()
+				errHndlr("Cmd", tmxErr)
 				tm2, _ := time.Parse(layout, tmx)
 				currentTime = int(_date.Sub(tm2.Local()).Seconds())
 				fmt.Println("currentTime: ", currentTime)
@@ -942,10 +969,15 @@ func OnSetDailySummary(_date time.Time) {
 		fmt.Println("maxTimeEventName: ", maxTimeEventName)
 		fmt.Println("thresholdEventName: ", thresholdEventName)
 
-		totCount, _ := redisPool.Cmd("get", key).Int()
-		totTime, _ := redisPool.Cmd("get", totTimeEventName).Int()
-		maxTime, _ := redisPool.Cmd("get", maxTimeEventName).Int()
-		threshold, _ := redisPool.Cmd("get", thresholdEventName).Int()
+		totCount, totCountErr := redisPool.Cmd("get", key).Int()
+		totTime, totTimeErr := redisPool.Cmd("get", totTimeEventName).Int()
+		maxTime, maxTimeErr := redisPool.Cmd("get", maxTimeEventName).Int()
+		threshold, thresholdErr := redisPool.Cmd("get", thresholdEventName).Int()
+
+		errHndlr("Cmd", totCountErr)
+		errHndlr("Cmd", totTimeErr)
+		errHndlr("Cmd", maxTimeErr)
+		errHndlr("Cmd", thresholdErr)
 
 		fmt.Println("totCount: ", totCount)
 		fmt.Println("totTime: ", totTime)
@@ -1001,7 +1033,8 @@ func OnSetDailyThesholdBreakDown(_date time.Time) {
 			summery.BreakDown = fmt.Sprintf("%s-%s", keyItems[7], keyItems[8])
 			summery.Hour = hour
 
-			thCount, _ := redisPool.Cmd("get", key).Int()
+			thCount, thCountErr := redisPool.Cmd("get", key).Int()
+			errHndlr("Cmd", thCountErr)
 			summery.ThresholdCount = thCount
 			summery.SummaryDate = _date
 
@@ -1059,11 +1092,13 @@ func OnGetMaxTime(_tenant, _company int, _window, _parameter1, _parameter2 strin
 	errHndlr("selectDb", r.Err)*/
 
 	maxtimeSearch := fmt.Sprintf("MAXTIME:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
-	keyList, _ := redisPool.Cmd("keys", maxtimeSearch).List()
+	keyList, keyListErr := redisPool.Cmd("keys", maxtimeSearch).List()
+	errHndlr("Cmd", keyListErr)
 	if len(keyList) > 0 {
 		tempMaxTime := 0
 		for _, key := range keyList {
-			value, _ := redisPool.Cmd("get", key).Int()
+			value, valueErr := redisPool.Cmd("get", key).Int()
+			errHndlr("Cmd", valueErr)
 			if tempMaxTime < value {
 				tempMaxTime = value
 			}
@@ -1097,12 +1132,14 @@ func OnGetCurrentMaxTime(_tenant, _company int, _window, _parameter1, _parameter
 	errHndlr("selectDb", r.Err)*/
 
 	maxtimeSearch := fmt.Sprintf("SESSION:%d:%d:%s:*:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
-	keyList, _ := redisPool.Cmd("keys", maxtimeSearch).List()
+	keyList, keyListErr := redisPool.Cmd("keys", maxtimeSearch).List()
+	errHndlr("Cmd", keyListErr)
 	if len(keyList) > 0 {
 		tempMaxTime := 0
 		tm := time.Now()
 		for _, key := range keyList {
-			tmx, _ := redisPool.Cmd("hget", key, "time").Str()
+			tmx, tmxErr := redisPool.Cmd("hget", key, "time").Str()
+			errHndlr("Cmd", tmxErr)
 			tm2, _ := time.Parse(layout, tmx)
 			timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
 			if tempMaxTime < timeDiff {
@@ -1138,11 +1175,13 @@ func OnGetCurrentCount(_tenant, _company int, _window, _parameter1, _parameter2 
 	errHndlr("selectDb", r.Err)*/
 
 	concurrentSearch := fmt.Sprintf("CONCURRENT:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
-	keyList, _ := redisPool.Cmd("keys", concurrentSearch).List()
+	keyList, keyListErr := redisPool.Cmd("keys", concurrentSearch).List()
+	errHndlr("Cmd", keyListErr)
 	if len(keyList) > 0 {
 		temptotal := 0
 		for _, key := range keyList {
-			value, _ := redisPool.Cmd("get", key).Int()
+			value, valueErr := redisPool.Cmd("get", key).Int()
+			errHndlr("Cmd", valueErr)
 			temptotal = temptotal + value
 		}
 		if temptotal < 0 {
@@ -1186,11 +1225,13 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 	totalTime := 0
 	totalCount := 0
 
-	totTimeKeyList, _ := redisPool.Cmd("keys", totTimeSearch).List()
+	totTimeKeyList, totTimeKeyListErr := redisPool.Cmd("keys", totTimeSearch).List()
+	errHndlr("Cmd", totTimeKeyListErr)
 	if len(totTimeKeyList) > 0 {
 		temptotal := 0
 		for _, key := range totTimeKeyList {
-			value, _ := redisPool.Cmd("get", key).Int()
+			value, valueErr := redisPool.Cmd("get", key).Int()
+			errHndlr("Cmd", valueErr)
 			temptotal = temptotal + value
 		}
 		totalTime = temptotal
@@ -1199,13 +1240,15 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 		totalTime = 0
 	}
 
-	sessTimeKeyList, _ := redisPool.Cmd("keys", sessEventSearch).List()
+	sessTimeKeyList, sessTimeKeyListErr := redisPool.Cmd("keys", sessEventSearch).List()
+	errHndlr("Cmd", sessTimeKeyListErr)
 	fmt.Println("totalSessTimeKey: ", len(sessTimeKeyList))
 	fmt.Println(time.Now().Local())
 	if len(sessTimeKeyList) > 0 {
 		sessTemptotal := 0
 		for _, key := range sessTimeKeyList {
-			tmx, _ := redisPool.Cmd("hget", key, "time").Str()
+			tmx, tmxErr := redisPool.Cmd("hget", key, "time").Str()
+			errHndlr("Cmd", tmxErr)
 			tm2, _ := time.Parse(layout, tmx)
 			timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
 
@@ -1217,11 +1260,13 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 	}
 	fmt.Println(time.Now().Local())
 
-	totCountKeyList, _ := redisPool.Cmd("keys", totCountSearch).List()
+	totCountKeyList, totCountKeyListErr := redisPool.Cmd("keys", totCountSearch).List()
+	errHndlr("Cmd", totCountKeyListErr)
 	if len(totCountKeyList) > 0 {
 		temptotal := 0
 		for _, key := range totCountKeyList {
-			value, _ := redisPool.Cmd("get", key).Int()
+			value, valueErr := redisPool.Cmd("get", key).Int()
+			errHndlr("Cmd", valueErr)
 			temptotal = temptotal + value
 		}
 		totalCount = temptotal
@@ -1264,11 +1309,13 @@ func OnGetTotalCount(_tenant, _company int, _window, _parameter1, _parameter2 st
 	errHndlr("selectDb", r.Err)*/
 
 	totalSearch := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
-	keyList, _ := redisPool.Cmd("keys", totalSearch).List()
+	keyList, keyListErr := redisPool.Cmd("keys", totalSearch).List()
+	errHndlr("Cmd", keyListErr)
 	if len(keyList) > 0 {
 		temptotal := 0
 		for _, key := range keyList {
-			value, _ := redisPool.Cmd("get", key).Int()
+			value, valueErr := redisPool.Cmd("get", key).Int()
+			errHndlr("Cmd", valueErr)
 			temptotal = temptotal + value
 		}
 		resultChannel <- temptotal
@@ -1301,7 +1348,8 @@ func OnGetQueueDetails(_tenant, _company int, resultChannel chan []QueueDetails)
 	errHndlr("selectDb", r.Err)*/
 
 	queueSearch := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:*", _tenant, _company, "QUEUE")
-	keyList, _ := redisPool.Cmd("keys", queueSearch).List()
+	keyList, keyListErr := redisPool.Cmd("keys", queueSearch).List()
+	errHndlr("Cmd", keyListErr)
 	if len(keyList) > 0 {
 		queueIdList := make([]string, 0)
 		for _, key := range keyList {
@@ -1427,7 +1475,8 @@ func GetQueueName(queueId string) string {
 	errHndlr("selectDb", r.Err)*/
 
 	qId := strings.Replace(queueId, "-", ":", -1)
-	queueName, _ := redisPool.Cmd("hget", "QueueNameHash", qId).Str()
+	queueName, queueNameErr := redisPool.Cmd("hget", "QueueNameHash", qId).Str()
+	errHndlr("Cmd", queueNameErr)
 	fmt.Println("queueName: ", queueName)
 	if queueName == "" {
 		return queueId
@@ -1463,16 +1512,18 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 		errHndlr("selectDb", r.Err)*/
 
 		sessParamsEventKey := fmt.Sprintf("SESSIONPARAMS:%d:%d:%s:%s", _tenant, _company, _window, _session)
-		paramList, _ := redisPool.Cmd("hmget", sessParamsEventKey, "param1", "param2").List()
+		paramList, paramListErr := redisPool.Cmd("hmget", sessParamsEventKey, "param1", "param2").List()
+		errHndlr("Cmd", paramListErr)
 		if len(paramList) >= 2 {
 			sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s", _tenant, _company, _window, _session, paramList[0], paramList[1])
-			tmx, _ := redisPool.Cmd("hget", sessionKey, "time").Str()
+			tmx, tmxErr := redisPool.Cmd("hget", sessionKey, "time").Str()
+			errHndlr("Cmd", tmxErr)
 			timeValue = tmx
 			param1 = paramList[0]
 			param2 = paramList[1]
 		}
 
-		redisPool.Cmd("del", sessParamsEventKey)
+		errHndlr("Cmd", redisPool.Cmd("del", sessParamsEventKey).Err)
 
 		return
 	}
@@ -1504,7 +1555,8 @@ func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey
 		r := client.Cmd("select", redisDb)
 		errHndlr("selectDb", r.Err)*/
 
-		iDel, _ := redisPool.Cmd("del", sessionKey).Int()
+		iDel, iDelErr := redisPool.Cmd("del", sessionKey).Int()
+		errHndlr("Cmd", iDelErr)
 		result = iDel
 		return
 	}
