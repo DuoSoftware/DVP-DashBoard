@@ -25,9 +25,9 @@ var dashboardMetaInfo []MetaData
 
 //var log = log4go.NewLogger()
 
-func errHndlr(err error) {
+func errHndlr(errorFrom string, err error) {
 	if err != nil {
-		fmt.Println("error:", err)
+		fmt.Println("error:", errorFrom, ":: ", err)
 	}
 }
 
@@ -41,10 +41,10 @@ func InitiateStatDClient() {
 
 func InitiateRedis() {
 	var err error
-	redisPool, err = pool.NewPool("tcp", redisIp, 10)
+	redisPool, err = pool.NewPool("tcp", redisIp, 50)
 	redisPubPool, err = pool.NewPool("tcp", redisPubSubIp, 10)
 	if err != nil {
-		errHndlr(err)
+		errHndlr("InitiatePool", err)
 	}
 
 	go PubSub()
@@ -57,7 +57,7 @@ func PubSub() {
 		}
 	}()
 	c2, err := redisPubPool.Get()
-	errHndlr(err)
+	errHndlr("getConnFromPool", err)
 	defer redisPubPool.Put(c2)
 
 	//c2, err := redis.Dial("tcp", redisPubSubIp)
@@ -66,7 +66,7 @@ func PubSub() {
 
 	//authServer
 	authE := c2.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 
 	psc := pubsub.NewSubClient(c2)
 	psr := psc.Subscribe("events")
@@ -327,8 +327,8 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 	//	}
 	//}()
 	client, err := redisPool.Get()
-	errHndlr(err)
-	defer redisPool.Put(client)
+	errHndlr("getConnFromPool", err)
+	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
@@ -336,10 +336,12 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr(r.Err)
+	errHndlr("selectDb", r.Err)
+
+	defer redisPool.CarefullyPut(client, &r.Err)
 
 	if _flushEnable == true {
 		client.Cmd("setnx", _flushName, _window)
@@ -390,8 +392,8 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 	}()
 
 	client, err := redisPool.Get()
-	errHndlr(err)
-	defer redisPool.Put(client)
+	errHndlr("getConnFromPool", err)
+	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
@@ -399,10 +401,12 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr(r.Err)
+	errHndlr("selectDb", r.Err)
+
+	defer redisPool.CarefullyPut(client, &r.Err)
 
 	var window, sinc, useSession, persistSession, threshold string
 	var iinc int
@@ -425,15 +429,15 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 			ReloadMetaData(_class, _type, _category)
 		}
 		window, _werr = client.Cmd("get", _window).Str()
-		errHndlr(_werr)
+		errHndlr("cmdGet", _werr)
 		sinc, _ierr = client.Cmd("get", _inc).Str()
-		errHndlr(_ierr)
+		errHndlr("cmdGet", _ierr)
 		useSession, _userr = client.Cmd("get", _useSessionName).Str()
-		errHndlr(_userr)
+		errHndlr("cmdGet", _userr)
 		persistSession, _peerr = client.Cmd("get", _persistSessionName).Str()
-		errHndlr(_peerr)
+		errHndlr("cmdGet", _peerr)
 		threshold, _thresherr = client.Cmd("get", _thresholdEnableName).Str()
-		errHndlr(_thresherr)
+		errHndlr("cmdGet", _thresherr)
 
 		if threshold != "" {
 			thresholdEnabled = true
@@ -694,8 +698,8 @@ func OnReset() {
 		}
 	}()
 	client, err := redisPool.Get()
-	errHndlr(err)
-	defer redisPool.Put(client)
+	errHndlr("redisPoolGet", err)
+	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
@@ -703,10 +707,12 @@ func OnReset() {
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr(r.Err)
+	errHndlr("selectDb", r.Err)
+
+	defer redisPool.CarefullyPut(client, &r.Err)
 
 	_windowList := make([]string, 0)
 	_keysToRemove := make([]string, 0)
@@ -881,8 +887,8 @@ func OnSetDailySummary(_date time.Time) {
 		}
 	}()
 	client, err := redisPool.Get()
-	errHndlr(err)
-	defer redisPool.Put(client)
+	errHndlr("redisPollGet", err)
+	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
@@ -890,10 +896,12 @@ func OnSetDailySummary(_date time.Time) {
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr(r.Err)
+	errHndlr("selectDb", r.Err)
+
+	defer redisPool.CarefullyPut(client, &r.Err)
 
 	totalEventKeys := ScanAndGetKeys(totCountEventSearch)
 	for _, key := range totalEventKeys {
@@ -954,8 +962,8 @@ func OnSetDailyThesholdBreakDown(_date time.Time) {
 		}
 	}()
 	client, err := redisPool.Get()
-	errHndlr(err)
-	defer redisPool.Put(client)
+	errHndlr("redisPoolGet", err)
+	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
@@ -963,10 +971,12 @@ func OnSetDailyThesholdBreakDown(_date time.Time) {
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr(r.Err)
+	errHndlr("selectDb", r.Err)
+
+	defer redisPool.CarefullyPut(client, &r.Err)
 
 	thresholdEventKeys := ScanAndGetKeys(thresholdEventSearch)
 	for _, key := range thresholdEventKeys {
@@ -1029,8 +1039,8 @@ func OnGetMaxTime(_tenant, _company int, _window, _parameter1, _parameter2 strin
 		}
 	}()
 	client, err := redisPool.Get()
-	errHndlr(err)
-	defer redisPool.Put(client)
+	errHndlr("redisPoolGet", err)
+	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
@@ -1038,10 +1048,12 @@ func OnGetMaxTime(_tenant, _company int, _window, _parameter1, _parameter2 strin
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr(r.Err)
+	errHndlr("selectDb", r.Err)
+
+	defer redisPool.CarefullyPut(client, &r.Err)
 
 	maxtimeSearch := fmt.Sprintf("MAXTIME:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
 	keyList, _ := client.Cmd("keys", maxtimeSearch).List()
@@ -1067,8 +1079,8 @@ func OnGetCurrentMaxTime(_tenant, _company int, _window, _parameter1, _parameter
 		}
 	}()
 	client, err := redisPool.Get()
-	errHndlr(err)
-	defer redisPool.Put(client)
+	errHndlr("redispoolGet", err)
+	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
@@ -1076,10 +1088,12 @@ func OnGetCurrentMaxTime(_tenant, _company int, _window, _parameter1, _parameter
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr(r.Err)
+	errHndlr("selectDb", r.Err)
+
+	defer redisPool.CarefullyPut(client, &r.Err)
 
 	maxtimeSearch := fmt.Sprintf("SESSION:%d:%d:%s:*:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
 	keyList, _ := client.Cmd("keys", maxtimeSearch).List()
@@ -1108,8 +1122,8 @@ func OnGetCurrentCount(_tenant, _company int, _window, _parameter1, _parameter2 
 		}
 	}()
 	client, err := redisPool.Get()
-	errHndlr(err)
-	defer redisPool.Put(client)
+	errHndlr("redisPoolGet", err)
+	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
@@ -1117,10 +1131,12 @@ func OnGetCurrentCount(_tenant, _company int, _window, _parameter1, _parameter2 
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr(r.Err)
+	errHndlr("selectDb", r.Err)
+
+	defer redisPool.CarefullyPut(client, &r.Err)
 
 	concurrentSearch := fmt.Sprintf("CONCURRENT:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
 	keyList, _ := client.Cmd("keys", concurrentSearch).List()
@@ -1148,8 +1164,8 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 		}
 	}()
 	client, err := redisPool.Get()
-	errHndlr(err)
-	defer redisPool.Put(client)
+	errHndlr("redisPoolGet", err)
+	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
@@ -1157,10 +1173,12 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr(r.Err)
+	errHndlr("selectDb", r.Err)
+
+	defer redisPool.CarefullyPut(client, &r.Err)
 
 	tm := time.Now().Local()
 
@@ -1234,8 +1252,8 @@ func OnGetTotalCount(_tenant, _company int, _window, _parameter1, _parameter2 st
 		}
 	}()
 	client, err := redisPool.Get()
-	errHndlr(err)
-	defer redisPool.Put(client)
+	errHndlr("redisPoolGet", err)
+	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
@@ -1243,10 +1261,12 @@ func OnGetTotalCount(_tenant, _company int, _window, _parameter1, _parameter2 st
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr(r.Err)
+	errHndlr("selectDb", r.Err)
+
+	defer redisPool.CarefullyPut(client, &r.Err)
 
 	totalSearch := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
 	keyList, _ := client.Cmd("keys", totalSearch).List()
@@ -1271,8 +1291,8 @@ func OnGetQueueDetails(_tenant, _company int, resultChannel chan []QueueDetails)
 	}()
 
 	client, err := redisPool.Get()
-	errHndlr(err)
-	defer redisPool.Put(client)
+	errHndlr("redisPoolGet", err)
+	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
@@ -1280,10 +1300,12 @@ func OnGetQueueDetails(_tenant, _company int, resultChannel chan []QueueDetails)
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr(r.Err)
+	errHndlr("selectDb", r.Err)
+
+	defer redisPool.CarefullyPut(client, &r.Err)
 
 	queueSearch := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:*", _tenant, _company, "QUEUE")
 	keyList, _ := client.Cmd("keys", queueSearch).List()
@@ -1397,8 +1419,8 @@ func GetQueueName(queueId string) string {
 		}
 	}()
 	client, err := redisPool.Get()
-	errHndlr(err)
-	defer redisPool.Put(client)
+	errHndlr("redisPoolGet", err)
+	//defer redisPool.Put(client)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
@@ -1406,10 +1428,12 @@ func GetQueueName(queueId string) string {
 
 	//authServer
 	authE := client.Cmd("auth", redisPubSubPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", ardsRedisDb)
-	errHndlr(r.Err)
+	errHndlr("selectDb", r.Err)
+
+	defer redisPool.CarefullyPut(client, &r.Err)
 
 	qId := strings.Replace(queueId, "-", ":", -1)
 	queueName, _ := client.Cmd("hget", "QueueNameHash", qId).Str()
@@ -1433,8 +1457,8 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 		return
 	} else {
 		client, err := redisPool.Get()
-		errHndlr(err)
-		defer redisPool.Put(client)
+		errHndlr("redisPoolGet", err)
+		//defer redisPool.Put(client)
 
 		//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 		//errHndlr(err)
@@ -1442,10 +1466,12 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 
 		//authServer
 		authE := client.Cmd("auth", redisPassword)
-		errHndlr(authE.Err)
+		errHndlr("auth", authE.Err)
 		// select database
 		r := client.Cmd("select", redisDb)
-		errHndlr(r.Err)
+		errHndlr("selectDb", r.Err)
+
+		defer redisPool.CarefullyPut(client, &r.Err)
 
 		sessParamsEventKey := fmt.Sprintf("SESSIONPARAMS:%d:%d:%s:%s", _tenant, _company, _window, _session)
 		paramList, _ := client.Cmd("hmget", sessParamsEventKey, "param1", "param2").List()
@@ -1475,8 +1501,8 @@ func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey
 		return
 	} else {
 		client, err := redisPool.Get()
-		errHndlr(err)
-		defer redisPool.Put(client)
+		errHndlr("redisPoolGet", err)
+		//defer redisPool.Put(client)
 
 		//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 		//errHndlr(err)
@@ -1484,10 +1510,12 @@ func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey
 
 		//authServer
 		authE := client.Cmd("auth", redisPassword)
-		errHndlr(authE.Err)
+		errHndlr("auth", authE.Err)
 		// select database
 		r := client.Cmd("select", redisDb)
-		errHndlr(r.Err)
+		errHndlr("selectDb", r.Err)
+
+		defer redisPool.CarefullyPut(client, &r.Err)
 
 		iDel, _ := client.Cmd("del", sessionKey).Int()
 		result = iDel
@@ -1505,8 +1533,7 @@ func ScanAndGetKeys(pattern string) []string {
 	matchingKeys := make([]string, 0)
 
 	client, err := redisPool.Get()
-	errHndlr(err)
-	defer redisPool.Put(client)
+	errHndlr("redisPoolGet", err)
 
 	//client, err := redis.DialTimeout("tcp", redisIp, time.Duration(10)*time.Second)
 	//errHndlr(err)
@@ -1514,10 +1541,13 @@ func ScanAndGetKeys(pattern string) []string {
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 	// select database
 	r := client.Cmd("select", redisDb)
-	errHndlr(r.Err)
+	errHndlr("selectDb", r.Err)
+
+	defer redisPool.CarefullyPut(client, &r.Err)
+
 	sIndex := 0
 	for {
 		scanResult := client.Cmd("scan", sIndex, "MATCH", pattern, "count", 1000).Elems

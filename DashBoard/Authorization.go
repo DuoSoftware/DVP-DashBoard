@@ -242,12 +242,12 @@ func SecurityGet(key string) string {
 		}
 	}()
 	client, err := redis.DialTimeout("tcp", securityIp, time.Duration(10)*time.Second)
-	errHndlr(err)
+	errHndlr("dial", err)
 	defer client.Close()
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("auth", authE.Err)
 
 	strObj, _ := client.Cmd("get", key).Str()
 	//fmt.Println(strObj)
