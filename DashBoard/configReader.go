@@ -38,6 +38,7 @@ var cacheMachenism string
 var dashboardServiceHost string
 var dashboardServicePort string
 var accessToken string
+var redisClusterName string
 
 func GetDirPath() string {
 	envPath := os.Getenv("GO_CONFIG_DIR")
@@ -89,6 +90,7 @@ func GetDefaultConfig() Configuration {
 		defconfiguration.DashboardServiceHost = "127.0.0.1"
 		defconfiguration.DashboardServicePort = "8874"
 		defconfiguration.AccessToken = ""
+		defconfiguration.RedisClusterName = "redis-cluster"
 	}
 
 	return defconfiguration
@@ -136,6 +138,7 @@ func LoadDefaultConfig() {
 		dashboardServiceHost = "127.0.0.1"
 		dashboardServicePort = "8874"
 		accessToken = ""
+		redisClusterName = "redis-cluster"
 	} else {
 		redisPubSubIp = fmt.Sprintf("%s:%s", defconfiguration.RedisPubSubIp, defconfiguration.RedisPort)
 		redisIp = fmt.Sprintf("%s:%s", defconfiguration.RedisIp, defconfiguration.RedisPort)
@@ -165,6 +168,7 @@ func LoadDefaultConfig() {
 		dashboardServiceHost = defconfiguration.DashboardServiceHost
 		dashboardServicePort = defconfiguration.DashboardServicePort
 		accessToken = defconfiguration.AccessToken
+		redisClusterName = defconfiguration.RedisClusterName
 	}
 }
 
@@ -214,6 +218,7 @@ func LoadConfiguration() {
 		dashboardServiceHost = os.Getenv(envconfiguration.DashboardServiceHost)
 		dashboardServicePort = os.Getenv(envconfiguration.DashboardServicePort)
 		accessToken = os.Getenv(envconfiguration.AccessToken)
+		redisClusterName = os.Getenv(envconfiguration.RedisClusterName)
 
 		if redisPubSubIp == "" {
 			redisPubSubIp = defConfig.RedisPubSubIp
@@ -298,6 +303,9 @@ func LoadConfiguration() {
 		}
 		if accessToken == "" {
 			accessToken = defConfig.AccessToken
+		}
+		if redisClusterName == "" {
+			redisClusterName = defConfig.RedisClusterName
 		}
 
 		redisIp = fmt.Sprintf("%s:%s", redisIp, redisPort)

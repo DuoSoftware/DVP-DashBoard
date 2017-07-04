@@ -26,5 +26,6 @@
 	"CacheMachenism": "HOST_DASHBOARD_CACHE",
 	"DashboardServiceHost": "SYS_DASHBOARDSERVICE_HOST",
 	"DashboardServicePort": "SYS_DASHBOARDSERVICE_PORT",
-	"AccessToken":"HOST_TOKEN"
+	"AccessToken":"HOST_TOKEN",
+	"RedisClusterName":"SYS_REDIS_SENTINEL_NAME"
 }
