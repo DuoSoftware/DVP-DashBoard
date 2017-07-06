@@ -39,6 +39,9 @@ var dashboardServiceHost string
 var dashboardServicePort string
 var accessToken string
 var redisClusterName string
+var redisMode string
+var sentinelHosts string
+var sentinelPort string
 
 func GetDirPath() string {
 	envPath := os.Getenv("GO_CONFIG_DIR")
@@ -91,6 +94,9 @@ func GetDefaultConfig() Configuration {
 		defconfiguration.DashboardServicePort = "8874"
 		defconfiguration.AccessToken = ""
 		defconfiguration.RedisClusterName = "redis-cluster"
+		defconfiguration.RedisMode = "instance"
+		defconfiguration.SentinelHosts = "138.197.90.92,45.55.205.92,138.197.90.92"
+		defconfiguration.SentinelPort = "16389"
 	}
 
 	return defconfiguration
@@ -139,6 +145,9 @@ func LoadDefaultConfig() {
 		dashboardServicePort = "8874"
 		accessToken = ""
 		redisClusterName = "redis-cluster"
+		redisMode = "instance"
+		sentinelHosts = "138.197.90.92,45.55.205.92,138.197.90.92"
+		sentinelPort = "16389"
 	} else {
 		redisPubSubIp = fmt.Sprintf("%s:%s", defconfiguration.RedisPubSubIp, defconfiguration.RedisPort)
 		redisIp = fmt.Sprintf("%s:%s", defconfiguration.RedisIp, defconfiguration.RedisPort)
@@ -169,6 +178,9 @@ func LoadDefaultConfig() {
 		dashboardServicePort = defconfiguration.DashboardServicePort
 		accessToken = defconfiguration.AccessToken
 		redisClusterName = defconfiguration.RedisClusterName
+		redisMode = defconfiguration.RedisMode
+		sentinelHosts = defconfiguration.SentinelHosts
+		sentinelPort = defconfiguration.SentinelPort
 	}
 }
 
@@ -219,6 +231,9 @@ func LoadConfiguration() {
 		dashboardServicePort = os.Getenv(envconfiguration.DashboardServicePort)
 		accessToken = os.Getenv(envconfiguration.AccessToken)
 		redisClusterName = os.Getenv(envconfiguration.RedisClusterName)
+		redisMode = os.Getenv(envconfiguration.RedisMode)
+		sentinelHosts = os.Getenv(envconfiguration.SentinelHosts)
+		sentinelPort = os.Getenv(envconfiguration.SentinelPort)
 
 		if redisPubSubIp == "" {
 			redisPubSubIp = defConfig.RedisPubSubIp
@@ -308,11 +323,24 @@ func LoadConfiguration() {
 			redisClusterName = defConfig.RedisClusterName
 		}
 
+		if redisMode == "" {
+			redisMode = defConfig.RedisMode
+		}
+		if sentinelHosts == "" {
+			sentinelHosts = defConfig.SentinelHosts
+		}
+		if sentinelPort == "" {
+			sentinelPort = defConfig.SentinelPort
+		}
+
 		redisIp = fmt.Sprintf("%s:%s", redisIp, redisPort)
 		redisPubSubIp = fmt.Sprintf("%s:%s", redisPubSubIp, redisPubSubPort)
 		securityIp = fmt.Sprintf("%s:%s", securityIp, securityPort)
 	}
 
+	fmt.Println("redisMode:", redisMode)
+	fmt.Println("sentinelHosts:", sentinelHosts)
+	fmt.Println("sentinelPort:", sentinelPort)
 	fmt.Println("redisPubSubIp:", redisPubSubIp)
 	fmt.Println("redisIp:", redisIp)
 	fmt.Println("redisDb:", redisDb)

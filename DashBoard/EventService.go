@@ -61,6 +61,9 @@ type Configuration struct {
 	DashboardServicePort string
 	AccessToken          string
 	RedisClusterName     string
+	RedisMode            string
+	SentinelHosts        string
+	SentinelPort         string
 }
 
 type EnvConfiguration struct {
@@ -93,6 +96,9 @@ type EnvConfiguration struct {
 	DashboardServicePort string
 	AccessToken          string
 	RedisClusterName     string
+	RedisMode            string
+	SentinelHosts        string
+	SentinelPort         string
 }
 
 type Result struct {

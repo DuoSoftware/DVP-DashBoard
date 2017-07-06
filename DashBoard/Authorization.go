@@ -8,7 +8,6 @@ import (
 	//"github.com/gorilla/context"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func loadJwtMiddleware() *jwtmiddleware.JWTMiddleware {
@@ -241,9 +240,18 @@ func SecurityGet(key string) string {
 			fmt.Println("Recovered in RedisGet", r)
 		}
 	}()
-	client, err := redis.DialTimeout("tcp", securityIp, time.Duration(10)*time.Second)
-	errHndlr("dial", err)
-	defer client.Close()
+	var client *redis.Client
+	var err error
+
+	if redisMode == "sentinel" {
+		client, err = sentinelPool.GetMaster(redisClusterName)
+		errHndlr("getConnFromSentinel", err)
+		defer sentinelPool.PutMaster(redisClusterName, client)
+	} else {
+		client, err = redisPool.Get()
+		errHndlr("getConnFromPool", err)
+		defer redisPool.Put(client)
+	}
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
