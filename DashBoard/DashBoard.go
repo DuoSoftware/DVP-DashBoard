@@ -526,9 +526,9 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		_thresholdEnableName := fmt.Sprintf("META:%s:%s:%s:thresholdEnable", _class, _type, _category)
 
 		isWindowExist, windowExistErr := client.Cmd("exists", _window).Int()
-		errHndlr("Cmd", windowExistErr)
+		errHndlr("Cmd windowExistErr", windowExistErr)
 		isIncExist, incExistErr := client.Cmd("exists", _inc).Int()
-		errHndlr("Cmd", incExistErr)
+		errHndlr("Cmd incExistErr", incExistErr)
 
 		if isWindowExist == 0 || isIncExist == 0 {
 			ReloadMetaData(_class, _type, _category)
@@ -636,8 +636,8 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 				if persistSession == "true" {
 					PersistSessionInfo(_tenent, _company, window, _session, _parameter1, _parameter2, tm.Format(layout))
 				} else {
-					errHndlr("Cmd", client.Cmd("hset", sessEventName, "time", tm.Format(layout)).Err)
-					errHndlr("Cmd", client.Cmd("hmset", sessParamEventName, "param1", _parameter1, "param2", _parameter2).Err)
+					errHndlr("Cmd sessEventName", client.Cmd("hset", sessEventName, "time", tm.Format(layout)).Err)
+					errHndlr("Cmd sessParamEventName", client.Cmd("hmset", sessParamEventName, "param1", _parameter1, "param2", _parameter2).Err)
 				}
 			}
 			ccount, ccountErr := client.Cmd("incr", concEventName).Int()
@@ -735,7 +735,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 					}
 
 					oldMaxTime, oldMaxTimeErr := client.Cmd("get", maxTimeEventName).Int()
-					errHndlr("Cmd", oldMaxTimeErr)
+					errHndlr("Cmd oldMaxTimeErr", oldMaxTimeErr)
 					if oldMaxTime < timeDiff {
 						errHndlr("Cmd maxTimeEventName", client.Cmd("set", maxTimeEventName, timeDiff).Err)
 					}
