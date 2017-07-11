@@ -169,6 +169,13 @@ func PubSub() {
 
 			for {
 				psr = psc.Receive()
+
+				if psr.Timeout() {
+					fmt.Println("psc.Receive Timeout:: ", psr.Timeout())
+					break
+
+				}
+
 				if psr.Err != nil {
 
 					fmt.Println("psc.Receive Err:: ", psr.Err.Error())
