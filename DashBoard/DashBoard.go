@@ -713,14 +713,14 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 					_, err6 := client.Cmd("decr", concEventNameWithSingleParam).Int()
 					_, err7 := client.Cmd("decr", concEventNameWithLastParam).Int()
 
-					errHndlr("Cmd", rincErr)
-					errHndlr("Cmd", err2)
-					errHndlr("Cmd", err3)
-					errHndlr("Cmd", err4)
-					errHndlr("Cmd", dccountErr)
-					errHndlr("Cmd", err5)
-					errHndlr("Cmd", err6)
-					errHndlr("Cmd", err7)
+					errHndlr("Cmd rincErr", rincErr)
+					errHndlr("Cmd err2", err2)
+					errHndlr("Cmd err3", err3)
+					errHndlr("Cmd err4", err4)
+					errHndlr("Cmd dccountErr", dccountErr)
+					errHndlr("Cmd err5", err5)
+					errHndlr("Cmd err6", err6)
+					errHndlr("Cmd err7", err7)
 
 					if dccount < 0 {
 						fmt.Println("reset minus concurrent count:: incr by 1 :: ", concEventName)
@@ -728,16 +728,16 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 						_, err8 := client.Cmd("incr", concEventNameWithoutParams).Int()
 						_, err9 := client.Cmd("incr", concEventNameWithSingleParam).Int()
 						_, err10 := client.Cmd("incr", concEventNameWithLastParam).Int()
-						errHndlr("Cmd", dccountErr)
-						errHndlr("Cmd", err8)
-						errHndlr("Cmd", err9)
-						errHndlr("Cmd", err10)
+						errHndlr("Cmd dccountErr", dccountErr)
+						errHndlr("Cmd err8", err8)
+						errHndlr("Cmd err9", err9)
+						errHndlr("Cmd err10", err10)
 					}
 
 					oldMaxTime, oldMaxTimeErr := client.Cmd("get", maxTimeEventName).Int()
 					errHndlr("Cmd", oldMaxTimeErr)
 					if oldMaxTime < timeDiff {
-						errHndlr("Cmd", client.Cmd("set", maxTimeEventName, timeDiff).Err)
+						errHndlr("Cmd maxTimeEventName", client.Cmd("set", maxTimeEventName, timeDiff).Err)
 					}
 					if window != "QUEUE" {
 						statClient.Decrement(countConcStatName)
@@ -750,7 +750,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 							if timeDiff > thValue {
 								thcount, thcountErr := client.Cmd("incr", thresholdEventName).Int()
-								errHndlr("Cmd", thcountErr)
+								errHndlr("Cmd thcountErr", thcountErr)
 								fmt.Println(thresholdEventName, ": ", thcount)
 
 								thValue_2 := thValue * 2
@@ -767,32 +767,32 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 								if timeDiff > thValue && timeDiff <= thValue_2 {
 									thresholdBreakDown_1 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue, thValue_2)
-									errHndlr("Cmd", client.Cmd("incr", thresholdBreakDown_1).Err)
+									errHndlr("Cmd thresholdBreakDown_1", client.Cmd("incr", thresholdBreakDown_1).Err)
 									fmt.Println("thresholdBreakDown_1::", thresholdBreakDown_1)
 								} else if timeDiff > thValue_2 && timeDiff <= thValue_4 {
 									thresholdBreakDown_2 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_2, thValue_4)
-									errHndlr("Cmd", client.Cmd("incr", thresholdBreakDown_2).Err)
+									errHndlr("Cmd thresholdBreakDown_2", client.Cmd("incr", thresholdBreakDown_2).Err)
 									fmt.Println("thresholdBreakDown_2::", thresholdBreakDown_2)
 								} else if timeDiff > thValue_4 && timeDiff <= thValue_8 {
 									thresholdBreakDown_3 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_4, thValue_8)
-									errHndlr("Cmd", client.Cmd("incr", thresholdBreakDown_3).Err)
+									errHndlr("Cmd thresholdBreakDown_3", client.Cmd("incr", thresholdBreakDown_3).Err)
 									fmt.Println("thresholdBreakDown_3::", thresholdBreakDown_3)
 								} else if timeDiff > thValue_8 && timeDiff <= thValue_10 {
 									thresholdBreakDown_4 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_8, thValue_10)
-									errHndlr("Cmd", client.Cmd("incr", thresholdBreakDown_4).Err)
+									errHndlr("Cmd thresholdBreakDown_4", client.Cmd("incr", thresholdBreakDown_4).Err)
 									fmt.Println("thresholdBreakDown_4::", thresholdBreakDown_4)
 								} else if timeDiff > thValue_10 && timeDiff <= thValue_12 {
 									thresholdBreakDown_5 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_10, thValue_12)
-									errHndlr("Cmd", client.Cmd("incr", thresholdBreakDown_5).Err)
+									errHndlr("Cmd thresholdBreakDown_5", client.Cmd("incr", thresholdBreakDown_5).Err)
 									fmt.Println("thresholdBreakDown_5::", thresholdBreakDown_5)
 								} else {
 									thresholdBreakDown_6 := fmt.Sprintf("%s:%d:%d:%s", thresholdBreakDownEventName, thHour, thValue_12, "gt")
-									errHndlr("Cmd", client.Cmd("incr", thresholdBreakDown_6).Err)
+									errHndlr("Cmd thresholdBreakDown_6", client.Cmd("incr", thresholdBreakDown_6).Err)
 									fmt.Println("thresholdBreakDown_6::", thresholdBreakDown_6)
 								}
 							} else {
 								thresholdBreakDown_7 := fmt.Sprintf("%s:%d:%s:%d", thresholdBreakDownEventName, thHour, "lt", thValue)
-								errHndlr("Cmd", client.Cmd("incr", thresholdBreakDown_7).Err)
+								errHndlr("Cmd thresholdBreakDown_7", client.Cmd("incr", thresholdBreakDown_7).Err)
 								fmt.Println("thresholdBreakDown_7::", thresholdBreakDown_7)
 							}
 						}
