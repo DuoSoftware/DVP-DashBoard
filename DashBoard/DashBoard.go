@@ -641,26 +641,26 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 				}
 			}
 			ccount, ccountErr := client.Cmd("incr", concEventName).Int()
-			errHndlr("Cmd", ccountErr)
+			errHndlr("Cmd ccountErr", ccountErr)
 			tcount, tcountErr := client.Cmd("incr", totCountEventName).Int()
-			errHndlr("Cmd", tcountErr)
+			errHndlr("Cmd tcountErr", tcountErr)
 
 			_, err1 := client.Cmd("incr", concEventNameWithoutParams).Int()
-			errHndlr("Cmd", err1)
+			errHndlr("Cmd err1", err1)
 			_, err2 := client.Cmd("incr", totCountEventNameWithoutParams).Int()
-			errHndlr("Cmd", err2)
+			errHndlr("Cmd err2", err2)
 
 			_, err3 := client.Cmd("incr", concEventNameWithSingleParam).Int()
-			errHndlr("Cmd", err3)
+			errHndlr("Cmd err3", err3)
 			_, err4 := client.Cmd("incr", totCountEventNameWithSingleParam).Int()
-			errHndlr("Cmd", err4)
+			errHndlr("Cmd err4", err4)
 
 			_, err5 := client.Cmd("incr", concEventNameWithLastParam).Int()
-			errHndlr("Cmd", err5)
+			errHndlr("Cmd err5", err5)
 			_, err6 := client.Cmd("incr", totCountEventNameWithLastParam).Int()
-			errHndlr("Cmd", err6)
+			errHndlr("Cmd err6", err6)
 
-			errHndlr("Cmd", client.Cmd("incr", totCountHrEventName).Err)
+			errHndlr("Cmd totCountHrEventName", client.Cmd("incr", totCountHrEventName).Err)
 
 			fmt.Println("tcount ", tcount)
 			fmt.Println("ccount ", ccount)
