@@ -1719,17 +1719,23 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 		errHndlr("selectDb", r.Err)*/
 
 		sessParamsEventKey := fmt.Sprintf("SESSIONPARAMS:%d:%d:%s:%s", _tenant, _company, _window, _session)
-		paramList, paramListErr := client.Cmd("hmget", sessParamsEventKey, "param1", "param2").List()
-		errHndlr("FindDashboardSession", "Cmd", paramListErr)
-		if len(paramList) >= 2 {
-			sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s", _tenant, _company, _window, _session, paramList[0], paramList[1])
-			tmx, tmxErr := client.Cmd("hget", sessionKey, "time").Str()
-			errHndlr("FindDashboardSession", "Cmd", tmxErr)
-			timeValue = tmx
-			param1 = paramList[0]
-			param2 = paramList[1]
 
-			errHndlr("FindDashboardSession", "Cmd", client.Cmd("del", sessParamsEventKey).Err)
+		isExists, isExistErr := client.Cmd("exists", sessParamsEventKey).Int()
+		errHndlr("FindDashboardSession", "exists", isExistErr)
+
+		if isExists == 1 {
+			paramList, paramListErr := client.Cmd("hmget", sessParamsEventKey, "param1", "param2").List()
+			errHndlr("FindDashboardSession", "Cmd", paramListErr)
+			if len(paramList) >= 2 {
+				sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s", _tenant, _company, _window, _session, paramList[0], paramList[1])
+				tmx, tmxErr := client.Cmd("hget", sessionKey, "time").Str()
+				errHndlr("FindDashboardSession", "Cmd", tmxErr)
+				timeValue = tmx
+				param1 = paramList[0]
+				param2 = paramList[1]
+
+				errHndlr("FindDashboardSession", "Cmd", client.Cmd("del", sessParamsEventKey).Err)
+			}
 		}
 
 		return
