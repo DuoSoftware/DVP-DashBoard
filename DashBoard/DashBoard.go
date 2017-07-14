@@ -1728,9 +1728,9 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 			timeValue = tmx
 			param1 = paramList[0]
 			param2 = paramList[1]
-		}
 
-		errHndlr("FindDashboardSession", "Cmd", client.Cmd("del", sessParamsEventKey).Err)
+			errHndlr("FindDashboardSession", "Cmd", client.Cmd("del", sessParamsEventKey).Err)
+		}
 
 		return
 	}
