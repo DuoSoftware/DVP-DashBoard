@@ -28,9 +28,9 @@ var dashboardMetaInfo []MetaData
 
 //var log = log4go.NewLogger()
 
-func errHndlr(errorFrom string, err error) {
+func errHndlr(errorFrom, command string, err error) {
 	if err != nil {
-		fmt.Println("error:", errorFrom, ":: ", err)
+		fmt.Println("error:", errorFrom, ":: ", command, ":: ", err)
 	}
 }
 
@@ -70,7 +70,7 @@ func InitiateRedis() {
 			sentinelPool, err = sentinel.NewClientCustom("tcp", sentinelIp, 10, df, redisClusterName)
 
 			if err != nil {
-				errHndlr("InitiateSentinel", err)
+				errHndlr("InitiateRedis", "InitiateSentinel", err)
 			}
 		} else {
 			fmt.Println("Not enough sentinel servers")
@@ -79,7 +79,7 @@ func InitiateRedis() {
 		redisPool, err = pool.NewCustom("tcp", redisIp, 10, df)
 
 		if err != nil {
-			errHndlr("InitiatePool", err)
+			errHndlr("InitiateRedis", "InitiatePool", err)
 		}
 	}
 
@@ -106,7 +106,7 @@ func PubSub() {
 	if redisMode == "sentinel" {
 
 		c2, err := sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromPool", err)
+		errHndlr("PubSub", "getConnFromPool", err)
 		defer sentinelPool.PutMaster(redisClusterName, c2)
 
 		psc := pubsub.NewSubClient(c2)
@@ -119,10 +119,15 @@ func PubSub() {
 
 			for {
 				psr = psc.Receive()
+
+				if psr.Timeout() {
+					fmt.Println("psc.Receive Timeout:: ", psr.Timeout())
+					break
+
+				}
 				if psr.Err != nil {
 
 					fmt.Println("psc.Receive Err:: ", psr.Err.Error())
-
 					break
 				}
 				list := strings.Split(psr.Message, ":")
@@ -152,12 +157,12 @@ func PubSub() {
 	} else {
 
 		c2, err := redis.Dial("tcp", redisPubSubIp)
-		errHndlr("dial", err)
+		errHndlr("PubSub", "dial", err)
 		defer c2.Close()
 
 		//authServer
 		authE := c2.Cmd("auth", redisPassword)
-		errHndlr("auth", authE.Err)
+		errHndlr("PubSub", "auth", authE.Err)
 
 		psc := pubsub.NewSubClient(c2)
 		psr := psc.Subscribe("events")
@@ -179,7 +184,6 @@ func PubSub() {
 				if psr.Err != nil {
 
 					fmt.Println("psc.Receive Err:: ", psr.Err.Error())
-
 					break
 				}
 				list := strings.Split(psr.Message, ":")
@@ -427,11 +431,11 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 
 	if redisMode == "sentinel" {
 		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromSentinel", err)
+		errHndlr("CacheMetaData", "getConnFromSentinel", err)
 		defer sentinelPool.PutMaster(redisClusterName, client)
 	} else {
 		client, err = redisPool.Get()
-		errHndlr("getConnFromPool", err)
+		errHndlr("CacheMetaData", "getConnFromPool", err)
 		defer redisPool.Put(client)
 	}
 
@@ -447,21 +451,21 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 	errHndlr("selectDb", r.Err)*/
 
 	if _flushEnable == true {
-		errHndlr("Cmd", client.Cmd("setnx", _flushName, _window).Err)
+		errHndlr("CacheMetaData", "Cmd", client.Cmd("setnx", _flushName, _window).Err)
 	} else {
-		errHndlr("Cmd", client.Cmd("del", _flushName).Err)
+		errHndlr("CacheMetaData", "Cmd", client.Cmd("del", _flushName).Err)
 	}
 
 	if _thresholdEnable == true {
-		errHndlr("Cmd", client.Cmd("setnx", _thresholdEnableName, _thresholdValue).Err)
+		errHndlr("CacheMetaData", "Cmd", client.Cmd("setnx", _thresholdEnableName, _thresholdValue).Err)
 	} else {
-		errHndlr("Cmd", client.Cmd("del", _thresholdEnableName).Err)
+		errHndlr("CacheMetaData", "Cmd", client.Cmd("del", _thresholdEnableName).Err)
 	}
 
-	errHndlr("Cmd", client.Cmd("setnx", _useSessionName, strconv.FormatBool(_useSession)).Err)
-	errHndlr("Cmd", client.Cmd("setnx", _persistSessionName, strconv.FormatBool(_persistSession)).Err)
-	errHndlr("Cmd", client.Cmd("setnx", _windowName, _window).Err)
-	errHndlr("Cmd", client.Cmd("setnx", _incName, strconv.Itoa(count)).Err)
+	errHndlr("CacheMetaData", "Cmd", client.Cmd("setnx", _useSessionName, strconv.FormatBool(_useSession)).Err)
+	errHndlr("CacheMetaData", "Cmd", client.Cmd("setnx", _persistSessionName, strconv.FormatBool(_persistSession)).Err)
+	errHndlr("CacheMetaData", "Cmd", client.Cmd("setnx", _windowName, _window).Err)
+	errHndlr("CacheMetaData", "Cmd", client.Cmd("setnx", _incName, strconv.Itoa(count)).Err)
 }
 
 func OnMeta(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _persistSession, _thresholdEnable bool, _thresholdValue int) {
@@ -499,11 +503,11 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 	if redisMode == "sentinel" {
 		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromSentinel", err)
+		errHndlr("OnEvent", "getConnFromSentinel", err)
 		defer sentinelPool.PutMaster(redisClusterName, client)
 	} else {
 		client, err = redisPool.Get()
-		errHndlr("getConnFromPool", err)
+		errHndlr("OnEvent", "getConnFromPool", err)
 		defer redisPool.Put(client)
 	}
 
@@ -533,23 +537,23 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 		_thresholdEnableName := fmt.Sprintf("META:%s:%s:%s:thresholdEnable", _class, _type, _category)
 
 		isWindowExist, windowExistErr := client.Cmd("exists", _window).Int()
-		errHndlr("Cmd windowExistErr", windowExistErr)
+		errHndlr("OnEvent", "Cmd windowExistErr", windowExistErr)
 		isIncExist, incExistErr := client.Cmd("exists", _inc).Int()
-		errHndlr("Cmd incExistErr", incExistErr)
+		errHndlr("OnEvent", "Cmd incExistErr", incExistErr)
 
 		if isWindowExist == 0 || isIncExist == 0 {
 			ReloadMetaData(_class, _type, _category)
 		}
 		window, _werr = client.Cmd("get", _window).Str()
-		errHndlr("cmdGet", _werr)
+		errHndlr("OnEvent", "cmdGet", _werr)
 		sinc, _ierr = client.Cmd("get", _inc).Str()
-		errHndlr("cmdGet", _ierr)
+		errHndlr("OnEvent", "cmdGet", _ierr)
 		useSession, _userr = client.Cmd("get", _useSessionName).Str()
-		errHndlr("cmdGet", _userr)
+		errHndlr("OnEvent", "cmdGet", _userr)
 		persistSession, _peerr = client.Cmd("get", _persistSessionName).Str()
-		errHndlr("cmdGet", _peerr)
+		errHndlr("OnEvent", "cmdGet", _peerr)
 		threshold, _thresherr = client.Cmd("get", _thresholdEnableName).Str()
-		errHndlr("cmdGet", _thresherr)
+		errHndlr("OnEvent", "cmdGet", _thresherr)
 
 		if threshold != "" {
 			thresholdEnabled = true
@@ -643,31 +647,31 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 				if persistSession == "true" {
 					PersistSessionInfo(_tenent, _company, window, _session, _parameter1, _parameter2, tm.Format(layout))
 				} else {
-					errHndlr("Cmd sessEventName", client.Cmd("hset", sessEventName, "time", tm.Format(layout)).Err)
-					errHndlr("Cmd sessParamEventName", client.Cmd("hmset", sessParamEventName, "param1", _parameter1, "param2", _parameter2).Err)
+					errHndlr("OnEvent", "Cmd sessEventName", client.Cmd("hset", sessEventName, "time", tm.Format(layout)).Err)
+					errHndlr("OnEvent", "Cmd sessParamEventName", client.Cmd("hmset", sessParamEventName, "param1", _parameter1, "param2", _parameter2).Err)
 				}
 			}
 			ccount, ccountErr := client.Cmd("incr", concEventName).Int()
-			errHndlr("Cmd ccountErr", ccountErr)
+			errHndlr("OnEvent", "Cmd ccountErr", ccountErr)
 			tcount, tcountErr := client.Cmd("incr", totCountEventName).Int()
-			errHndlr("Cmd tcountErr", tcountErr)
+			errHndlr("OnEvent", "Cmd tcountErr", tcountErr)
 
 			_, err1 := client.Cmd("incr", concEventNameWithoutParams).Int()
-			errHndlr("Cmd err1", err1)
+			errHndlr("OnEvent", "Cmd err1", err1)
 			_, err2 := client.Cmd("incr", totCountEventNameWithoutParams).Int()
-			errHndlr("Cmd err2", err2)
+			errHndlr("OnEvent", "Cmd err2", err2)
 
 			_, err3 := client.Cmd("incr", concEventNameWithSingleParam).Int()
-			errHndlr("Cmd err3", err3)
+			errHndlr("OnEvent", "Cmd err3", err3)
 			_, err4 := client.Cmd("incr", totCountEventNameWithSingleParam).Int()
-			errHndlr("Cmd err4", err4)
+			errHndlr("OnEvent", "Cmd err4", err4)
 
 			_, err5 := client.Cmd("incr", concEventNameWithLastParam).Int()
-			errHndlr("Cmd err5", err5)
+			errHndlr("OnEvent", "Cmd err5", err5)
 			_, err6 := client.Cmd("incr", totCountEventNameWithLastParam).Int()
-			errHndlr("Cmd err6", err6)
+			errHndlr("OnEvent", "Cmd err6", err6)
 
-			errHndlr("Cmd totCountHrEventName", client.Cmd("incr", totCountHrEventName).Err)
+			errHndlr("OnEvent", "Cmd totCountHrEventName", client.Cmd("incr", totCountHrEventName).Err)
 
 			fmt.Println("tcount ", tcount)
 			fmt.Println("ccount ", ccount)
@@ -720,14 +724,14 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 					_, err6 := client.Cmd("decr", concEventNameWithSingleParam).Int()
 					_, err7 := client.Cmd("decr", concEventNameWithLastParam).Int()
 
-					errHndlr("Cmd rincErr", rincErr)
-					errHndlr("Cmd err2", err2)
-					errHndlr("Cmd err3", err3)
-					errHndlr("Cmd err4", err4)
-					errHndlr("Cmd dccountErr", dccountErr)
-					errHndlr("Cmd err5", err5)
-					errHndlr("Cmd err6", err6)
-					errHndlr("Cmd err7", err7)
+					errHndlr("OnEvent", "Cmd rincErr", rincErr)
+					errHndlr("OnEvent", "Cmd err2", err2)
+					errHndlr("OnEvent", "Cmd err3", err3)
+					errHndlr("OnEvent", "Cmd err4", err4)
+					errHndlr("OnEvent", "Cmd dccountErr", dccountErr)
+					errHndlr("OnEvent", "Cmd err5", err5)
+					errHndlr("OnEvent", "Cmd err6", err6)
+					errHndlr("OnEvent", "Cmd err7", err7)
 
 					if dccount < 0 {
 						fmt.Println("reset minus concurrent count:: incr by 1 :: ", concEventName)
@@ -735,16 +739,16 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 						_, err8 := client.Cmd("incr", concEventNameWithoutParams).Int()
 						_, err9 := client.Cmd("incr", concEventNameWithSingleParam).Int()
 						_, err10 := client.Cmd("incr", concEventNameWithLastParam).Int()
-						errHndlr("Cmd dccountErr", dccountErr)
-						errHndlr("Cmd err8", err8)
-						errHndlr("Cmd err9", err9)
-						errHndlr("Cmd err10", err10)
+						errHndlr("OnEvent", "Cmd dccountErr", dccountErr)
+						errHndlr("OnEvent", "Cmd err8", err8)
+						errHndlr("OnEvent", "Cmd err9", err9)
+						errHndlr("OnEvent", "Cmd err10", err10)
 					}
 
 					oldMaxTime, oldMaxTimeErr := client.Cmd("get", maxTimeEventName).Int()
-					errHndlr("Cmd oldMaxTimeErr", oldMaxTimeErr)
+					errHndlr("OnEvent", "Cmd oldMaxTimeErr", oldMaxTimeErr)
 					if oldMaxTime < timeDiff {
-						errHndlr("Cmd maxTimeEventName", client.Cmd("set", maxTimeEventName, timeDiff).Err)
+						errHndlr("OnEvent", "Cmd maxTimeEventName", client.Cmd("set", maxTimeEventName, timeDiff).Err)
 					}
 					if window != "QUEUE" {
 						statClient.Decrement(countConcStatName)
@@ -757,7 +761,7 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 							if timeDiff > thValue {
 								thcount, thcountErr := client.Cmd("incr", thresholdEventName).Int()
-								errHndlr("Cmd thcountErr", thcountErr)
+								errHndlr("OnEvent", "Cmd thcountErr", thcountErr)
 								fmt.Println(thresholdEventName, ": ", thcount)
 
 								thValue_2 := thValue * 2
@@ -774,32 +778,32 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 								if timeDiff > thValue && timeDiff <= thValue_2 {
 									thresholdBreakDown_1 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue, thValue_2)
-									errHndlr("Cmd thresholdBreakDown_1", client.Cmd("incr", thresholdBreakDown_1).Err)
+									errHndlr("OnEvent", "Cmd thresholdBreakDown_1", client.Cmd("incr", thresholdBreakDown_1).Err)
 									fmt.Println("thresholdBreakDown_1::", thresholdBreakDown_1)
 								} else if timeDiff > thValue_2 && timeDiff <= thValue_4 {
 									thresholdBreakDown_2 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_2, thValue_4)
-									errHndlr("Cmd thresholdBreakDown_2", client.Cmd("incr", thresholdBreakDown_2).Err)
+									errHndlr("OnEvent", "Cmd thresholdBreakDown_2", client.Cmd("incr", thresholdBreakDown_2).Err)
 									fmt.Println("thresholdBreakDown_2::", thresholdBreakDown_2)
 								} else if timeDiff > thValue_4 && timeDiff <= thValue_8 {
 									thresholdBreakDown_3 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_4, thValue_8)
-									errHndlr("Cmd thresholdBreakDown_3", client.Cmd("incr", thresholdBreakDown_3).Err)
+									errHndlr("OnEvent", "Cmd thresholdBreakDown_3", client.Cmd("incr", thresholdBreakDown_3).Err)
 									fmt.Println("thresholdBreakDown_3::", thresholdBreakDown_3)
 								} else if timeDiff > thValue_8 && timeDiff <= thValue_10 {
 									thresholdBreakDown_4 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_8, thValue_10)
-									errHndlr("Cmd thresholdBreakDown_4", client.Cmd("incr", thresholdBreakDown_4).Err)
+									errHndlr("OnEvent", "Cmd thresholdBreakDown_4", client.Cmd("incr", thresholdBreakDown_4).Err)
 									fmt.Println("thresholdBreakDown_4::", thresholdBreakDown_4)
 								} else if timeDiff > thValue_10 && timeDiff <= thValue_12 {
 									thresholdBreakDown_5 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_10, thValue_12)
-									errHndlr("Cmd thresholdBreakDown_5", client.Cmd("incr", thresholdBreakDown_5).Err)
+									errHndlr("OnEvent", "Cmd thresholdBreakDown_5", client.Cmd("incr", thresholdBreakDown_5).Err)
 									fmt.Println("thresholdBreakDown_5::", thresholdBreakDown_5)
 								} else {
 									thresholdBreakDown_6 := fmt.Sprintf("%s:%d:%d:%s", thresholdBreakDownEventName, thHour, thValue_12, "gt")
-									errHndlr("Cmd thresholdBreakDown_6", client.Cmd("incr", thresholdBreakDown_6).Err)
+									errHndlr("OnEvent", "Cmd thresholdBreakDown_6", client.Cmd("incr", thresholdBreakDown_6).Err)
 									fmt.Println("thresholdBreakDown_6::", thresholdBreakDown_6)
 								}
 							} else {
 								thresholdBreakDown_7 := fmt.Sprintf("%s:%d:%s:%d", thresholdBreakDownEventName, thHour, "lt", thValue)
-								errHndlr("Cmd thresholdBreakDown_7", client.Cmd("incr", thresholdBreakDown_7).Err)
+								errHndlr("OnEvent", "Cmd thresholdBreakDown_7", client.Cmd("incr", thresholdBreakDown_7).Err)
 								fmt.Println("thresholdBreakDown_7::", thresholdBreakDown_7)
 							}
 						}
@@ -837,11 +841,11 @@ func OnReset() {
 
 	if redisMode == "sentinel" {
 		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromSentinel", err)
+		errHndlr("OnReset", "getConnFromSentinel", err)
 		defer sentinelPool.PutMaster(redisClusterName, client)
 	} else {
 		client, err = redisPool.Get()
-		errHndlr("getConnFromPool", err)
+		errHndlr("OnReset", "getConnFromPool", err)
 		defer redisPool.Put(client)
 	}
 
@@ -869,7 +873,7 @@ func OnReset() {
 		if lenth > 0 {
 			for _, value := range val {
 				tmx, tmxErr := client.Cmd("get", value).Str()
-				errHndlr("Cmd", tmxErr)
+				errHndlr("OnReset", "Cmd", tmxErr)
 
 				_windowList = AppendIfMissing(_windowList, tmx)
 			}
@@ -988,11 +992,11 @@ func OnReset() {
 	tm := time.Now()
 	for _, remove := range _keysToRemove {
 		fmt.Println("remove_: ", remove)
-		errHndlr("Cmd", client.Cmd("del", remove).Err)
+		errHndlr("OnReset", "Cmd", client.Cmd("del", remove).Err)
 	}
 	for _, session := range _loginSessions {
 		fmt.Println("readdSession: ", session)
-		errHndlr("Cmd", client.Cmd("hset", session, "time", tm.Format(layout)).Err)
+		errHndlr("OnReset", "Cmd", client.Cmd("hset", session, "time", tm.Format(layout)).Err)
 		sessItemsL := strings.Split(session, ":")
 		if len(sessItemsL) >= 7 {
 			LsessParamEventName := fmt.Sprintf("SESSIONPARAMS:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[4])
@@ -1005,15 +1009,15 @@ func OnReset() {
 			LtotTimeEventNameWithLastParam := fmt.Sprintf("TOTALTIMEWLPARAM:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[6])
 			LtotCountEventNameWithLastParam := fmt.Sprintf("TOTALCOUNTWLPARAM:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[6])
 
-			errHndlr("Cmd", client.Cmd("hmset", LsessParamEventName, "param1", sessItemsL[5], "param2", sessItemsL[6]).Err)
-			errHndlr("Cmd", client.Cmd("set", LtotTimeEventName, 0).Err)
-			errHndlr("Cmd", client.Cmd("set", LtotCountEventName, 0).Err)
-			errHndlr("Cmd", client.Cmd("set", LtotTimeEventNameWithoutParams, 0).Err)
-			errHndlr("Cmd", client.Cmd("set", LtotCountEventNameWithoutParams, 0).Err)
-			errHndlr("Cmd", client.Cmd("set", LtotTimeEventNameWithSingleParam, 0).Err)
-			errHndlr("Cmd", client.Cmd("set", LtotCountEventNameWithSingleParam, 0).Err)
-			errHndlr("Cmd", client.Cmd("set", LtotTimeEventNameWithLastParam, 0).Err)
-			errHndlr("Cmd", client.Cmd("set", LtotCountEventNameWithLastParam, 0).Err)
+			errHndlr("OnReset", "Cmd", client.Cmd("hmset", LsessParamEventName, "param1", sessItemsL[5], "param2", sessItemsL[6]).Err)
+			errHndlr("OnReset", "Cmd", client.Cmd("set", LtotTimeEventName, 0).Err)
+			errHndlr("OnReset", "Cmd", client.Cmd("set", LtotCountEventName, 0).Err)
+			errHndlr("OnReset", "Cmd", client.Cmd("set", LtotTimeEventNameWithoutParams, 0).Err)
+			errHndlr("OnReset", "Cmd", client.Cmd("set", LtotCountEventNameWithoutParams, 0).Err)
+			errHndlr("OnReset", "Cmd", client.Cmd("set", LtotTimeEventNameWithSingleParam, 0).Err)
+			errHndlr("OnReset", "Cmd", client.Cmd("set", LtotCountEventNameWithSingleParam, 0).Err)
+			errHndlr("OnReset", "Cmd", client.Cmd("set", LtotTimeEventNameWithLastParam, 0).Err)
+			errHndlr("OnReset", "Cmd", client.Cmd("set", LtotCountEventNameWithLastParam, 0).Err)
 		}
 	}
 	/*for _, prosession := range _productivitySessions {
@@ -1034,11 +1038,11 @@ func OnSetDailySummary(_date time.Time) {
 
 	if redisMode == "sentinel" {
 		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromSentinel", err)
+		errHndlr("OnSetDailySummary", "getConnFromSentinel", err)
 		defer sentinelPool.PutMaster(redisClusterName, client)
 	} else {
 		client, err = redisPool.Get()
-		errHndlr("getConnFromPool", err)
+		errHndlr("OnSetDailySummary", "getConnFromPool", err)
 		defer redisPool.Put(client)
 	}
 
@@ -1072,7 +1076,7 @@ func OnSetDailySummary(_date time.Time) {
 			sessEvents := ScanAndGetKeys(sessEventSearch)
 			if len(sessEvents) > 0 {
 				tmx, tmxErr := client.Cmd("hget", sessEvents[0], "time").Str()
-				errHndlr("Cmd", tmxErr)
+				errHndlr("OnSetDailySummary", "Cmd", tmxErr)
 				tm2, _ := time.Parse(layout, tmx)
 				currentTime = int(_date.Sub(tm2.Local()).Seconds())
 				fmt.Println("currentTime: ", currentTime)
@@ -1091,10 +1095,10 @@ func OnSetDailySummary(_date time.Time) {
 		maxTime, maxTimeErr := client.Cmd("get", maxTimeEventName).Int()
 		threshold, thresholdErr := client.Cmd("get", thresholdEventName).Int()
 
-		errHndlr("Cmd", totCountErr)
-		errHndlr("Cmd", totTimeErr)
-		errHndlr("Cmd", maxTimeErr)
-		errHndlr("Cmd", thresholdErr)
+		errHndlr("OnSetDailySummary", "Cmd", totCountErr)
+		errHndlr("OnSetDailySummary", "Cmd", totTimeErr)
+		errHndlr("OnSetDailySummary", "Cmd", maxTimeErr)
+		errHndlr("OnSetDailySummary", "Cmd", thresholdErr)
 
 		fmt.Println("totCount: ", totCount)
 		fmt.Println("totTime: ", totTime)
@@ -1122,11 +1126,11 @@ func OnSetDailyThesholdBreakDown(_date time.Time) {
 
 	if redisMode == "sentinel" {
 		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromSentinel", err)
+		errHndlr("OnSetDailyThesholdBreakDown", "getConnFromSentinel", err)
 		defer sentinelPool.PutMaster(redisClusterName, client)
 	} else {
 		client, err = redisPool.Get()
-		errHndlr("getConnFromPool", err)
+		errHndlr("OnSetDailyThesholdBreakDown", "getConnFromPool", err)
 		defer redisPool.Put(client)
 	}
 
@@ -1160,7 +1164,7 @@ func OnSetDailyThesholdBreakDown(_date time.Time) {
 			summery.Hour = hour
 
 			thCount, thCountErr := client.Cmd("get", key).Int()
-			errHndlr("Cmd", thCountErr)
+			errHndlr("OnSetDailyThesholdBreakDown", "Cmd", thCountErr)
 			summery.ThresholdCount = thCount
 			summery.SummaryDate = _date
 
@@ -1207,11 +1211,11 @@ func OnGetMaxTime(_tenant, _company int, _window, _parameter1, _parameter2 strin
 
 	if redisMode == "sentinel" {
 		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromSentinel", err)
+		errHndlr("OnGetMaxTime", "getConnFromSentinel", err)
 		defer sentinelPool.PutMaster(redisClusterName, client)
 	} else {
 		client, err = redisPool.Get()
-		errHndlr("getConnFromPool", err)
+		errHndlr("OnGetMaxTime", "getConnFromPool", err)
 		defer redisPool.Put(client)
 	}
 
@@ -1228,12 +1232,12 @@ func OnGetMaxTime(_tenant, _company int, _window, _parameter1, _parameter2 strin
 
 	maxtimeSearch := fmt.Sprintf("MAXTIME:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
 	keyList, keyListErr := client.Cmd("keys", maxtimeSearch).List()
-	errHndlr("Cmd", keyListErr)
+	errHndlr("OnGetMaxTime", "Cmd", keyListErr)
 	if len(keyList) > 0 {
 		tempMaxTime := 0
 		for _, key := range keyList {
 			value, valueErr := client.Cmd("get", key).Int()
-			errHndlr("Cmd", valueErr)
+			errHndlr("OnGetMaxTime", "Cmd", valueErr)
 			if tempMaxTime < value {
 				tempMaxTime = value
 			}
@@ -1256,11 +1260,11 @@ func OnGetCurrentMaxTime(_tenant, _company int, _window, _parameter1, _parameter
 
 	if redisMode == "sentinel" {
 		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromSentinel", err)
+		errHndlr("OnGetCurrentMaxTime", "getConnFromSentinel", err)
 		defer sentinelPool.PutMaster(redisClusterName, client)
 	} else {
 		client, err = redisPool.Get()
-		errHndlr("getConnFromPool", err)
+		errHndlr("OnGetCurrentMaxTime", "getConnFromPool", err)
 		defer redisPool.Put(client)
 	}
 
@@ -1277,13 +1281,13 @@ func OnGetCurrentMaxTime(_tenant, _company int, _window, _parameter1, _parameter
 
 	maxtimeSearch := fmt.Sprintf("SESSION:%d:%d:%s:*:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
 	keyList, keyListErr := client.Cmd("keys", maxtimeSearch).List()
-	errHndlr("Cmd", keyListErr)
+	errHndlr("OnGetCurrentMaxTime", "Cmd", keyListErr)
 	if len(keyList) > 0 {
 		tempMaxTime := 0
 		tm := time.Now()
 		for _, key := range keyList {
 			tmx, tmxErr := client.Cmd("hget", key, "time").Str()
-			errHndlr("Cmd", tmxErr)
+			errHndlr("OnGetCurrentMaxTime", "Cmd", tmxErr)
 			tm2, _ := time.Parse(layout, tmx)
 			timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
 			if tempMaxTime < timeDiff {
@@ -1308,11 +1312,11 @@ func OnGetCurrentCount(_tenant, _company int, _window, _parameter1, _parameter2 
 
 	if redisMode == "sentinel" {
 		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromSentinel", err)
+		errHndlr("OnGetCurrentCount", "getConnFromSentinel", err)
 		defer sentinelPool.PutMaster(redisClusterName, client)
 	} else {
 		client, err = redisPool.Get()
-		errHndlr("getConnFromPool", err)
+		errHndlr("OnGetCurrentCount", "getConnFromPool", err)
 		defer redisPool.Put(client)
 	}
 
@@ -1329,12 +1333,12 @@ func OnGetCurrentCount(_tenant, _company int, _window, _parameter1, _parameter2 
 
 	concurrentSearch := fmt.Sprintf("CONCURRENT:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
 	keyList, keyListErr := client.Cmd("keys", concurrentSearch).List()
-	errHndlr("Cmd", keyListErr)
+	errHndlr("OnGetCurrentCount", "Cmd", keyListErr)
 	if len(keyList) > 0 {
 		temptotal := 0
 		for _, key := range keyList {
 			value, valueErr := client.Cmd("get", key).Int()
-			errHndlr("Cmd", valueErr)
+			errHndlr("OnGetCurrentCount", "Cmd", valueErr)
 			temptotal = temptotal + value
 		}
 		if temptotal < 0 {
@@ -1359,11 +1363,11 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 
 	if redisMode == "sentinel" {
 		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromSentinel", err)
+		errHndlr("OnGetAverageTime", "getConnFromSentinel", err)
 		defer sentinelPool.PutMaster(redisClusterName, client)
 	} else {
 		client, err = redisPool.Get()
-		errHndlr("getConnFromPool", err)
+		errHndlr("OnGetAverageTime", "getConnFromPool", err)
 		defer redisPool.Put(client)
 	}
 
@@ -1388,12 +1392,12 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 	totalCount := 0
 
 	totTimeKeyList, totTimeKeyListErr := client.Cmd("keys", totTimeSearch).List()
-	errHndlr("Cmd", totTimeKeyListErr)
+	errHndlr("OnGetAverageTime", "Cmd", totTimeKeyListErr)
 	if len(totTimeKeyList) > 0 {
 		temptotal := 0
 		for _, key := range totTimeKeyList {
 			value, valueErr := client.Cmd("get", key).Int()
-			errHndlr("Cmd", valueErr)
+			errHndlr("OnGetAverageTime", "Cmd", valueErr)
 			temptotal = temptotal + value
 		}
 		totalTime = temptotal
@@ -1403,14 +1407,14 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 	}
 
 	sessTimeKeyList, sessTimeKeyListErr := client.Cmd("keys", sessEventSearch).List()
-	errHndlr("Cmd", sessTimeKeyListErr)
+	errHndlr("OnGetAverageTime", "Cmd", sessTimeKeyListErr)
 	fmt.Println("totalSessTimeKey: ", len(sessTimeKeyList))
 	fmt.Println(time.Now().Local())
 	if len(sessTimeKeyList) > 0 {
 		sessTemptotal := 0
 		for _, key := range sessTimeKeyList {
 			tmx, tmxErr := client.Cmd("hget", key, "time").Str()
-			errHndlr("Cmd", tmxErr)
+			errHndlr("OnGetAverageTime", "Cmd", tmxErr)
 			tm2, _ := time.Parse(layout, tmx)
 			timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
 
@@ -1423,12 +1427,12 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 	fmt.Println(time.Now().Local())
 
 	totCountKeyList, totCountKeyListErr := client.Cmd("keys", totCountSearch).List()
-	errHndlr("Cmd", totCountKeyListErr)
+	errHndlr("OnGetAverageTime", "Cmd", totCountKeyListErr)
 	if len(totCountKeyList) > 0 {
 		temptotal := 0
 		for _, key := range totCountKeyList {
 			value, valueErr := client.Cmd("get", key).Int()
-			errHndlr("Cmd", valueErr)
+			errHndlr("OnGetAverageTime", "Cmd", valueErr)
 			temptotal = temptotal + value
 		}
 		totalCount = temptotal
@@ -1460,11 +1464,11 @@ func OnGetTotalCount(_tenant, _company int, _window, _parameter1, _parameter2 st
 
 	if redisMode == "sentinel" {
 		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromSentinel", err)
+		errHndlr("OnGetTotalCount", "getConnFromSentinel", err)
 		defer sentinelPool.PutMaster(redisClusterName, client)
 	} else {
 		client, err = redisPool.Get()
-		errHndlr("getConnFromPool", err)
+		errHndlr("OnGetTotalCount", "getConnFromPool", err)
 		defer redisPool.Put(client)
 	}
 
@@ -1481,12 +1485,12 @@ func OnGetTotalCount(_tenant, _company int, _window, _parameter1, _parameter2 st
 
 	totalSearch := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:%s:%s", _tenant, _company, _window, _parameter1, _parameter2)
 	keyList, keyListErr := client.Cmd("keys", totalSearch).List()
-	errHndlr("Cmd", keyListErr)
+	errHndlr("OnGetTotalCount", "Cmd", keyListErr)
 	if len(keyList) > 0 {
 		temptotal := 0
 		for _, key := range keyList {
 			value, valueErr := client.Cmd("get", key).Int()
-			errHndlr("Cmd", valueErr)
+			errHndlr("OnGetTotalCount", "Cmd", valueErr)
 			temptotal = temptotal + value
 		}
 		resultChannel <- temptotal
@@ -1508,11 +1512,11 @@ func OnGetQueueDetails(_tenant, _company int, resultChannel chan []QueueDetails)
 
 	if redisMode == "sentinel" {
 		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromSentinel", err)
+		errHndlr("OnGetQueueDetails", "getConnFromSentinel", err)
 		defer sentinelPool.PutMaster(redisClusterName, client)
 	} else {
 		client, err = redisPool.Get()
-		errHndlr("getConnFromPool", err)
+		errHndlr("OnGetQueueDetails", "getConnFromPool", err)
 		defer redisPool.Put(client)
 	}
 
@@ -1529,7 +1533,7 @@ func OnGetQueueDetails(_tenant, _company int, resultChannel chan []QueueDetails)
 
 	queueSearch := fmt.Sprintf("TOTALCOUNT:%d:%d:%s:*", _tenant, _company, "QUEUE")
 	keyList, keyListErr := client.Cmd("keys", queueSearch).List()
-	errHndlr("Cmd", keyListErr)
+	errHndlr("OnGetQueueDetails", "Cmd", keyListErr)
 	if len(keyList) > 0 {
 		queueIdList := make([]string, 0)
 		for _, key := range keyList {
@@ -1644,11 +1648,11 @@ func GetQueueName(queueId string) string {
 
 	if redisMode == "sentinel" {
 		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromSentinel", err)
+		errHndlr("GetQueueName", "getConnFromSentinel", err)
 		defer sentinelPool.PutMaster(redisClusterName, client)
 	} else {
 		client, err = redisPool.Get()
-		errHndlr("getConnFromPool", err)
+		errHndlr("GetQueueName", "getConnFromPool", err)
 		defer redisPool.Put(client)
 	}
 
@@ -1665,7 +1669,7 @@ func GetQueueName(queueId string) string {
 
 	qId := strings.Replace(queueId, "-", ":", -1)
 	queueName, queueNameErr := client.Cmd("hget", "QueueNameHash", qId).Str()
-	errHndlr("Cmd", queueNameErr)
+	errHndlr("GetQueueName", "Cmd", queueNameErr)
 	fmt.Println("queueName: ", queueName)
 	if queueName == "" {
 		return queueId
@@ -1690,11 +1694,11 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 
 		if redisMode == "sentinel" {
 			client, err = sentinelPool.GetMaster(redisClusterName)
-			errHndlr("getConnFromSentinel", err)
+			errHndlr("FindDashboardSession", "getConnFromSentinel", err)
 			defer sentinelPool.PutMaster(redisClusterName, client)
 		} else {
 			client, err = redisPool.Get()
-			errHndlr("getConnFromPool", err)
+			errHndlr("FindDashboardSession", "getConnFromPool", err)
 			defer redisPool.Put(client)
 		}
 
@@ -1711,17 +1715,17 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 
 		sessParamsEventKey := fmt.Sprintf("SESSIONPARAMS:%d:%d:%s:%s", _tenant, _company, _window, _session)
 		paramList, paramListErr := client.Cmd("hmget", sessParamsEventKey, "param1", "param2").List()
-		errHndlr("Cmd", paramListErr)
+		errHndlr("FindDashboardSession", "Cmd", paramListErr)
 		if len(paramList) >= 2 {
 			sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s", _tenant, _company, _window, _session, paramList[0], paramList[1])
 			tmx, tmxErr := client.Cmd("hget", sessionKey, "time").Str()
-			errHndlr("Cmd", tmxErr)
+			errHndlr("FindDashboardSession", "Cmd", tmxErr)
 			timeValue = tmx
 			param1 = paramList[0]
 			param2 = paramList[1]
 		}
 
-		errHndlr("Cmd", client.Cmd("del", sessParamsEventKey).Err)
+		errHndlr("FindDashboardSession", "Cmd", client.Cmd("del", sessParamsEventKey).Err)
 
 		return
 	}
@@ -1743,11 +1747,11 @@ func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey
 
 		if redisMode == "sentinel" {
 			client, err = sentinelPool.GetMaster(redisClusterName)
-			errHndlr("getConnFromSentinel", err)
+			errHndlr("RemoveDashboardSession", "getConnFromSentinel", err)
 			defer sentinelPool.PutMaster(redisClusterName, client)
 		} else {
 			client, err = redisPool.Get()
-			errHndlr("getConnFromPool", err)
+			errHndlr("RemoveDashboardSession", "getConnFromPool", err)
 			defer redisPool.Put(client)
 		}
 
@@ -1763,7 +1767,7 @@ func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey
 		errHndlr("selectDb", r.Err)*/
 
 		iDel, iDelErr := client.Cmd("del", sessionKey).Int()
-		errHndlr("Cmd", iDelErr)
+		errHndlr("RemoveDashboardSession", "Cmd", iDelErr)
 		result = iDel
 		return
 	}
@@ -1783,11 +1787,11 @@ func ScanAndGetKeys(pattern string) []string {
 
 	if redisMode == "sentinel" {
 		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromSentinel", err)
+		errHndlr("ScanAndGetKeys", "getConnFromSentinel", err)
 		defer sentinelPool.PutMaster(redisClusterName, client)
 	} else {
 		client, err = redisPool.Get()
-		errHndlr("getConnFromPool", err)
+		errHndlr("ScanAndGetKeys", "getConnFromPool", err)
 		defer redisPool.Put(client)
 	}
 

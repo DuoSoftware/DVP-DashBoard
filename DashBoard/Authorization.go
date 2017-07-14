@@ -245,17 +245,17 @@ func SecurityGet(key string) string {
 
 	if redisMode == "sentinel" {
 		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("getConnFromSentinel", err)
+		errHndlr("SecurityGet", "getConnFromSentinel", err)
 		defer sentinelPool.PutMaster(redisClusterName, client)
 	} else {
 		client, err = redisPool.Get()
-		errHndlr("getConnFromPool", err)
+		errHndlr("SecurityGet", "getConnFromPool", err)
 		defer redisPool.Put(client)
 	}
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr("auth", authE.Err)
+	errHndlr("SecurityGet", "auth", authE.Err)
 
 	strObj, _ := client.Cmd("get", key).Str()
 	//fmt.Println(strObj)

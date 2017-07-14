@@ -344,5 +344,5 @@ func LoadConfiguration() {
 	fmt.Println("redisPubSubIp:", redisPubSubIp)
 	fmt.Println("redisIp:", redisIp)
 	fmt.Println("redisDb:", redisDb)
-	fmt.Println("redisDb:", securityIp)
+	fmt.Println("securityIp:", securityIp)
 }
