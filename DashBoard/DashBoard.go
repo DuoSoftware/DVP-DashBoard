@@ -825,8 +825,8 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 
 		}
 
-		logWindow := fmt.Sprintf("%s : %s", window, sinc)
-		fmt.Println(logWindow)
+		//logWindow := fmt.Sprintf("%s : %s", window, sinc)
+		//fmt.Println(logWindow)
 	}
 
 }
