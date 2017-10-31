@@ -103,112 +103,127 @@ func PubSub() {
 	//errHndlr("Dial tcp", err2)
 	//defer client.PutMaster(redisClusterName, c2)
 
-	if redisMode == "sentinel" {
+	for {
 
-		c2, err := sentinelPool.GetMaster(redisClusterName)
-		errHndlr("PubSub", "getConnFromPool", err)
-		defer sentinelPool.PutMaster(redisClusterName, c2)
+		if redisMode == "sentinel" {
 
-		psc := pubsub.NewSubClient(c2)
-		psr := psc.Subscribe("events")
-		ppsr := psc.PSubscribe("EVENT:*")
+			c2, err := sentinelPool.GetMaster(redisClusterName)
+			errHndlr("PubSub", "getConnFromPool", err)
+			defer sentinelPool.PutMaster(redisClusterName, c2)
 
-		fmt.Println("Event Start")
+			if err == nil {
+				psc := pubsub.NewSubClient(c2)
+				psr := psc.Subscribe("events")
+				ppsr := psc.PSubscribe("EVENT:*")
 
-		if ppsr.Err == nil {
+				fmt.Println("Event Start")
 
-			for {
-				psr = psc.Receive()
+				if ppsr.Err == nil {
 
-				if psr.Timeout() {
-					fmt.Println("psc.Receive Timeout:: ", psr.Timeout())
-					break
+					for {
+						psr = psc.Receive()
 
+						if psr.Timeout() {
+							fmt.Println("psc.Receive Timeout:: ", psr.Timeout())
+							break
+
+						}
+						if psr.Err != nil {
+
+							fmt.Println("psc.Receive Err:: ", psr.Err.Error())
+							break
+						}
+						list := strings.Split(psr.Message, ":")
+						fmt.Println(list)
+						if len(list) >= 8 {
+							stenent := list[1]
+							scompany := list[2]
+							sclass := list[3]
+							stype := list[4]
+							scategory := list[5]
+							sparam1 := list[6]
+							sparam2 := list[7]
+							ssession := list[8]
+
+							itenet, _ := strconv.Atoi(stenent)
+							icompany, _ := strconv.Atoi(scompany)
+
+							go OnEvent(itenet, icompany, sclass, stype, scategory, ssession, sparam1, sparam2)
+						}
+
+					}
+					//s := strings.Split("127.0.0.1:5432", ":")
 				}
-				if psr.Err != nil {
 
-					fmt.Println("psc.Receive Err:: ", psr.Err.Error())
-					break
-				}
-				list := strings.Split(psr.Message, ":")
-				fmt.Println(list)
-				if len(list) >= 8 {
-					stenent := list[1]
-					scompany := list[2]
-					sclass := list[3]
-					stype := list[4]
-					scategory := list[5]
-					sparam1 := list[6]
-					sparam2 := list[7]
-					ssession := list[8]
-
-					itenet, _ := strconv.Atoi(stenent)
-					icompany, _ := strconv.Atoi(scompany)
-
-					go OnEvent(itenet, icompany, sclass, stype, scategory, ssession, sparam1, sparam2)
-				}
-
+				fmt.Println("Unsubscribe")
+				psc.Unsubscribe("events")
 			}
-			//s := strings.Split("127.0.0.1:5432", ":")
+
+		} else {
+
+			c2, err := redis.Dial("tcp", redisPubSubIp)
+			errHndlr("PubSub", "dial", err)
+			defer c2.Close()
+
+			//authServer
+
+			if err == nil {
+				authE := c2.Cmd("auth", redisPassword)
+				errHndlr("PubSub", "auth", authE.Err)
+
+				if authE.Err == nil {
+
+					psc := pubsub.NewSubClient(c2)
+					psr := psc.Subscribe("events")
+					ppsr := psc.PSubscribe("EVENT:*")
+
+					fmt.Println("Event Start")
+
+					if ppsr.Err == nil {
+
+						for {
+							psr = psc.Receive()
+
+							if psr.Timeout() {
+								fmt.Println("psc.Receive Timeout:: ", psr.Timeout())
+								break
+
+							}
+
+							if psr.Err != nil {
+
+								fmt.Println("psc.Receive Err:: ", psr.Err.Error())
+								break
+							}
+							list := strings.Split(psr.Message, ":")
+							fmt.Println(list)
+							if len(list) >= 8 {
+								stenent := list[1]
+								scompany := list[2]
+								sclass := list[3]
+								stype := list[4]
+								scategory := list[5]
+								sparam1 := list[6]
+								sparam2 := list[7]
+								ssession := list[8]
+
+								itenet, _ := strconv.Atoi(stenent)
+								icompany, _ := strconv.Atoi(scompany)
+
+								go OnEvent(itenet, icompany, sclass, stype, scategory, ssession, sparam1, sparam2)
+							}
+
+						}
+						//s := strings.Split("127.0.0.1:5432", ":")
+					}
+
+					fmt.Println("Unsubscribe")
+					psc.Unsubscribe("events")
+				}
+			}
 		}
 
-		psc.Unsubscribe("events")
-
-	} else {
-
-		c2, err := redis.Dial("tcp", redisPubSubIp)
-		errHndlr("PubSub", "dial", err)
-		defer c2.Close()
-
-		//authServer
-		authE := c2.Cmd("auth", redisPassword)
-		errHndlr("PubSub", "auth", authE.Err)
-
-		psc := pubsub.NewSubClient(c2)
-		psr := psc.Subscribe("events")
-		ppsr := psc.PSubscribe("EVENT:*")
-
-		fmt.Println("Event Start")
-
-		if ppsr.Err == nil {
-
-			for {
-				psr = psc.Receive()
-
-				if psr.Timeout() {
-					fmt.Println("psc.Receive Timeout:: ", psr.Timeout())
-					break
-
-				}
-
-				if psr.Err != nil {
-
-					fmt.Println("psc.Receive Err:: ", psr.Err.Error())
-					break
-				}
-				list := strings.Split(psr.Message, ":")
-				fmt.Println(list)
-				if len(list) >= 8 {
-					stenent := list[1]
-					scompany := list[2]
-					sclass := list[3]
-					stype := list[4]
-					scategory := list[5]
-					sparam1 := list[6]
-					sparam2 := list[7]
-					ssession := list[8]
-
-					itenet, _ := strconv.Atoi(stenent)
-					icompany, _ := strconv.Atoi(scompany)
-
-					go OnEvent(itenet, icompany, sclass, stype, scategory, ssession, sparam1, sparam2)
-				}
-
-			}
-			//s := strings.Split("127.0.0.1:5432", ":")
-		}
-
-		psc.Unsubscribe("events")
+		time.Sleep(1 * time.Second)
 	}
 
 }
