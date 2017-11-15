@@ -953,7 +953,7 @@ func ProcessDecrRetry() {
 			decrEventDetail.TryCount++
 
 			client.Cmd("hdel", "DecrRetrySessions", decrEventDetail.Session)
-			DecrementEvent(decrEventDetail.Tenant, decrEventDetail.Tenant, decrEventDetail.TryCount, decrEventDetail.Window, decrEventDetail.Session, decrEventDetail.PersistSession, decrEventDetail.StatsDPath, decrEventDetail.Threshold, eventTime, location, decrEventDetail.ThresholdEnabled)
+			DecrementEvent(decrEventDetail.Tenant, decrEventDetail.Company, decrEventDetail.TryCount, decrEventDetail.Window, decrEventDetail.Session, decrEventDetail.PersistSession, decrEventDetail.StatsDPath, decrEventDetail.Threshold, eventTime, location, decrEventDetail.ThresholdEnabled)
 
 		} else {
 			fmt.Println("Execute decr late event session: ", decrEventDetail.Session, " :: Waiting")
