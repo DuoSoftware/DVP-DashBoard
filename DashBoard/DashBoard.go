@@ -887,6 +887,7 @@ func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSe
 			reTryDetail.StatsDPath = statsDPath
 			reTryDetail.Threshold = threshold
 			reTryDetail.EventTime = tm.Format(layout)
+			reTryDetail.ExecutionTime = time.Now().In(location).Format(layout)
 			reTryDetail.TimeLocation = location.String()
 			reTryDetail.ThresholdEnabled = thresholdEnabled
 			reTryDetail.TryCount = tryCount
@@ -938,8 +939,10 @@ func ProcessDecrRetry() {
 		fmt.Println("Execute decr late event session: ", decrEventDetail.Session, " :: tmNow:: ", tm.String())
 
 		tm2, _ := time.Parse(layout, decrEventDetail.EventTime)
+		tm3, _ := time.Parse(layout, decrEventDetail.ExecutionTime)
 		eventTime := tm2.In(location)
-		timeDiff := int(tm.Sub(eventTime).Seconds())
+		executionTime := tm3.In(location)
+		timeDiff := int(tm.Sub(executionTime).Seconds())
 
 		decrRetryDelayInt, _ := strconv.Atoi(decrRetryDelay)
 		if timeDiff >= decrRetryDelayInt {

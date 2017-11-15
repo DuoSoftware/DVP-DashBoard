@@ -173,6 +173,7 @@ type DecrRetryDetail struct {
 	StatsDPath       string
 	Threshold        string
 	EventTime        string
+	ExecutionTime    string
 	TimeLocation     string
 	ThresholdEnabled bool
 	TryCount         int
