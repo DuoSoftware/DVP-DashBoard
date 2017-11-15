@@ -30,5 +30,7 @@
 	"RedisClusterName":"SYS_REDIS_SENTINEL_NAME",
 	"RedisMode":"SYS_REDIS_MODE",
 	"SentinelHosts": "SYS_REDIS_SENTINEL_HOSTS",
-	"SentinelPort": "SYS_REDIS_SENTINEL_PORT"
+	"SentinelPort": "SYS_REDIS_SENTINEL_PORT",
+	"DecrRetryCount": "HOST_DASHBOARD_DRC",
+	"DecrRetryDelay": "HOST_DASHBOARD_DRD"
 }

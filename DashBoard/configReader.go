@@ -42,6 +42,8 @@ var redisClusterName string
 var redisMode string
 var sentinelHosts string
 var sentinelPort string
+var decrRetryCount string
+var decrRetryDelay string
 
 func GetDirPath() string {
 	envPath := os.Getenv("GO_CONFIG_DIR")
@@ -65,123 +67,50 @@ func GetDefaultConfig() Configuration {
 
 	if deferr != nil {
 		fmt.Println("error:", deferr)
-		defconfiguration.RedisPubSubIp = "127.0.0.1"
-		defconfiguration.RedisPubSubPort = "6389"
-		defconfiguration.RedisPubSubPassword = "DuoS123"
-		defconfiguration.RedisIp = "127.0.0.1"
-		defconfiguration.RedisPort = "6389"
-		defconfiguration.RedisDb = 8
-		defconfiguration.ArdsRedisDb = 6
-		defconfiguration.RedisPassword = "DuoS123"
-		defconfiguration.Port = "2226"
-		defconfiguration.StatsDIp = "45.55.142.207"
-		defconfiguration.StatsDPort = 8125
-		defconfiguration.PgUser = "duo"
-		defconfiguration.PgPassword = "DuoS123"
-		defconfiguration.PgDbname = "dvpdb"
-		defconfiguration.PgHost = "104.131.105.222"
-		defconfiguration.PgPort = 5432
-		defconfiguration.SecurityIp = "45.55.142.207"
-		defconfiguration.SecurityPort = "6389"
-		defconfiguration.SecurityPassword = "DuoS123"
-		defconfiguration.MongoIp = "45.55.142.207"
-		defconfiguration.MongoPort = "27017"
-		defconfiguration.MongoDbname = "dvpdb"
-		defconfiguration.MongoPassword = "DuoS123"
-		defconfiguration.MongoUser = "duo"
-		defconfiguration.CacheMachenism = "redis"
-		defconfiguration.DashboardServiceHost = "127.0.0.1"
-		defconfiguration.DashboardServicePort = "8874"
-		defconfiguration.AccessToken = ""
-		defconfiguration.RedisClusterName = "redis-cluster"
-		defconfiguration.RedisMode = "instance"
-		defconfiguration.SentinelHosts = "138.197.90.92,45.55.205.92,138.197.90.92"
-		defconfiguration.SentinelPort = "16389"
+		panic(deferr)
 	}
 
 	return defconfiguration
 }
 
 func LoadDefaultConfig() {
-	confPath := filepath.Join(dirPath, "conf.json")
-	fmt.Println("LoadDefaultConfig config path: ", confPath)
 
-	content, operr := ioutil.ReadFile(confPath)
-	if operr != nil {
-		fmt.Println(operr)
-	}
+	defconfiguration := GetDefaultConfig()
 
-	defconfiguration := Configuration{}
-	deferr := json.Unmarshal(content, &defconfiguration)
-
-	if deferr != nil {
-		fmt.Println("error:", deferr)
-		redisPubSubIp = "127.0.0.1"
-		redisPubSubPort = "6389"
-		redisPubSubPassword = "DuoS123"
-		redisIp = "127.0.0.1"
-		redisPort = "6389"
-		redisDb = 8
-		ardsRedisDb = 6
-		redisPassword = "DuoS123"
-		port = "2226"
-		statsDIp = "45.55.142.207"
-		statsDPort = 8125
-		pgUser = "duo"
-		pgPassword = "DuoS123"
-		pgDbname = "dvpdb"
-		pgHost = "104.131.105.222"
-		pgPort = 5432
-		securityIp = "45.55.142.207"
-		securityPort = "6389"
-		securityPassword = "DuoS123"
-		mongoIp = "45.55.142.207"
-		mongoPort = "27017"
-		mongoDbname = "dvpdb"
-		mongoPassword = "DuoS123"
-		mongoUser = "duo"
-		cacheMachenism = "redis"
-		dashboardServiceHost = "127.0.0.1"
-		dashboardServicePort = "8874"
-		accessToken = ""
-		redisClusterName = "redis-cluster"
-		redisMode = "instance"
-		sentinelHosts = "138.197.90.92,45.55.205.92,138.197.90.92"
-		sentinelPort = "16389"
-	} else {
-		redisPubSubIp = fmt.Sprintf("%s:%s", defconfiguration.RedisPubSubIp, defconfiguration.RedisPort)
-		redisIp = fmt.Sprintf("%s:%s", defconfiguration.RedisIp, defconfiguration.RedisPort)
-		redisPubSubPort = defconfiguration.RedisPubSubPort
-		redisPubSubPassword = defconfiguration.RedisPubSubPassword
-		redisPort = defconfiguration.RedisPort
-		redisDb = defconfiguration.RedisDb
-		ardsRedisDb = defconfiguration.ArdsRedisDb
-		redisPassword = defconfiguration.RedisPassword
-		port = defconfiguration.Port
-		statsDIp = defconfiguration.StatsDIp
-		statsDPort = defconfiguration.StatsDPort
-		pgUser = defconfiguration.PgUser
-		pgPassword = defconfiguration.PgPassword
-		pgDbname = defconfiguration.PgDbname
-		pgHost = defconfiguration.PgHost
-		pgPort = defconfiguration.PgPort
-		securityIp = defconfiguration.SecurityIp
-		securityPort = defconfiguration.SecurityPort
-		securityPassword = defconfiguration.SecurityPassword
-		mongoIp = defconfiguration.MongoIp
-		mongoPort = defconfiguration.MongoPort
-		mongoDbname = defconfiguration.MongoDbname
-		mongoPassword = defconfiguration.MongoPassword
-		mongoUser = defconfiguration.MongoUser
-		cacheMachenism = defconfiguration.CacheMachenism
-		dashboardServiceHost = defconfiguration.DashboardServiceHost
-		dashboardServicePort = defconfiguration.DashboardServicePort
-		accessToken = defconfiguration.AccessToken
-		redisClusterName = defconfiguration.RedisClusterName
-		redisMode = defconfiguration.RedisMode
-		sentinelHosts = defconfiguration.SentinelHosts
-		sentinelPort = defconfiguration.SentinelPort
-	}
+	redisPubSubIp = fmt.Sprintf("%s:%s", defconfiguration.RedisPubSubIp, defconfiguration.RedisPort)
+	redisIp = fmt.Sprintf("%s:%s", defconfiguration.RedisIp, defconfiguration.RedisPort)
+	redisPubSubPort = defconfiguration.RedisPubSubPort
+	redisPubSubPassword = defconfiguration.RedisPubSubPassword
+	redisPort = defconfiguration.RedisPort
+	redisDb = defconfiguration.RedisDb
+	ardsRedisDb = defconfiguration.ArdsRedisDb
+	redisPassword = defconfiguration.RedisPassword
+	port = defconfiguration.Port
+	statsDIp = defconfiguration.StatsDIp
+	statsDPort = defconfiguration.StatsDPort
+	pgUser = defconfiguration.PgUser
+	pgPassword = defconfiguration.PgPassword
+	pgDbname = defconfiguration.PgDbname
+	pgHost = defconfiguration.PgHost
+	pgPort = defconfiguration.PgPort
+	securityIp = fmt.Sprintf("%s:%s", defconfiguration.SecurityIp, defconfiguration.SecurityPort)
+	securityPort = defconfiguration.SecurityPort
+	securityPassword = defconfiguration.SecurityPassword
+	mongoIp = defconfiguration.MongoIp
+	mongoPort = defconfiguration.MongoPort
+	mongoDbname = defconfiguration.MongoDbname
+	mongoPassword = defconfiguration.MongoPassword
+	mongoUser = defconfiguration.MongoUser
+	cacheMachenism = defconfiguration.CacheMachenism
+	dashboardServiceHost = defconfiguration.DashboardServiceHost
+	dashboardServicePort = defconfiguration.DashboardServicePort
+	accessToken = defconfiguration.AccessToken
+	redisClusterName = defconfiguration.RedisClusterName
+	redisMode = defconfiguration.RedisMode
+	sentinelHosts = defconfiguration.SentinelHosts
+	sentinelPort = defconfiguration.SentinelPort
+	decrRetryCount = defconfiguration.DecrRetryCount
+	decrRetryDelay = defconfiguration.DecrRetryDelay
 }
 
 func LoadConfiguration() {
@@ -234,6 +163,8 @@ func LoadConfiguration() {
 		redisMode = os.Getenv(envconfiguration.RedisMode)
 		sentinelHosts = os.Getenv(envconfiguration.SentinelHosts)
 		sentinelPort = os.Getenv(envconfiguration.SentinelPort)
+		decrRetryCount = os.Getenv(envconfiguration.DecrRetryCount)
+		decrRetryDelay = os.Getenv(envconfiguration.DecrRetryDelay)
 
 		if redisPubSubIp == "" {
 			redisPubSubIp = defConfig.RedisPubSubIp
@@ -331,6 +262,12 @@ func LoadConfiguration() {
 		}
 		if sentinelPort == "" {
 			sentinelPort = defConfig.SentinelPort
+		}
+		if decrRetryCount == "" {
+			decrRetryCount = defConfig.DecrRetryCount
+		}
+		if decrRetryDelay == "" {
+			decrRetryDelay = defConfig.DecrRetryDelay
 		}
 
 		redisIp = fmt.Sprintf("%s:%s", redisIp, redisPort)

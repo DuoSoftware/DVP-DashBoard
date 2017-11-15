@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/DuoSoftware/gorest"
 	"time"
+
+	"github.com/DuoSoftware/gorest"
 )
 
 type EventData struct {
@@ -64,6 +65,8 @@ type Configuration struct {
 	RedisMode            string
 	SentinelHosts        string
 	SentinelPort         string
+	DecrRetryCount       string
+	DecrRetryDelay       string
 }
 
 type EnvConfiguration struct {
@@ -99,6 +102,8 @@ type EnvConfiguration struct {
 	RedisMode            string
 	SentinelHosts        string
 	SentinelPort         string
+	DecrRetryCount       string
+	DecrRetryDelay       string
 }
 
 type Result struct {
@@ -157,6 +162,20 @@ type SessionPersistence struct {
 	Param1  string
 	Param2  string
 	Time    string
+}
+
+type DecrRetryDetail struct {
+	Tenant           int
+	Company          int
+	Window           string
+	Session          string
+	PersistSession   string
+	StatsDPath       string
+	Threshold        string
+	EventTime        string
+	TimeLocation     string
+	ThresholdEnabled bool
+	TryCount         int
 }
 
 type DashBoardEvent struct {

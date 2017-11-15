@@ -3,10 +3,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/DuoSoftware/gorest"
-	"github.com/rs/cors"
 	"net/http"
 	"time"
+
+	"github.com/DuoSoftware/gorest"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -21,6 +22,7 @@ func main() {
 
 	InitiateRedis()
 	InitiateStatDClient()
+	go StartDecrRetry()
 	//go ClearData()
 
 	//jwtMiddleware := loadJwtMiddleware()
@@ -88,5 +90,16 @@ func ClearData() {
 		timer2 := time.NewTimer(time.Duration(time.Minute * 5))
 		<-timer2.C
 		fmt.Println("----------End ClearData Wait after reset----------------------")
+	}
+}
+
+func StartDecrRetry() {
+	for {
+		fmt.Println("----------Start StartDecrRetry----------------------")
+
+		ProcessDecrRetry()
+		time.Sleep(1 * time.Second)
+
+		fmt.Println("----------End StartDecrRetry----------------------")
 	}
 }
