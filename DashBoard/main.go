@@ -95,11 +95,7 @@ func ClearData() {
 
 func StartDecrRetry() {
 	for {
-		fmt.Println("----------Start StartDecrRetry----------------------")
-
 		ProcessDecrRetry()
 		time.Sleep(1 * time.Second)
-
-		fmt.Println("----------End StartDecrRetry----------------------")
 	}
 }

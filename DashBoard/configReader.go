@@ -282,4 +282,6 @@ func LoadConfiguration() {
 	fmt.Println("redisIp:", redisIp)
 	fmt.Println("redisDb:", redisDb)
 	fmt.Println("securityIp:", securityIp)
+	fmt.Println("decrRetryCount:", decrRetryCount)
+	fmt.Println("decrRetryDelay:", decrRetryDelay)
 }
