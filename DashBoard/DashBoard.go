@@ -870,10 +870,10 @@ func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSe
 
 			DoPublish(_company, _tenent, window, sParam1, sParam2)
 		} else {
-			fmt.Println("Delete session: %s failed", _session)
+			fmt.Println("Delete session: ", _session, " failed")
 		}
 	} else {
-		fmt.Println("Session data not found for decriment: %s :: tryCount: %d", _session, tryCount)
+		fmt.Println("Session data not found for decriment: ", _session, " :: tryCount: ", tryCount)
 
 		decrRetryCountInt, _ := strconv.Atoi(decrRetryCount)
 
@@ -893,12 +893,12 @@ func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSe
 
 			reTryDetailMarshalData, mErr := json.Marshal(reTryDetail)
 			if mErr != nil {
-				fmt.Println("Marshal Retry data failed: %s :: Error: %s", _session, mErr.Error())
+				fmt.Println("Marshal Retry data failed: ", _session, " :: Error: ", mErr.Error())
 			} else {
 				reTryDetailJsonString := string(reTryDetailMarshalData)
 				_, lpushErr := client.Cmd("hset", "DecrRetrySessions", _session, reTryDetailJsonString).Int()
 				if lpushErr != nil {
-					fmt.Println("Lpush retry data failed: %s :: Error: %s", _session, lpushErr.Error())
+					fmt.Println("Lpush retry data failed: ", _session, " :: Error: ", lpushErr.Error())
 				}
 			}
 		}
@@ -932,12 +932,12 @@ func ProcessDecrRetry() {
 
 		client.Cmd("hdel", "DecrRetrySessions", decrEventDetail.Session)
 
-		fmt.Println("Execute decr late event session: %s ", decrEventDetail.Session)
+		fmt.Println("Execute decr late event session: ", decrEventDetail.Session)
 		location, _ := time.LoadLocation(decrEventDetail.TimeLocation)
-		fmt.Println("Execute decr late event session: %s :: location:: ", decrEventDetail.Session, location.String())
+		fmt.Println("Execute decr late event session: ", decrEventDetail.Session, " :: location:: ", location.String())
 
 		tm := time.Now().In(location)
-		fmt.Println("Execute decr late event session: %s :: tmNow:: ", decrEventDetail.Session, tm.String())
+		fmt.Println("Execute decr late event session: ", decrEventDetail.Session, " :: tmNow:: ", tm.String())
 
 		tm2, _ := time.Parse(layout, decrEventDetail.EventTime)
 		eventTime := tm2.In(location)
@@ -950,7 +950,7 @@ func ProcessDecrRetry() {
 			DecrementEvent(decrEventDetail.Tenant, decrEventDetail.Tenant, decrEventDetail.TryCount, decrEventDetail.Window, decrEventDetail.Session, decrEventDetail.PersistSession, decrEventDetail.StatsDPath, decrEventDetail.Threshold, eventTime, location, decrEventDetail.ThresholdEnabled)
 
 		} else {
-			fmt.Println("Execute decr late event session: %s :: Waiting:: ", decrEventDetail.Session)
+			fmt.Println("Execute decr late event session: ", decrEventDetail.Session, " :: Waiting")
 		}
 	}
 }
