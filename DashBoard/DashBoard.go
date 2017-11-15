@@ -739,11 +739,20 @@ func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSe
 
 	sessionKey, timeValue, sParam1, sParam2 := FindDashboardSession(_tenent, _company, window, _session, persistSession)
 	if sessionKey != "" {
-		tm2, _ := time.Parse(layout, timeValue)
-		timeDiff := int(tm.Sub(tm2.In(location)).Seconds())
+		var timeDiff int
+		var duration int64
 
-		if timeDiff < 0 {
+		if timeValue != "" {
+			tm2, _ := time.Parse(layout, timeValue)
+			duration = int64(tm.Sub(tm2.In(location)) / time.Millisecond)
+			timeDiff = int(tm.Sub(tm2.In(location)).Seconds())
+
+			if timeDiff < 0 {
+				timeDiff = 0
+			}
+		} else {
 			timeDiff = 0
+			duration = 0
 		}
 
 		fmt.Println(timeDiff)
@@ -868,7 +877,6 @@ func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSe
 			statClient.Gauge(gaugeConcStatName, dccount)
 			statClient.Gauge(totTimeStatName, rinc)
 
-			duration := int64(tm.Sub(tm2.In(location)) / time.Millisecond)
 			statClient.Timing(timeStatName, duration)
 
 			DoPublish(_company, _tenent, window, sParam1, sParam2)
@@ -1210,9 +1218,11 @@ func OnSetDailySummary(_date time.Time) {
 			if len(sessEvents) > 0 {
 				tmx, tmxErr := client.Cmd("hget", sessEvents[0], "time").Str()
 				errHndlr("OnSetDailySummary", "Cmd", tmxErr)
-				tm2, _ := time.Parse(layout, tmx)
-				currentTime = int(_date.Sub(tm2.Local()).Seconds())
-				fmt.Println("currentTime: ", currentTime)
+				if tmx != "" {
+					tm2, _ := time.Parse(layout, tmx)
+					currentTime = int(_date.Sub(tm2.Local()).Seconds())
+					fmt.Println("currentTime: ", currentTime)
+				}
 			}
 		}
 		totTimeEventName := fmt.Sprintf("TOTALTIME:%d:%d:%s:%s:%s", tenant, company, summery.WindowName, summery.Param1, summery.Param2)
@@ -1421,10 +1431,12 @@ func OnGetCurrentMaxTime(_tenant, _company int, _window, _parameter1, _parameter
 		for _, key := range keyList {
 			tmx, tmxErr := client.Cmd("hget", key, "time").Str()
 			errHndlr("OnGetCurrentMaxTime", "Cmd", tmxErr)
-			tm2, _ := time.Parse(layout, tmx)
-			timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
-			if tempMaxTime < timeDiff {
-				tempMaxTime = timeDiff
+			if tmx != "" {
+				tm2, _ := time.Parse(layout, tmx)
+				timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
+				if tempMaxTime < timeDiff {
+					tempMaxTime = timeDiff
+				}
 			}
 		}
 		resultChannel <- tempMaxTime
@@ -1548,11 +1560,13 @@ func OnGetAverageTime(_tenant, _company int, _window, _parameter1, _parameter2 s
 		for _, key := range sessTimeKeyList {
 			tmx, tmxErr := client.Cmd("hget", key, "time").Str()
 			errHndlr("OnGetAverageTime", "Cmd", tmxErr)
-			tm2, _ := time.Parse(layout, tmx)
-			timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
+			if tmx != "" {
+				tm2, _ := time.Parse(layout, tmx)
+				timeDiff := int(tm.Local().Sub(tm2.Local()).Seconds())
 
-			if timeDiff > 0 {
-				sessTemptotal = sessTemptotal + timeDiff
+				if timeDiff > 0 {
+					sessTemptotal = sessTemptotal + timeDiff
+				}
 			}
 		}
 		totalTime = totalTime + sessTemptotal
