@@ -874,27 +874,32 @@ func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSe
 		}
 	} else {
 		fmt.Println("Session data not found for decriment: %s :: tryCount: %d", _session, tryCount)
-		var reTryDetail = DecrRetryDetail{}
-		reTryDetail.Company = _company
-		reTryDetail.Tenant = _tenent
-		reTryDetail.Window = window
-		reTryDetail.Session = _session
-		reTryDetail.PersistSession = persistSession
-		reTryDetail.StatsDPath = statsDPath
-		reTryDetail.Threshold = threshold
-		reTryDetail.EventTime = tm.Format(layout)
-		reTryDetail.TimeLocation = location.String()
-		reTryDetail.ThresholdEnabled = thresholdEnabled
-		reTryDetail.TryCount = tryCount
 
-		reTryDetailMarshalData, mErr := json.Marshal(reTryDetail)
-		if mErr != nil {
-			fmt.Println("Marshal Retry data failed: %s :: Error: %s", _session, mErr.Error())
-		} else {
-			reTryDetailJsonString := string(reTryDetailMarshalData)
-			_, lpushErr := client.Cmd("hset", "DecrRetrySessions", _session, reTryDetailJsonString).Int()
-			if lpushErr != nil {
-				fmt.Println("Lpush retry data failed: %s :: Error: %s", _session, lpushErr.Error())
+		decrRetryCountInt, _ := strconv.Atoi(decrRetryCount)
+
+		if tryCount < decrRetryCountInt {
+			var reTryDetail = DecrRetryDetail{}
+			reTryDetail.Company = _company
+			reTryDetail.Tenant = _tenent
+			reTryDetail.Window = window
+			reTryDetail.Session = _session
+			reTryDetail.PersistSession = persistSession
+			reTryDetail.StatsDPath = statsDPath
+			reTryDetail.Threshold = threshold
+			reTryDetail.EventTime = tm.Format(layout)
+			reTryDetail.TimeLocation = location.String()
+			reTryDetail.ThresholdEnabled = thresholdEnabled
+			reTryDetail.TryCount = tryCount
+
+			reTryDetailMarshalData, mErr := json.Marshal(reTryDetail)
+			if mErr != nil {
+				fmt.Println("Marshal Retry data failed: %s :: Error: %s", _session, mErr.Error())
+			} else {
+				reTryDetailJsonString := string(reTryDetailMarshalData)
+				_, lpushErr := client.Cmd("hset", "DecrRetrySessions", _session, reTryDetailJsonString).Int()
+				if lpushErr != nil {
+					fmt.Println("Lpush retry data failed: %s :: Error: %s", _session, lpushErr.Error())
+				}
 			}
 		}
 	}
