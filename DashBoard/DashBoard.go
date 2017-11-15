@@ -734,6 +734,9 @@ func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSe
 		defer redisPool.Put(client)
 	}
 
+	logDetails := fmt.Sprintf("Tenant: %d :: Company: %d :: TryCount: %d :: Window: %s :: Session: %s :: PersistSession: %s :: StatsDPath: %s :: threshold: %s :: TM: %s :: Location: %s :: ThresholdEnabled: %t", _tenent, _company, tryCount, window, _session, persistSession, statsDPath, threshold, tm.Format(layout), location.String(), thresholdEnabled)
+	fmt.Println("DecrementEvent:: ", logDetails)
+
 	sessionKey, timeValue, sParam1, sParam2 := FindDashboardSession(_tenent, _company, window, _session, persistSession)
 	if sessionKey != "" {
 		tm2, _ := time.Parse(layout, timeValue)
