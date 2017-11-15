@@ -930,8 +930,6 @@ func ProcessDecrRetry() {
 		var decrEventDetail DecrRetryDetail
 		json.Unmarshal([]byte(event), &decrEventDetail)
 
-		client.Cmd("hdel", "DecrRetrySessions", decrEventDetail.Session)
-
 		fmt.Println("Execute decr late event session: ", decrEventDetail.Session)
 		location, _ := time.LoadLocation(decrEventDetail.TimeLocation)
 		fmt.Println("Execute decr late event session: ", decrEventDetail.Session, " :: location:: ", location.String())
@@ -947,6 +945,8 @@ func ProcessDecrRetry() {
 		if timeDiff >= decrRetryDelayInt {
 
 			decrEventDetail.TryCount++
+
+			client.Cmd("hdel", "DecrRetrySessions", decrEventDetail.Session)
 			DecrementEvent(decrEventDetail.Tenant, decrEventDetail.Tenant, decrEventDetail.TryCount, decrEventDetail.Window, decrEventDetail.Session, decrEventDetail.PersistSession, decrEventDetail.StatsDPath, decrEventDetail.Threshold, eventTime, location, decrEventDetail.ThresholdEnabled)
 
 		} else {
