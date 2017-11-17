@@ -44,6 +44,11 @@ var sentinelHosts string
 var sentinelPort string
 var decrRetryCount string
 var decrRetryDelay string
+var rabbitMQIp string
+var rabbitMQPort string
+var rabbitMQUser string
+var rabbitMQPassword string
+var useMsgQueue string
 
 func GetDirPath() string {
 	envPath := os.Getenv("GO_CONFIG_DIR")
@@ -111,6 +116,11 @@ func LoadDefaultConfig() {
 	sentinelPort = defconfiguration.SentinelPort
 	decrRetryCount = defconfiguration.DecrRetryCount
 	decrRetryDelay = defconfiguration.DecrRetryDelay
+	rabbitMQIp = defconfiguration.RabbitMQIp
+	rabbitMQPort = defconfiguration.RabbitMQPort
+	rabbitMQUser = defconfiguration.RabbitMQUser
+	rabbitMQPassword = defconfiguration.RabbitMQPassword
+	useMsgQueue = defconfiguration.UseMsgQueue
 }
 
 func LoadConfiguration() {
@@ -165,6 +175,11 @@ func LoadConfiguration() {
 		sentinelPort = os.Getenv(envconfiguration.SentinelPort)
 		decrRetryCount = os.Getenv(envconfiguration.DecrRetryCount)
 		decrRetryDelay = os.Getenv(envconfiguration.DecrRetryDelay)
+		rabbitMQIp = os.Getenv(envconfiguration.RabbitMQIp)
+		rabbitMQPort = os.Getenv(envconfiguration.RabbitMQPort)
+		rabbitMQUser = os.Getenv(envconfiguration.RabbitMQUser)
+		rabbitMQPassword = os.Getenv(envconfiguration.RabbitMQPassword)
+		useMsgQueue = os.Getenv(envconfiguration.UseMsgQueue)
 
 		if redisPubSubIp == "" {
 			redisPubSubIp = defConfig.RedisPubSubIp
@@ -269,6 +284,21 @@ func LoadConfiguration() {
 		if decrRetryDelay == "" {
 			decrRetryDelay = defConfig.DecrRetryDelay
 		}
+		if rabbitMQIp == "" {
+			rabbitMQIp = defConfig.RabbitMQIp
+		}
+		if rabbitMQPort == "" {
+			rabbitMQPort = defConfig.RabbitMQPort
+		}
+		if rabbitMQUser == "" {
+			rabbitMQUser = defConfig.RabbitMQUser
+		}
+		if rabbitMQPassword == "" {
+			rabbitMQPassword = defConfig.RabbitMQPassword
+		}
+		if useMsgQueue == "" {
+			useMsgQueue = defConfig.UseMsgQueue
+		}
 
 		redisIp = fmt.Sprintf("%s:%s", redisIp, redisPort)
 		redisPubSubIp = fmt.Sprintf("%s:%s", redisPubSubIp, redisPubSubPort)
@@ -284,4 +314,9 @@ func LoadConfiguration() {
 	fmt.Println("securityIp:", securityIp)
 	fmt.Println("decrRetryCount:", decrRetryCount)
 	fmt.Println("decrRetryDelay:", decrRetryDelay)
+	fmt.Println("rabbitMQIp:", rabbitMQIp)
+	fmt.Println("rabbitMQPort:", rabbitMQPort)
+	fmt.Println("rabbitMQUser:", rabbitMQUser)
+	fmt.Println("rabbitMQPassword:", rabbitMQPassword)
+	fmt.Println("useMsgQueue:", useMsgQueue)
 }

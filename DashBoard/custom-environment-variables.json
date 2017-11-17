@@ -32,5 +32,10 @@
 	"SentinelHosts": "SYS_REDIS_SENTINEL_HOSTS",
 	"SentinelPort": "SYS_REDIS_SENTINEL_PORT",
 	"DecrRetryCount": "HOST_DASHBOARD_DRC",
-	"DecrRetryDelay": "HOST_DASHBOARD_DRD"
+	"DecrRetryDelay": "HOST_DASHBOARD_DRD",
+	"RabbitMQIp": "SYS_RABBITMQ_HOST",
+	"RabbitMQPort": "SYS_RABBITMQ_PORT",
+	"RabbitMQUser": "SYS_RABBITMQ_USER",
+	"RabbitMQPassword":"SYS_RABBITMQ_PASSWORD",
+	"UseMsgQueue": "HOST_USE_MSG_QUEUE"
 }

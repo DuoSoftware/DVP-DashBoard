@@ -67,6 +67,11 @@ type Configuration struct {
 	SentinelPort         string
 	DecrRetryCount       string
 	DecrRetryDelay       string
+	RabbitMQIp           string
+	RabbitMQPort         string
+	RabbitMQUser         string
+	RabbitMQPassword     string
+	UseMsgQueue          string
 }
 
 type EnvConfiguration struct {
@@ -104,6 +109,11 @@ type EnvConfiguration struct {
 	SentinelPort         string
 	DecrRetryCount       string
 	DecrRetryDelay       string
+	RabbitMQIp           string
+	RabbitMQPort         string
+	RabbitMQUser         string
+	RabbitMQPassword     string
+	UseMsgQueue          string
 }
 
 type Result struct {
@@ -219,7 +229,7 @@ func (dashboardEvent DashBoardEvent) Event(data EventData) {
 	fmt.Println(data.EventType)
 	fmt.Println(data.EventCategory)
 
-	go OnEvent(data.Tenent, data.Company, data.EventClass, data.EventType, data.EventCategory, data.SessionID, data.Parameter1, data.Parameter2)
+	go OnEvent(data.Tenent, data.Company, data.EventClass, data.EventType, data.EventCategory, data.SessionID, data.Parameter1, data.Parameter2, data.TimeStamp)
 
 	return
 

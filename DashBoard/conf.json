@@ -33,5 +33,10 @@
 	"SentinelHosts": "138.197.90.92,45.55.205.92,138.197.90.92",
 	"SentinelPort": "16389",
 	"DecrRetryCount": "2",
-	"DecrRetryDelay": "5"
+	"DecrRetryDelay": "5",
+	"RabbitMQIp": "45.55.142.207",
+	"RabbitMQPort": "5672",
+	"RabbitMQUser": "admin",
+	"RabbitMQPassword":"admin",
+	"UseMsgQueue": "false"
 }

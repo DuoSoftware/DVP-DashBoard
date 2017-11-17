@@ -86,7 +86,6 @@ func InitiateRedis() {
 		}
 	}
 
-	go PubSub()
 }
 
 func PubSub() {
@@ -151,7 +150,7 @@ func PubSub() {
 							itenet, _ := strconv.Atoi(stenent)
 							icompany, _ := strconv.Atoi(scompany)
 
-							go OnEvent(itenet, icompany, sclass, stype, scategory, ssession, sparam1, sparam2)
+							go OnEvent(itenet, icompany, sclass, stype, scategory, ssession, sparam1, sparam2, "")
 						}
 
 					}
@@ -213,7 +212,7 @@ func PubSub() {
 								itenet, _ := strconv.Atoi(stenent)
 								icompany, _ := strconv.Atoi(scompany)
 
-								go OnEvent(itenet, icompany, sclass, stype, scategory, ssession, sparam1, sparam2)
+								go OnEvent(itenet, icompany, sclass, stype, scategory, ssession, sparam1, sparam2, "")
 							}
 
 						}
@@ -491,7 +490,7 @@ func OnMeta(_class, _type, _category, _window string, count int, _flushEnable, _
 	PersistsMetaData(_class, _type, _category, _window, count, _flushEnable, _useSession, _persistSession, _thresholdEnable, _thresholdValue)
 }
 
-func OnEvent(_tenent, _company int, _class, _type, _category, _session, _parameter1, _parameter2 string) {
+func OnEvent(_tenent, _company int, _class, _type, _category, _session, _parameter1, _parameter2, eventTime string) {
 
 	if _parameter2 == "" || _parameter2 == "*" {
 		fmt.Println("Use Default Param2")
@@ -507,8 +506,14 @@ func OnEvent(_tenent, _company int, _class, _type, _category, _session, _paramet
 	location, _ := time.LoadLocation("Asia/Colombo")
 	fmt.Println("location:: " + location.String())
 
-	tm := time.Now().In(location)
-	fmt.Println("tmNow:: " + tm.String())
+	var tm time.Time
+	if eventTime != "" {
+		eTime, _ := time.Parse(layout, eventTime)
+		tm = eTime.In(location)
+	} else {
+		tm = time.Now().In(location)
+	}
+	fmt.Println("eventTime:: " + tm.String())
 
 	defer func() {
 		if r := recover(); r != nil {
