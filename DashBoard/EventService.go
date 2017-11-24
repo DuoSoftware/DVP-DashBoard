@@ -71,7 +71,7 @@ type Configuration struct {
 	RabbitMQPort         string
 	RabbitMQUser         string
 	RabbitMQPassword     string
-	UseMsgQueue          string
+	UseDashboardMsgQueue string
 }
 
 type EnvConfiguration struct {
@@ -113,7 +113,7 @@ type EnvConfiguration struct {
 	RabbitMQPort         string
 	RabbitMQUser         string
 	RabbitMQPassword     string
-	UseMsgQueue          string
+	UseDashboardMsgQueue string
 }
 
 type Result struct {
