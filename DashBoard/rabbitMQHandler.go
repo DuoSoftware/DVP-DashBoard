@@ -87,7 +87,7 @@ func Worker() {
 				var eventData EventData
 				json.Unmarshal(d.Body, &eventData)
 
-				go OnEvent(eventData.Tenent, eventData.Company, eventData.EventClass, eventData.EventType, eventData.EventCategory, eventData.SessionID, eventData.Parameter1, eventData.Parameter2, eventData.TimeStamp)
+				go OnEvent(eventData.Tenant, eventData.Company, eventData.EventClass, eventData.EventType, eventData.EventCategory, eventData.SessionID, eventData.Parameter1, eventData.Parameter2, eventData.TimeStamp)
 
 			}
 			fmt.Println("Unsubscribe from dashboard event")

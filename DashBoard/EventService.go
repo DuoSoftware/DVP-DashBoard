@@ -8,7 +8,7 @@ import (
 )
 
 type EventData struct {
-	Tenent        int
+	Tenant        int
 	Company       int
 	EventClass    string
 	EventType     string
@@ -229,7 +229,7 @@ func (dashboardEvent DashBoardEvent) Event(data EventData) {
 	fmt.Println(data.EventType)
 	fmt.Println(data.EventCategory)
 
-	go OnEvent(data.Tenent, data.Company, data.EventClass, data.EventType, data.EventCategory, data.SessionID, data.Parameter1, data.Parameter2, data.TimeStamp)
+	go OnEvent(data.Tenant, data.Company, data.EventClass, data.EventType, data.EventCategory, data.SessionID, data.Parameter1, data.Parameter2, data.TimeStamp)
 
 	return
 
