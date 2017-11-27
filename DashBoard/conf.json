@@ -38,5 +38,5 @@
 	"RabbitMQPort": "5672",
 	"RabbitMQUser": "admin",
 	"RabbitMQPassword":"admin",
-	"UseDashboardMsgQueue": "true"
+	"UseDashboardMsgQueue": "false"
 }
