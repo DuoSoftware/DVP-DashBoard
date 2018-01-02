@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"log"
+
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"log"
 )
 
-func PersistSessionInfo(tenant, company int, window, dashboardSession, param1, param2, timeStr string) {
+func PersistSessionInfo(tenant, company int, businessUnit, window, dashboardSession, param1, param2, timeStr string) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in PersistSessionInfo", r)
@@ -18,7 +19,8 @@ func PersistSessionInfo(tenant, company int, window, dashboardSession, param1, p
 	session, err := mgo.Dial(dialUrl)
 
 	if err != nil {
-		panic(err)
+		//panic(err)
+		log.Println(err)
 	}
 	defer session.Close()
 
@@ -38,7 +40,7 @@ func PersistSessionInfo(tenant, company int, window, dashboardSession, param1, p
 		log.Fatal(errIndex)
 	}
 
-	err = c.Insert(&SessionPersistence{tenant, company, window, dashboardSession, param1, param2, timeStr})
+	err = c.Insert(&SessionPersistence{tenant, company, businessUnit, window, dashboardSession, param1, param2, timeStr})
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -46,7 +48,7 @@ func PersistSessionInfo(tenant, company int, window, dashboardSession, param1, p
 	}
 }
 
-func FindPersistedSession(tenant, company int, window, dashboardSession string) (sessionKey, timeValue, param1, param2 string) {
+func FindPersistedSession(tenant, company int, window, dashboardSession string) (sessionKey, timeValue, businessUnit, param1, param2 string) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in FindPersistedSession", r)
@@ -57,7 +59,8 @@ func FindPersistedSession(tenant, company int, window, dashboardSession string) 
 	session, err := mgo.Dial(dialUrl)
 
 	if err != nil {
-		panic(err)
+		//panic(err)
+		log.Println(err)
 	}
 	defer session.Close()
 
@@ -73,9 +76,10 @@ func FindPersistedSession(tenant, company int, window, dashboardSession string) 
 
 		fmt.Println("SessionPersistenceInfo :", result)
 		timeValue = result.Time
-		sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s", result.Tenant, result.Company, result.Window, result.Session, result.Param1, result.Param2)
+		sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s:%s", result.Tenant, result.Company, result.BusinessUnit, result.Window, result.Session, result.Param1, result.Param2)
 		param1 = result.Param1
 		param2 = result.Param2
+		businessUnit = result.BusinessUnit
 	}
 	return
 }
