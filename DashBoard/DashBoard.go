@@ -645,6 +645,9 @@ func OnEvent(_tenent, _company int, _businessUnit, _class, _type, _category, _se
 		}
 
 		if iinc > 0 {
+			if window == "LOGIN" {
+				_businessUnit = "default"
+			}
 			if useSession == "true" {
 				if persistSession == "true" {
 					PersistSessionInfo(_tenent, _company, _businessUnit, window, _session, _parameter1, _parameter2, tm.Format(layout))
