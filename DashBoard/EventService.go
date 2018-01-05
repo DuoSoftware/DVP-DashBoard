@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/DuoSoftware/gorest"
 	"time"
+
+	"github.com/DuoSoftware/gorest"
 )
 
 type EventData struct {
@@ -26,54 +27,93 @@ type MetaData struct {
 	Count           int
 	FlushEnable     bool
 	UseSession      bool
+	PersistSession  bool
 	ThresholdEnable bool
 	ThresholdValue  int
 }
 
 type Configuration struct {
-	RedisPubSubIp       string
-	RedisPubSubPort     string
-	RedisPubSubPassword string
-	RedisIp             string
-	RedisPort           string
-	RedisDb             int
-	ArdsRedisDb         int
-	RedisPassword       string
-	Port                string
-	StatsDIp            string
-	StatsDPort          int
-	PgUser              string
-	PgPassword          string
-	PgDbname            string
-	PgHost              string
-	PgPort              int
-	SecurityIp          string
-	SecurityPort        string
-	SecurityPassword    string
-	CacheMachenism      string
+	RedisPubSubIp        string
+	RedisPubSubPort      string
+	RedisPubSubPassword  string
+	RedisIp              string
+	RedisPort            string
+	RedisDb              int
+	ArdsRedisDb          int
+	RedisPassword        string
+	Port                 string
+	StatsDIp             string
+	StatsDPort           int
+	PgUser               string
+	PgPassword           string
+	PgDbname             string
+	PgHost               string
+	PgPort               int
+	SecurityIp           string
+	SecurityPort         string
+	SecurityPassword     string
+	MongoIp              string
+	MongoPort            string
+	MongoDbname          string
+	MongoPassword        string
+	MongoUser            string
+	CacheMachenism       string
+	DashboardServiceHost string
+	DashboardServicePort string
+	AccessToken          string
+	RedisClusterName     string
+	RedisMode            string
+	SentinelHosts        string
+	SentinelPort         string
+	DecrRetryCount       string
+	DecrRetryDelay       string
+	RabbitMQIp           string
+	RabbitMQPort         string
+	RabbitMQUser         string
+	RabbitMQPassword     string
+	UseMsgQueue          string
 }
 
 type EnvConfiguration struct {
-	RedisPubSubIp       string
-	RedisPubSubPort     string
-	RedisPubSubPassword string
-	RedisIp             string
-	RedisPort           string
-	RedisDb             string
-	ArdsRedisDb         string
-	RedisPassword       string
-	Port                string
-	StatsDIp            string
-	StatsDPort          string
-	PgUser              string
-	PgPassword          string
-	PgDbname            string
-	PgHost              string
-	PgPort              string
-	SecurityIp          string
-	SecurityPort        string
-	SecurityPassword    string
-	CacheMachenism      string
+	RedisPubSubIp        string
+	RedisPubSubPort      string
+	RedisPubSubPassword  string
+	RedisIp              string
+	RedisPort            string
+	RedisDb              string
+	ArdsRedisDb          string
+	RedisPassword        string
+	Port                 string
+	StatsDIp             string
+	StatsDPort           string
+	PgUser               string
+	PgPassword           string
+	PgDbname             string
+	PgHost               string
+	PgPort               string
+	SecurityIp           string
+	SecurityPort         string
+	SecurityPassword     string
+	MongoIp              string
+	MongoPort            string
+	MongoDbname          string
+	MongoPassword        string
+	MongoUser            string
+	CacheMachenism       string
+	DashboardServiceHost string
+	DashboardServicePort string
+	AccessToken          string
+	RedisClusterName     string
+	RedisMode            string
+	SentinelHosts        string
+	SentinelPort         string
+	DecrRetryCount       string
+	DecrRetryDelay       string
+	RabbitMQIp           string
+	RabbitMQPort         string
+	RabbitMQUser         string
+	RabbitMQPassword     string
+	UseMsgQueue          string
 }
 
 type Result struct {
@@ -124,6 +164,31 @@ type ThresholdBreakDownDetail struct {
 	Hour           int
 }
 
+type SessionPersistence struct {
+	Tenant  int
+	Company int
+	Window  string
+	Session string
+	Param1  string
+	Param2  string
+	Time    string
+}
+
+type DecrRetryDetail struct {
+	Tenant           int
+	Company          int
+	Window           string
+	Session          string
+	PersistSession   string
+	StatsDPath       string
+	Threshold        string
+	EventTime        string
+	ExecutionTime    string
+	TimeLocation     string
+	ThresholdEnabled bool
+	TryCount         int
+}
+
 type DashBoardEvent struct {
 	gorest.RestService `root:"/DashboardEvent/" consumes:"application/json" produces:"application/json"`
 	event              gorest.EndPoint `method:"POST" path:"/Event/" postdata:"EventData"`
@@ -164,7 +229,7 @@ func (dashboardEvent DashBoardEvent) Event(data EventData) {
 	fmt.Println(data.EventType)
 	fmt.Println(data.EventCategory)
 
-	go OnEvent(data.Tenent, data.Company, data.EventClass, data.EventType, data.EventCategory, data.SessionID, data.Parameter1, data.Parameter2)
+	go OnEvent(data.Tenent, data.Company, data.EventClass, data.EventType, data.EventCategory, data.SessionID, data.Parameter1, data.Parameter2, data.TimeStamp)
 
 	return
 
@@ -178,7 +243,7 @@ func (dashboardEvent DashBoardEvent) Meta(data MetaData) {
 	fmt.Println(data.EventType)
 	fmt.Println(data.EventCategory)
 
-	go OnMeta(data.EventClass, data.EventType, data.EventCategory, data.WindowName, data.Count, data.FlushEnable, data.UseSession, data.ThresholdEnable, data.ThresholdValue)
+	go OnMeta(data.EventClass, data.EventType, data.EventCategory, data.WindowName, data.Count, data.FlushEnable, data.UseSession, data.PersistSession, data.ThresholdEnable, data.ThresholdValue)
 
 	return
 

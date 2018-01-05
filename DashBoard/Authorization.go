@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"github.com/auth0/go-jwt-middleware"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/fzzy/radix/redis"
+	"github.com/mediocregopher/radix.v2/redis"
 	//"github.com/gorilla/context"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func loadJwtMiddleware() *jwtmiddleware.JWTMiddleware {
@@ -241,13 +240,22 @@ func SecurityGet(key string) string {
 			fmt.Println("Recovered in RedisGet", r)
 		}
 	}()
-	client, err := redis.DialTimeout("tcp", securityIp, time.Duration(10)*time.Second)
-	errHndlr(err)
-	defer client.Close()
+	var client *redis.Client
+	var err error
+
+	if redisMode == "sentinel" {
+		client, err = sentinelPool.GetMaster(redisClusterName)
+		errHndlr("SecurityGet", "getConnFromSentinel", err)
+		defer sentinelPool.PutMaster(redisClusterName, client)
+	} else {
+		client, err = redisPool.Get()
+		errHndlr("SecurityGet", "getConnFromPool", err)
+		defer redisPool.Put(client)
+	}
 
 	//authServer
 	authE := client.Cmd("auth", redisPassword)
-	errHndlr(authE.Err)
+	errHndlr("SecurityGet", "auth", authE.Err)
 
 	strObj, _ := client.Cmd("get", key).Str()
 	//fmt.Println(strObj)

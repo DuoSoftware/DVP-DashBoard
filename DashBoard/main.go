@@ -3,15 +3,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/DuoSoftware/gorest"
-	"github.com/rs/cors"
 	"net/http"
 	"time"
+
+	"github.com/DuoSoftware/gorest"
+	"github.com/rs/cors"
 )
 
 func main() {
 
-	//fmt.Println("Hello World!")
 	LoadConfiguration()
 
 	if cacheMachenism == "memory" {
@@ -21,14 +21,23 @@ func main() {
 
 	InitiateRedis()
 	InitiateStatDClient()
-	go ClearData()
 
-	//jwtMiddleware := loadJwtMiddleware()
+	if useMsgQueue == "false" {
+		go PubSub()
+	} else {
+		go func() {
+			for {
+				Worker()
+				fmt.Println("End Worker()")
+				time.Sleep(2 * time.Second)
+			}
+		}()
+	}
+
+	go StartDecrRetry()
+	//go ClearData()
 
 	gorest.RegisterService(new(DashBoardEvent))
-	//gorest.RegisterService(new(DashBoardGraph))
-
-	//app := jwtMiddleware.Handler(gorest.Handle())
 
 	c := cors.New(cors.Options{
 		AllowedHeaders: []string{"accept", "authorization"},
@@ -45,20 +54,6 @@ func main() {
 
 	s.SetKeepAlivesEnabled(false)
 	s.ListenAndServe()
-
-	//http.ListenAndServe(addr, handler)
-
-	////fmt.Scanln()
-	//client, error := goredis.Dial(&goredis.DialConfig{Address: "127.0.0.1:6379"})
-	//if error == nil {
-	//client.Set("key", "value", 0, 0, false, false)
-
-	//	go OnEvent("3", "1", "CALLSERVER", "CALL", "IVR", "1111111", client)
-
-	//} else {
-	//	fmt.Println(error.Error())
-	//}
-	//fmt.Println("Hello World!")
 }
 func ClearData() {
 	for {
@@ -88,5 +83,12 @@ func ClearData() {
 		timer2 := time.NewTimer(time.Duration(time.Minute * 5))
 		<-timer2.C
 		fmt.Println("----------End ClearData Wait after reset----------------------")
+	}
+}
+
+func StartDecrRetry() {
+	for {
+		ProcessDecrRetry()
+		time.Sleep(1 * time.Second)
 	}
 }
