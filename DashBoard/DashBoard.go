@@ -1021,6 +1021,7 @@ func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSe
 			statClient.Timing(timeStatName, duration)
 
 			DoPublish(_company, _tenent, businessUnit, window, sParam1, sParam2)
+			DoPublish(_company, _tenent, "*", window, sParam1, sParam2)
 		} else {
 			fmt.Println("Delete session: ", _session, " failed")
 		}
