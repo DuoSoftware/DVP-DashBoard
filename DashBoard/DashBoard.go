@@ -790,7 +790,7 @@ func IncrementEvent(_tenent, _company int, _businessUnit, window, _parameter1, _
 	statClient.Gauge(totCountStatName, tcountB)
 
 	DoPublish(_company, _tenent, _businessUnit, window, _parameter1, _parameter2)
-	DoPublish(_company, _tenent, "*", window, sParam1, sParam2)
+	DoPublish(_company, _tenent, "*", window, _parameter1, _parameter2)
 }
 
 func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSession, statsDPath, threshold string, tm time.Time, location *time.Location, thresholdEnabled bool) {
