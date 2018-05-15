@@ -49,6 +49,7 @@ var rabbitMQPort string
 var rabbitMQUser string
 var rabbitMQPassword string
 var useMsgQueue string
+var useAmqpAdapter string
 
 func GetDirPath() string {
 	envPath := os.Getenv("GO_CONFIG_DIR")
@@ -121,6 +122,7 @@ func LoadDefaultConfig() {
 	rabbitMQUser = defconfiguration.RabbitMQUser
 	rabbitMQPassword = defconfiguration.RabbitMQPassword
 	useMsgQueue = defconfiguration.UseDashboardMsgQueue
+	useAmqpAdapter = defconfiguration.UseAmqpAdapter
 }
 
 func LoadConfiguration() {
@@ -180,6 +182,7 @@ func LoadConfiguration() {
 		rabbitMQUser = os.Getenv(envconfiguration.RabbitMQUser)
 		rabbitMQPassword = os.Getenv(envconfiguration.RabbitMQPassword)
 		useMsgQueue = os.Getenv(envconfiguration.UseDashboardMsgQueue)
+		useAmqpAdapter = os.Getenv(envconfiguration.UseAmqpAdapter)
 
 		if redisPubSubIp == "" {
 			redisPubSubIp = defConfig.RedisPubSubIp
@@ -299,6 +302,9 @@ func LoadConfiguration() {
 		if useMsgQueue == "" {
 			useMsgQueue = defConfig.UseDashboardMsgQueue
 		}
+		if useAmqpAdapter == "" {
+			useAmqpAdapter = defConfig.UseAmqpAdapter
+		}
 
 		redisIp = fmt.Sprintf("%s:%s", redisIp, redisPort)
 		redisPubSubIp = fmt.Sprintf("%s:%s", redisPubSubIp, redisPubSubPort)
@@ -319,4 +325,5 @@ func LoadConfiguration() {
 	fmt.Println("rabbitMQUser:", rabbitMQUser)
 	fmt.Println("rabbitMQPassword:", rabbitMQPassword)
 	fmt.Println("useMsgQueue:", useMsgQueue)
+	fmt.Println("useAmqpAdapter:", useAmqpAdapter)
 }

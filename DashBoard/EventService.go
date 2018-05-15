@@ -73,6 +73,7 @@ type Configuration struct {
 	RabbitMQUser         string
 	RabbitMQPassword     string
 	UseDashboardMsgQueue string
+	UseAmqpAdapter       string
 }
 
 type EnvConfiguration struct {
@@ -115,6 +116,7 @@ type EnvConfiguration struct {
 	RabbitMQUser         string
 	RabbitMQPassword     string
 	UseDashboardMsgQueue string
+	UseAmqpAdapter       string
 }
 
 type Result struct {

@@ -37,5 +37,6 @@
 	"RabbitMQPort": "SYS_RABBITMQ_PORT",
 	"RabbitMQUser": "SYS_RABBITMQ_USER",
 	"RabbitMQPassword":"SYS_RABBITMQ_PASSWORD",
-	"UseDashboardMsgQueue": "HOST_USE_DASHBOARD_MSG_QUEUE"
+	"UseDashboardMsgQueue": "HOST_USE_DASHBOARD_MSG_QUEUE",
+	"UseAmqpAdapter": "HOST_USE_AMQP_ADAPTER"
 }
