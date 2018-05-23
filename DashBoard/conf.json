@@ -39,5 +39,5 @@
 	"RabbitMQUser": "admin",
 	"RabbitMQPassword":"admin",
 	"UseDashboardMsgQueue": "true",
-	"UseAmqpAdapter": "true"
+	"UseAmqpAdapter": "false"
 }
