@@ -8,8 +8,9 @@ import (
 )
 
 type EventData struct {
-	Tenent        int
+	Tenant        int
 	Company       int
+	BusinessUnit  string
 	EventClass    string
 	EventType     string
 	EventCategory string
@@ -71,7 +72,8 @@ type Configuration struct {
 	RabbitMQPort         string
 	RabbitMQUser         string
 	RabbitMQPassword     string
-	UseMsgQueue          string
+	UseDashboardMsgQueue string
+	UseAmqpAdapter       string
 }
 
 type EnvConfiguration struct {
@@ -113,7 +115,8 @@ type EnvConfiguration struct {
 	RabbitMQPort         string
 	RabbitMQUser         string
 	RabbitMQPassword     string
-	UseMsgQueue          string
+	UseDashboardMsgQueue string
+	UseAmqpAdapter       string
 }
 
 type Result struct {
@@ -142,6 +145,7 @@ type QueueDetails struct {
 type SummeryDetail struct {
 	Company        int
 	Tenant         int
+	BusinessUnit   string
 	WindowName     string
 	Param1         string
 	Param2         string
@@ -155,6 +159,7 @@ type SummeryDetail struct {
 type ThresholdBreakDownDetail struct {
 	Company        int
 	Tenant         int
+	BusinessUnit   string
 	WindowName     string
 	Param1         string
 	Param2         string
@@ -165,13 +170,14 @@ type ThresholdBreakDownDetail struct {
 }
 
 type SessionPersistence struct {
-	Tenant  int
-	Company int
-	Window  string
-	Session string
-	Param1  string
-	Param2  string
-	Time    string
+	Tenant       int
+	Company      int
+	BusinessUnit string
+	Window       string
+	Session      string
+	Param1       string
+	Param2       string
+	Time         string
 }
 
 type DecrRetryDetail struct {
@@ -229,7 +235,7 @@ func (dashboardEvent DashBoardEvent) Event(data EventData) {
 	fmt.Println(data.EventType)
 	fmt.Println(data.EventCategory)
 
-	go OnEvent(data.Tenent, data.Company, data.EventClass, data.EventType, data.EventCategory, data.SessionID, data.Parameter1, data.Parameter2, data.TimeStamp)
+	go OnEvent(data.Tenant, data.Company, data.BusinessUnit, data.EventClass, data.EventType, data.EventCategory, data.SessionID, data.Parameter1, data.Parameter2, data.TimeStamp)
 
 	return
 
@@ -264,106 +270,106 @@ func (dashboardEvent DashBoardEvent) ReloadMetaData() {
 	go ReloadAllMetaData()
 }
 
-func (dashBoardEvent DashBoardEvent) MaxWaiting(window, param1, param2 string) int {
-	company, tenant, _ := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
-	if company != 0 && tenant != 0 {
-		resultChannel := make(chan int)
-		go OnGetMaxTime(tenant, company, window, param1, param2, resultChannel)
-		var maxTime = <-resultChannel
-		close(resultChannel)
-		return maxTime
-	} else {
-		dashBoardEvent.RB().SetResponseCode(403)
-		return 0
-	}
-}
+//func (dashBoardEvent DashBoardEvent) MaxWaiting(window, param1, param2 string) int {
+//	company, tenant, _ := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
+//	if company != 0 && tenant != 0 {
+//		resultChannel := make(chan int)
+//		go OnGetMaxTime(tenant, company, window, param1, param2, resultChannel)
+//		var maxTime = <-resultChannel
+//		close(resultChannel)
+//		return maxTime
+//	} else {
+//		dashBoardEvent.RB().SetResponseCode(403)
+//		return 0
+//	}
+//}
 
-func (dashBoardEvent DashBoardEvent) CurrentMaxTime(window, param1, param2 string) int {
-	company, tenant, _ := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
-	if company != 0 && tenant != 0 {
-		resultChannel := make(chan int)
-		go OnGetCurrentMaxTime(tenant, company, window, param1, param2, resultChannel)
-		var maxTime = <-resultChannel
-		close(resultChannel)
-		return maxTime
-	} else {
-		dashBoardEvent.RB().SetResponseCode(403)
-		return 0
-	}
-}
+//func (dashBoardEvent DashBoardEvent) CurrentMaxTime(window, param1, param2 string) int {
+//	company, tenant, _ := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
+//	if company != 0 && tenant != 0 {
+//		resultChannel := make(chan int)
+//		go OnGetCurrentMaxTime(tenant, company, window, param1, param2, resultChannel)
+//		var maxTime = <-resultChannel
+//		close(resultChannel)
+//		return maxTime
+//	} else {
+//		dashBoardEvent.RB().SetResponseCode(403)
+//		return 0
+//	}
+//}
 
-func (dashBoardEvent DashBoardEvent) CurrentCount(window, param1, param2 string) int {
-	company, tenant, _ := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
-	if company != 0 && tenant != 0 {
-		resultChannel := make(chan int)
-		go OnGetCurrentCount(tenant, company, window, param1, param2, resultChannel)
-		var maxTime = <-resultChannel
-		close(resultChannel)
-		return maxTime
-	} else {
-		dashBoardEvent.RB().SetResponseCode(403)
-		return 0
-	}
-}
+//func (dashBoardEvent DashBoardEvent) CurrentCount(window, param1, param2 string) int {
+//	company, tenant, _ := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
+//	if company != 0 && tenant != 0 {
+//		resultChannel := make(chan int)
+//		go OnGetCurrentCount(tenant, company, window, param1, param2, resultChannel)
+//		var maxTime = <-resultChannel
+//		close(resultChannel)
+//		return maxTime
+//	} else {
+//		dashBoardEvent.RB().SetResponseCode(403)
+//		return 0
+//	}
+//}
 
-func (dashBoardEvent DashBoardEvent) AverageTime(window, param1, param2 string) float32 {
-	company, tenant, _ := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
-	if company != 0 && tenant != 0 {
-		resultChannel := make(chan float32)
-		go OnGetAverageTime(tenant, company, window, param1, param2, resultChannel)
-		var maxTime = <-resultChannel
-		close(resultChannel)
-		fmt.Println("AverageTime: ", maxTime)
-		return maxTime
-	} else {
-		dashBoardEvent.RB().SetResponseCode(403)
-		return 0
-	}
-}
+//func (dashBoardEvent DashBoardEvent) AverageTime(window, param1, param2 string) float32 {
+//	company, tenant, _ := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
+//	if company != 0 && tenant != 0 {
+//		resultChannel := make(chan float32)
+//		go OnGetAverageTime(tenant, company, window, param1, param2, resultChannel)
+//		var maxTime = <-resultChannel
+//		close(resultChannel)
+//		fmt.Println("AverageTime: ", maxTime)
+//		return maxTime
+//	} else {
+//		dashBoardEvent.RB().SetResponseCode(403)
+//		return 0
+//	}
+//}
 
-func (dashBoardEvent DashBoardEvent) QueueDetails() []QueueDetails {
-	company, tenant, _ := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
-	if company != 0 && tenant != 0 {
-		resultChannel := make(chan []QueueDetails)
-		go OnGetQueueDetails(tenant, company, resultChannel)
-		var queueInfo = <-resultChannel
-		close(resultChannel)
-		return queueInfo
-	} else {
-		dashBoardEvent.RB().SetResponseCode(403)
-		return make([]QueueDetails, 0)
-	}
-}
+//func (dashBoardEvent DashBoardEvent) QueueDetails() []QueueDetails {
+//	company, tenant, _ := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
+//	if company != 0 && tenant != 0 {
+//		resultChannel := make(chan []QueueDetails)
+//		go OnGetQueueDetails(tenant, company, resultChannel)
+//		var queueInfo = <-resultChannel
+//		close(resultChannel)
+//		return queueInfo
+//	} else {
+//		dashBoardEvent.RB().SetResponseCode(403)
+//		return make([]QueueDetails, 0)
+//	}
+//}
 
-func (dashBoardEvent DashBoardEvent) QueueSingleDetail(queueId string) QueueDetails {
-	company, tenant, _ := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
-	if company != 0 && tenant != 0 {
-		resultChannel := make(chan QueueDetails)
-		go OnGetSingleQueueDetails(tenant, company, queueId, resultChannel)
-		var queueInfo = <-resultChannel
-		close(resultChannel)
-		return queueInfo
-	} else {
-		dashBoardEvent.RB().SetResponseCode(403)
-		var detais = QueueDetails{}
-		return detais
-	}
-}
+//func (dashBoardEvent DashBoardEvent) QueueSingleDetail(queueId string) QueueDetails {
+//	company, tenant, _ := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
+//	if company != 0 && tenant != 0 {
+//		resultChannel := make(chan QueueDetails)
+//		go OnGetSingleQueueDetails(tenant, company, queueId, resultChannel)
+//		var queueInfo = <-resultChannel
+//		close(resultChannel)
+//		return queueInfo
+//	} else {
+//		dashBoardEvent.RB().SetResponseCode(403)
+//		var detais = QueueDetails{}
+//		return detais
+//	}
+//}
 
-func (dashBoardEvent DashBoardEvent) TotalCount(window, param1, param2 string) int {
-	company, tenant, _ := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
-	fmt.Println(company, tenant)
-	if company != 0 && tenant != 0 {
-		resultChannel := make(chan int)
-		go OnGetTotalCount(tenant, company, window, param1, param2, resultChannel)
-		var totalCount = <-resultChannel
-		close(resultChannel)
-		return totalCount
-	} else {
-		dashBoardEvent.RB().SetResponseCode(403)
-		return 0
-	}
-}
+//func (dashBoardEvent DashBoardEvent) TotalCount(window, param1, param2 string) int {
+//	company, tenant, _ := decodeJwtDashBoardEvent(dashBoardEvent, "dashboardevent", "read")
+//	fmt.Println(company, tenant)
+//	if company != 0 && tenant != 0 {
+//		resultChannel := make(chan int)
+//		go OnGetTotalCount(tenant, company, window, param1, param2, resultChannel)
+//		var totalCount = <-resultChannel
+//		close(resultChannel)
+//		return totalCount
+//	} else {
+//		dashBoardEvent.RB().SetResponseCode(403)
+//		return 0
+//	}
+//}
 
 func (dashBoardGraph DashBoardGraph) Calls(duration int) string {
 	company, tenant, _, _ := decodeJwtDashBoardGraph(dashBoardGraph, "dashboardgraph", "read")
