@@ -22,7 +22,7 @@ COPY . .
 RUN go build -o main ./DashBoard/
 
 # Expose port 8080 to the outside world
-EXPOSE 8835
+EXPOSE 8841
 
 # Command to run the executable
 CMD ["./main"]
