@@ -1,16 +1,28 @@
-# Start from a Debian image with the latest version of Go installed
+# Dockerfile References: https://docs.docker.com/engine/reference/builder/
 
-FROM golang
-ARG MAJOR_VER
+# Start from the latest golang base image
+FROM golang:latest
 
-#RUN go get gopkg.in/DuoSoftware/DVP-DashBoard.$MAJOR_VER/DashBoard
+# Add Maintainer Info
+LABEL maintainer="Duosoftware <admin@duosoftware.com>"
 
-RUN go get github.com/DuoSoftware/DVP-DashBoard/DashBoard
+# Set the Current Working Directory inside the container
+WORKDIR /app
 
-#RUN go install gopkg.in/DuoSoftware/DVP-DashBoard.$MAJOR_VER/DashBoard
+# Copy go mod and sum files
+COPY go.mod go.sum ./
 
-RUN go install github.com/DuoSoftware/DVP-DashBoard/DashBoard
+# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
+RUN go mod download
 
-ENTRYPOINT /go/bin/DashBoard
+# Copy the source from the current directory to the Working Directory inside the container
+COPY . .
 
-EXPOSE 8841
+# Build the Go app
+RUN go build -o main ./DashBoard/
+
+# Expose port 8080 to the outside world
+EXPOSE 8835
+
+# Command to run the executable
+CMD ["./main"]
