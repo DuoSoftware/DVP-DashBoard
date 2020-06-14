@@ -1,13 +1,13 @@
 # Dockerfile References: https://docs.docker.com/engine/reference/builder/
 
 # Start from the latest golang base image
-FROM golang:latest
+FROM golang:alpine AS build-env
 
 # Add Maintainer Info
 LABEL maintainer="Duosoftware <admin@duosoftware.com>"
 
 # Set the Current Working Directory inside the container
-WORKDIR /app
+WORKDIR /src
 
 # Copy go mod and sum files
 COPY go.mod go.sum ./
@@ -21,8 +21,20 @@ COPY . .
 # Build the Go app
 RUN go build -o main ./DashBoard/
 
+
+# Create Runtime image
+FROM alpine
+
+# New Work Directory
+WORKDIR /app
+
+# Copy build and config files
+COPY --from=build-env /src/main /app/
+
+COPY --from=build-env /src/conf.json   /src/custom-environment-variables.json /app/
 # Expose port 8080 to the outside world
-EXPOSE 8841
+EXPOSE 8835
 
 # Command to run the executable
 CMD ["./main"]
+
