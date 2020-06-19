@@ -21,13 +21,13 @@ COPY . .
 # Build the Go app
 RUN go build -o main ./DashBoard/
 
-RUN apk add --no-cache tzdata
-
 # Create Runtime image
 FROM alpine
 
 # New Work Directory
 WORKDIR /app
+
+RUN apk add --no-cache tzdata
 
 # Copy build and config files
 COPY --from=build-env /src/main /app/
