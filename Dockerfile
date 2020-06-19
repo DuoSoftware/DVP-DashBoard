@@ -21,6 +21,7 @@ COPY . .
 # Build the Go app
 RUN go build -o main ./DashBoard/
 
+RUN apk --no-cache add tzdata
 
 # Create Runtime image
 FROM alpine
