@@ -74,6 +74,10 @@ type Configuration struct {
 	RabbitMQPassword     string
 	UseDashboardMsgQueue string
 	UseAmqpAdapter       string
+	RedisPubSubClusterName string
+	RedisPubSubMode string
+	PubSubSentinelHosts string
+	PubSubSentinelPort string
 }
 
 type EnvConfiguration struct {
@@ -117,6 +121,10 @@ type EnvConfiguration struct {
 	RabbitMQPassword     string
 	UseDashboardMsgQueue string
 	UseAmqpAdapter       string
+	RedisPubSubClusterName string
+	RedisPubSubMode string
+	PubSubSentinelHosts string
+	PubSubSentinelPort string
 }
 
 type Result struct {

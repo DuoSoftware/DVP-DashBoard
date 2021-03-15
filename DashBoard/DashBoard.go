@@ -21,6 +21,7 @@ import (
 )
 
 var sentinelPool *sentinel.Client
+var pubSubSentinelPool *sentinel.Client
 
 var redisPool *pool.Pool
 var statClient *StatsdClient
@@ -100,8 +101,8 @@ func PubSub() {
 		}
 
 		if c2 != nil {
-			if redisMode == "sentinel" {
-				sentinelPool.PutMaster(redisClusterName, c2)
+			if redisPubSubMode == "sentinel" {
+				pubSubSentinelPool.PutMaster(redisPubSubClusterName, c2)
 			}
 		} else {
 			fmt.Println("Cannot Put invalid connection")
@@ -120,9 +121,9 @@ func PubSub() {
 
 	for {
 
-		if redisMode == "sentinel" {
+		if redisPubSubMode == "sentinel" {
 
-			c2, err = sentinelPool.GetMaster(redisClusterName)
+			c2, err = pubSubSentinelPool.GetMaster(redisPubSubClusterName)
 			errHndlr("PubSub", "getConnFromPool", err)
 			//defer sentinelPool.PutMaster(redisClusterName, c2)
 
@@ -186,7 +187,7 @@ func PubSub() {
 			//authServer
 
 			if err == nil {
-				authE := c2.Cmd("auth", redisPassword)
+				authE := c2.Cmd("auth", redisPubSubPassword)
 				errHndlr("PubSub", "auth", authE.Err)
 
 				if authE.Err == nil {

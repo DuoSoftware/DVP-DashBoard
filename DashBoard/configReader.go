@@ -42,6 +42,13 @@ var redisClusterName string
 var redisMode string
 var sentinelHosts string
 var sentinelPort string
+
+var redisPubSubClusterName string
+var redisPubSubMode string
+var	pubSubSentinelHosts string
+var	pubSubSentinelPort string
+
+
 var decrRetryCount string
 var decrRetryDelay string
 var rabbitMQIp string
@@ -115,6 +122,10 @@ func LoadDefaultConfig() {
 	redisMode = defconfiguration.RedisMode
 	sentinelHosts = defconfiguration.SentinelHosts
 	sentinelPort = defconfiguration.SentinelPort
+	redisPubSubClusterName = defconfiguration.RedisPubSubClusterName
+	redisPubSubMode = defconfiguration.RedisPubSubMode
+	pubSubSentinelHosts = defconfiguration.PubSubSentinelHosts
+	pubSubSentinelPort = defconfiguration.PubSubSentinelPort
 	decrRetryCount = defconfiguration.DecrRetryCount
 	decrRetryDelay = defconfiguration.DecrRetryDelay
 	rabbitMQIp = defconfiguration.RabbitMQIp
@@ -175,6 +186,12 @@ func LoadConfiguration() {
 		redisMode = os.Getenv(envconfiguration.RedisMode)
 		sentinelHosts = os.Getenv(envconfiguration.SentinelHosts)
 		sentinelPort = os.Getenv(envconfiguration.SentinelPort)
+
+		redisPubSubClusterName = os.Getenv(envconfiguration.RedisPubSubClusterName)
+		redisPubSubMode = os.Getenv(envconfiguration.RedisPubSubMode)
+		pubSubSentinelHosts = os.Getenv(envconfiguration.PubSubSentinelHosts)
+		pubSubSentinelPort = os.Getenv(envconfiguration.PubSubSentinelPort)
+
 		decrRetryCount = os.Getenv(envconfiguration.DecrRetryCount)
 		decrRetryDelay = os.Getenv(envconfiguration.DecrRetryDelay)
 		rabbitMQIp = os.Getenv(envconfiguration.RabbitMQIp)
