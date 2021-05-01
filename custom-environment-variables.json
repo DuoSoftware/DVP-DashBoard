@@ -28,7 +28,7 @@
   "DashboardServicePort": "SYS_DASHBOARDSERVICE_PORT",
   "AccessToken": "HOST_TOKEN",
   "RedisClusterName": "SYS_REDIS_SENTINEL_NAME",
-  "RedisMode": "SYS_REDIS_MODE",
+  "RedisMode": "SYS_DASHBOARD_REDIS_MODE",
   "SentinelHosts": "SYS_REDIS_SENTINEL_HOSTS",
   "SentinelPort": "SYS_REDIS_SENTINEL_PORT",
   "DecrRetryCount": "HOST_DASHBOARD_DRC",
@@ -40,7 +40,7 @@
   "UseDashboardMsgQueue": "HOST_USE_DASHBOARD_MSG_QUEUE",
   "UseAmqpAdapter": "HOST_USE_AMQP_ADAPTER",
   "RedisPubSubClusterName": "SYS_DASHBOARD_REDIS_SENTINEL_NAME",
-  "RedisPubSubMode": "SYS_DASHBOARD_REDIS_MODE",
+  "RedisPubSubMode": "SYS_REDIS_MODE",
   "PubSubSentinelHosts": "SYS_DASHBOARD_REDIS_SENTINEL_HOSTS",
   "PubSubSentinelPort": "SYS_DASHBOARD_REDIS_SENTINEL_PORT"
 }
