@@ -24,7 +24,8 @@ func main() {
 	InitiateStatDClient()
 
 	if useMsgQueue == "false" {
-		go PubSub()
+		//go PubSub()
+		fmt.Println("Redis Pubsub has been removed !!!!")
 	} else {
 		if useAmqpAdapter == "false" {
 			go func() {

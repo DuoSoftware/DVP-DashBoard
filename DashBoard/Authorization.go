@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/auth0/go-jwt-middleware"
+
+	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/mediocregopher/radix.v2/redis"
+	"github.com/mediocregopher/radix/v3"
+
 	//"github.com/gorilla/context"
 	"strconv"
 	"strings"
@@ -235,29 +237,9 @@ func ResponseGenerator(isSuccess bool, customMessage, result, exception string) 
 }
 
 func SecurityGet(key string) string {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in RedisGet", r)
-		}
-	}()
-	var client *redis.Client
-	var err error
 
-	if redisMode == "sentinel" {
-		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("SecurityGet", "getConnFromSentinel", err)
-		defer sentinelPool.PutMaster(redisClusterName, client)
-	} else {
-		client, err = redisPool.Get()
-		errHndlr("SecurityGet", "getConnFromPool", err)
-		defer redisPool.Put(client)
-	}
-
-	//authServer
-	authE := client.Cmd("auth", redisPassword)
-	errHndlr("SecurityGet", "auth", authE.Err)
-
-	strObj, _ := client.Cmd("get", key).Str()
+	var strObj string;
+	Cmd(radix.Cmd(&strObj,"get", key))
 	//fmt.Println(strObj)
 	return strObj
 }
