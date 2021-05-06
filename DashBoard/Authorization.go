@@ -238,6 +238,12 @@ func ResponseGenerator(isSuccess bool, customMessage, result, exception string) 
 
 func SecurityGet(key string) string {
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in SecurityGet", r)
+		}
+	}()
+
 	var strObj string;
 	Cmd(radix.Cmd(&strObj,"get", key))
 	//fmt.Println(strObj)

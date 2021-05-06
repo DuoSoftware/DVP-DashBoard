@@ -516,6 +516,11 @@ func ReloadAllMetaData() bool {
 
 func CacheMetaData(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _persistSession, _thresholdEnable bool, _thresholdValue int) {
 	
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in CacheMetaData", r)
+		}
+	}()
 	
 	_windowName := fmt.Sprintf("META:%s:%s:%s:WINDOW", _class, _type, _category)
 	_incName := fmt.Sprintf("META:%s:%s:%s:COUNT", _class, _type, _category)
@@ -527,13 +532,13 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 
 	
 
-	if _flushEnable == true {
+	if _flushEnable{
 		errHndlr("CacheMetaData", "Cmd", Cmd(radix.Cmd(nil, "setnx", _flushName, _window)))
 	} else {
 		errHndlr("CacheMetaData", "Cmd", Cmd(radix.Cmd(nil, "del", _flushName)))
 	}
 
-	if _thresholdEnable == true {
+	if _thresholdEnable {
 		errHndlr("CacheMetaData", "Cmd",  Cmd(radix.Cmd(nil, "setnx", _thresholdEnableName, strconv.Itoa(_thresholdValue) )))
 	} else {
 		errHndlr("CacheMetaData", "Cmd", Cmd(radix.Cmd(nil, "del", _thresholdEnableName)))
@@ -551,6 +556,12 @@ func OnMeta(_class, _type, _category, _window string, count int, _flushEnable, _
 }
 
 func OnEvent(_tenent, _company int, _businessUnit, _class, _type, _category, _session, _parameter1, _parameter2, eventTime string) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnEvent", r)
+		}
+	}()
 
 	if _businessUnit == "" || _businessUnit == "*" {
 		fmt.Println("Use Default BusinessUnit")
@@ -695,6 +706,11 @@ func OnEvent(_tenent, _company int, _businessUnit, _class, _type, _category, _se
 func IncrementEvent(_tenent, _company int, _businessUnit, window, _parameter1, _parameter2, statsDPath string, tm time.Time) {
 
 	
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in IncrementEvent", r)
+		}
+	}()
 
 	//------------------------Redis keys---------------------
 
@@ -782,6 +798,11 @@ func IncrementEvent(_tenent, _company int, _businessUnit, window, _parameter1, _
 func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSession, statsDPath, threshold string, tm time.Time, location *time.Location, thresholdEnabled bool) {
 
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in DecrementEvent", r)
+		}
+	}()
 
 	logDetails := fmt.Sprintf("Tenant: %d :: Company: %d :: TryCount: %d :: Window: %s :: Session: %s :: PersistSession: %s :: StatsDPath: %s :: threshold: %s :: TM: %s :: Location: %s :: ThresholdEnabled: %t", _tenent, _company, tryCount, window, _session, persistSession, statsDPath, threshold, tm.Format(layout), location.String(), thresholdEnabled)
 	fmt.Println("DecrementEvent:: ", logDetails)
@@ -927,7 +948,7 @@ func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSe
 			if window != "QUEUE" {
 				statClient.Decrement(countConcStatName)
 			}
-			if thresholdEnabled == true && threshold != "" {
+			if thresholdEnabled && threshold != "" {
 				thValue, _ := strconv.Atoi(threshold)
 
 				if thValue > 0 {
@@ -1030,6 +1051,14 @@ func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSe
 func ProcessDecrRetry() {
 	
 
+	
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in ProcessDecrRetry", r)
+		}
+	}()
+
+
 	var decrEvents map[string]string
 	Cmd(radix.Cmd(&decrEvents,"hgetall", "DecrRetrySessions"))
 	for _, event := range decrEvents {
@@ -1063,7 +1092,14 @@ func ProcessDecrRetry() {
 
 func OnReset() {
 
-	_searchName := fmt.Sprintf("META:*:FLUSH")
+		
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnReset", r)
+		}
+	}()
+
+	_searchName := "META:*:FLUSH"
 	fmt.Println("Search Windows to Flush: ", _searchName)
 
 
@@ -1250,9 +1286,13 @@ func OnReset() {
 
 func OnSetDailySummary(_date time.Time) {
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnSetDailySummary", r)
+		}
+	}()
 	
-	
-	totCountEventSearch := fmt.Sprintf("TOTALCOUNT:*")
+	totCountEventSearch := "TOTALCOUNT:*"
 	
 
 	totalEventKeys := ScanAndGetKeys(totCountEventSearch)
@@ -1322,8 +1362,13 @@ func OnSetDailySummary(_date time.Time) {
 
 func OnSetDailyThesholdBreakDown(_date time.Time) {
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in OnSetDailySummary", r)
+		}
+	}()
 	
-	thresholdEventSearch := fmt.Sprintf("THRESHOLDBREAKDOWN:*")
+	thresholdEventSearch := "THRESHOLDBREAKDOWN:*"
 	
 	thresholdEventKeys := ScanAndGetKeys(thresholdEventSearch)
 	for _, key := range thresholdEventKeys {
@@ -1374,7 +1419,7 @@ func AppendListIfMissing(windowList1 []string, windowList2 []string) []string {
 			}
 		}
 
-		if notExist == true {
+		if notExist {
 			windowList1 = append(windowList1, ele2)
 		}
 	}
@@ -1384,6 +1429,12 @@ func AppendListIfMissing(windowList1 []string, windowList2 []string) []string {
 
 func FindDashboardSession(_tenant, _company int, _window, _session, _persistSession string) (sessionKey, timeValue, businessUnit, param1, param2 string) {
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in FindDashboardSession", r)
+		}
+	}()
+	
 
 	
 	if _persistSession == "true" {
@@ -1422,7 +1473,11 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 
 func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey, _persistSession string) (result int) {
 	
-	
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in RemoveDashboardSession", r)
+		}
+	}()
 
 	if _persistSession == "true" {
 		result = DeletePersistedSession(_tenant, _company, _window, _session)
@@ -1439,6 +1494,14 @@ func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey
 }
 
 func DoPublish(company, tenant int, businessUnit, window, param1, param2 string) {
+
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in DoPublish", r)
+		}
+	}()
+
 	authToken := fmt.Sprintf("Bearer %s", accessToken)
 	internalAuthToken := fmt.Sprintf("%d:%d", tenant, company)
 	serviceurl := fmt.Sprintf("http://%s/DashboardEvent/Publish/%s/%s/%s/%s", CreateHost(dashboardServiceHost, dashboardServicePort), businessUnit, window, param1, param2)
@@ -1475,6 +1538,12 @@ func DoPublish(company, tenant int, businessUnit, window, param1, param2 string)
 
 
 func ScanAndGetKeys(pattern string) []string {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in ScanAndGetKeys", r)
+		}
+	}()
 
 	
 	scanOpts := radix.ScanOpts{
