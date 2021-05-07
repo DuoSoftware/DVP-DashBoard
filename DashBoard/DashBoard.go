@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"encoding/json"
@@ -20,8 +21,10 @@ import (
 )
 
 var redisSentinel *radix.Sentinel
+var redisScanSentinel *radix.Sentinel
 var redisPool *radix.Pool;
 var redisScanClient radix.Client
+var mu sync.Mutex
 
 // var sentinelPool *sentinel.Client
 // var pubSubSentinelPool *sentinel.Client
@@ -109,9 +112,11 @@ func InitiateRedis() {
 			}
 
 			redisSentinel, err = radix.NewSentinel(redisClusterName, ips , radix.SentinelPoolFunc(customConnFunc))
+			redisScanSentinel, err = radix.NewSentinel(redisClusterName, ips , radix.SentinelPoolFunc(customConnFunc))
 
 			if err != nil {
 				log.Println("InitiateSentinel ::", err)
+				os.Exit(0)
 			}
 		} else {
 			log.Println("Not enough sentinel servers")
@@ -653,7 +658,7 @@ func OnEvent(_tenent, _company int, _businessUnit, _class, _type, _category, _se
 		}
 	}
 
-	fmt.Println("Session: %s iinc value is %d", _session, iinc)
+	fmt.Println("Session: ",_session, " iinc value is ", iinc)
 
 	if _werr == nil && _ierr == nil && berr == nil {
 
@@ -1539,7 +1544,11 @@ func DoPublish(company, tenant int, businessUnit, window, param1, param2 string)
 
 func ScanAndGetKeys(pattern string) []string {
 
+	
+	mu.Lock();
+
 	defer func() {
+		mu.Unlock()
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in ScanAndGetKeys", r)
 		}
@@ -1559,8 +1568,8 @@ func ScanAndGetKeys(pattern string) []string {
 	var client  radix.Client;
 
 	if redisMode == "sentinel" {
-		addr, _ := redisSentinel.Addrs()
-		client , _ = redisSentinel.Client(addr) 
+		addr, _ := redisScanSentinel.Addrs()
+		client , _ = redisScanSentinel.Client(addr) 
 	}else{
 		client = redisScanClient;
 	}
@@ -1581,6 +1590,8 @@ func ScanAndGetKeys(pattern string) []string {
 			os.Exit(0)
 		}
     }
+
+	
 
 	return matchingKeys
 

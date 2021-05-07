@@ -15,11 +15,13 @@ COPY go.mod go.sum ./
 # Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
 RUN go mod download
 
+RUN apk add build-base
+
 # Copy the source from the current directory to the Working Directory inside the container
 COPY . .
 
 # Build the Go app
-RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o main ./DashBoard/
+RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0  CGO_ENABLED=1 go build -o main -race ./DashBoard/
 
 # Create Runtime image
 FROM alpine
