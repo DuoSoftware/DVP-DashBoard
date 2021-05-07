@@ -25,7 +25,7 @@ var redisScanSentinel *radix.Sentinel
 var redisPool *radix.Pool;
 var redisScanClient radix.Client
 var mu sync.Mutex
-
+var rmu sync.Mutex
 // var sentinelPool *sentinel.Client
 // var pubSubSentinelPool *sentinel.Client
 // var redisPool *pool.Pool
@@ -56,6 +56,16 @@ func InitiateStatDClient() {
 func Cmd(cmd radix.CmdAction) error{
 
 	var err error;
+
+	rmu.Lock()
+
+	defer func() {
+		rmu.Unlock()
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in Cmd", r)
+		}
+	}()
+
 	if redisMode == "sentinel" {
 				
 		if err := redisSentinel.Do(cmd); err != nil {
