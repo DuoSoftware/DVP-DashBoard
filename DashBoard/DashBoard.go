@@ -113,8 +113,8 @@ func InitiateRedis() {
 	fmt.Println(iDel)
 	errHndlr("RemoveDashboardSession", "Cmd", iDelErr)
 
-	paramList, _  := rdb.HMGet(context.TODO(),"test1", "1", "2", "3").Result()
-	fmt.Println(paramList[0].(string), paramList[1].(string), paramList[2].(string))
+	// paramList, _  := rdb.HMGet(context.TODO(),"test1", "1", "2", "3").Result()
+	// fmt.Println(paramList[0].(string), paramList[1].(string), paramList[2].(string))
 
 }
 
