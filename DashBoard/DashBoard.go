@@ -113,6 +113,9 @@ func InitiateRedis() {
 	fmt.Println(iDel)
 	errHndlr("RemoveDashboardSession", "Cmd", iDelErr)
 
+	paramList, _  := rdb.HMGet(context.TODO(),"test1", "1", "2", "3").Result()
+	fmt.Println(paramList[0].(string), paramList[1].(string), paramList[2].(string))
+
 }
 
 func PubSub() {
@@ -1277,7 +1280,7 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 
 		if isExists == 1 {
 
-			paramList, paramListErr  := rdb.HMGet(context.TODO(),"hmget", sessParamsEventKey, "businessUnit", "param1", "param2").Result()
+			paramList, paramListErr  := rdb.HMGet(context.TODO(), sessParamsEventKey, "businessUnit", "param1", "param2").Result()
 			errHndlr("FindDashboardSession", "Cmd", paramListErr)
 			if len(paramList) >= 3 {
 				sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s:%s", _tenant, _company, paramList[0].(string), _window, _session, paramList[1].(string), paramList[2].(string))
