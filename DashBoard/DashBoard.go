@@ -109,6 +109,9 @@ func InitiateRedis() {
 	rdb.Do(context.TODO(), "set", "key123", "value123")
 	val, _ := rdb.Do(context.TODO(), "get", "key123").Text()
 	fmt.Println(val)
+	iDel, iDelErr := rdb.Do(context.TODO(),"del", "key123").Int()
+	fmt.Println(iDel)
+	errHndlr("RemoveDashboardSession", "Cmd", iDelErr)
 
 }
 
@@ -1277,7 +1280,7 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 			paramList, paramListErr  := rdb.HMGet(context.TODO(),"hmget", sessParamsEventKey, "businessUnit", "param1", "param2").Result()
 			errHndlr("FindDashboardSession", "Cmd", paramListErr)
 			if len(paramList) >= 3 {
-				sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s:%s", _tenant, _company, paramList[0], _window, _session, paramList[1], paramList[2])
+				sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s:%s", _tenant, _company, paramList[0].(string), _window, _session, paramList[1].(string), paramList[2].(string))
 				tmx, _:= rdb.Do(context.TODO(),"hget", sessionKey, "time").Text()
 				timeValue = tmx
 				businessUnit = paramList[0].(string)
@@ -1297,7 +1300,7 @@ func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey
 
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered in FindDashboardSession", r)
+			fmt.Println("Recovered in RemoveDashboardSession", r)
 		}
 
 	}()
