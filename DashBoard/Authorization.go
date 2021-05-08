@@ -1,15 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/auth0/go-jwt-middleware"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/mediocregopher/radix.v2/redis"
+
+	jwtmiddleware "github.com/auth0/go-jwt-middleware"
+	"github.com/form3tech-oss/jwt-go"
+
 	//"github.com/gorilla/context"
 	"strconv"
 	"strings"
 )
 
+//func(*Token) (interface{}, error)
 func loadJwtMiddleware() *jwtmiddleware.JWTMiddleware {
 	return (jwtmiddleware.New(jwtmiddleware.Options{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
@@ -240,24 +243,7 @@ func SecurityGet(key string) string {
 			fmt.Println("Recovered in RedisGet", r)
 		}
 	}()
-	var client *redis.Client
-	var err error
-
-	if redisMode == "sentinel" {
-		client, err = sentinelPool.GetMaster(redisClusterName)
-		errHndlr("SecurityGet", "getConnFromSentinel", err)
-		defer sentinelPool.PutMaster(redisClusterName, client)
-	} else {
-		client, err = redisPool.Get()
-		errHndlr("SecurityGet", "getConnFromPool", err)
-		defer redisPool.Put(client)
-	}
-
-	//authServer
-	authE := client.Cmd("auth", redisPassword)
-	errHndlr("SecurityGet", "auth", authE.Err)
-
-	strObj, _ := client.Cmd("get", key).Str()
+	strObj := rdb.Do(context.TODO(),"get", key).String()
 	//fmt.Println(strObj)
 	return strObj
 }
