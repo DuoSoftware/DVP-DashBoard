@@ -106,6 +106,9 @@ func InitiateRedis() {
 	connectionOptions.Password = redisPassword
 
 	rdb = redis.NewUniversalClient(&connectionOptions)
+	rdb.Do(context.TODO(), "set", "key123", "value123")
+	val, _ := rdb.Do(context.TODO(), "get", "key123").Text()
+	fmt.Println(val)
 
 }
 
@@ -458,11 +461,11 @@ func OnEvent(_tenent, _company int, _businessUnit, _class, _type, _category, _se
 		if isWindowExist == 0 || isIncExist == 0 {
 			ReloadMetaData(_class, _type, _category)
 		}
-		window = rdb.Do(context.TODO(),"get", _window).String()
-		sinc = rdb.Do(context.TODO(),"get", _inc).String()
-		useSession = rdb.Do(context.TODO(),"get", _useSessionName).String()
-		persistSession = rdb.Do(context.TODO(),"get", _persistSessionName).String()
-		threshold = rdb.Do(context.TODO(),"get", _thresholdEnableName).String()
+		window, _= rdb.Do(context.TODO(),"get", _window).Text()
+		sinc, _ = rdb.Do(context.TODO(),"get", _inc).Text()
+		useSession, _= rdb.Do(context.TODO(),"get", _useSessionName).Text()
+		persistSession, _= rdb.Do(context.TODO(),"get", _persistSessionName).Text()
+		threshold, _ = rdb.Do(context.TODO(),"get", _thresholdEnableName).Text()
 
 		if threshold != "" {
 			thresholdEnabled = true
@@ -940,7 +943,7 @@ func OnReset() {
 		fmt.Println(lenth)
 		if lenth > 0 {
 			for _, value := range val {
-				tmx := rdb.Do(context.TODO(),"get", value).String()
+				tmx, _ := rdb.Do(context.TODO(),"get", value).Text()
 				_windowList = AppendIfMissing(_windowList, tmx)
 			}
 
@@ -1139,7 +1142,7 @@ func OnSetDailySummary(_date time.Time) {
 				sessEventSearch := fmt.Sprintf("SESSION:%d:%d:%s:%s:*:%s:%s", tenant, company, summery.BusinessUnit, summery.WindowName, summery.Param1, summery.Param2)
 				sessEvents := ScanAndGetKeys(sessEventSearch)
 				if len(sessEvents) > 0 {
-					tmx := rdb.Do(context.TODO(),"hget", sessEvents[0], "time").String()
+					tmx, _ := rdb.Do(context.TODO(),"hget", sessEvents[0], "time").Text()
 					if tmx != "" {
 						tm2, _ := time.Parse(layout, tmx)
 						currentTime = int(_date.Sub(tm2.Local()).Seconds())
@@ -1275,7 +1278,7 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 			errHndlr("FindDashboardSession", "Cmd", paramListErr)
 			if len(paramList) >= 3 {
 				sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s:%s", _tenant, _company, paramList[0], _window, _session, paramList[1], paramList[2])
-				tmx := rdb.Do(context.TODO(),"hget", sessionKey, "time").String()
+				tmx, _:= rdb.Do(context.TODO(),"hget", sessionKey, "time").Text()
 				timeValue = tmx
 				businessUnit = paramList[0].(string)
 				param1 = paramList[1].(string)
