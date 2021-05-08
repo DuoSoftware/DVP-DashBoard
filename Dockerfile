@@ -19,7 +19,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go app
-RUN go build -o main ./DashBoard/
+RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0  CGO_ENABLED=1 go build -o main -race ./DashBoard/
 
 # Create Runtime image
 FROM alpine
