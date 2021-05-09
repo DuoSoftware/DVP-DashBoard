@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -12,11 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"encoding/json"
-
-	_ "github.com/lib/pq"
-
 	"github.com/go-redis/redis/v8"
+	_ "github.com/lib/pq"
 )
 
 
@@ -106,13 +104,12 @@ func InitiateRedis() {
 	connectionOptions.Password = redisPassword
 
 	rdb = redis.NewUniversalClient(&connectionOptions)
-	rdb.Do(context.TODO(), "set", "key123", "value123")
-	val, _ := rdb.Do(context.TODO(), "get", "key123").Text()
-	fmt.Println(val)
-	iDel, iDelErr := rdb.Do(context.TODO(),"del", "key123").Int()
-	fmt.Println(iDel)
-	errHndlr("RemoveDashboardSession", "Cmd", iDelErr)
-
+	// rdb.Do(context.TODO(), "set", "key123", "value123")
+	// val, _ := rdb.Do(context.TODO(), "get", "key123").Text()
+	// fmt.Println(val)
+	// iDel, iDelErr := rdb.Do(context.TODO(),"del", "key123").Int()
+	// fmt.Println(iDel)
+	// errHndlr("RemoveDashboardSession", "Cmd", iDelErr)
 	// paramList, _  := rdb.HMGet(context.TODO(),"test1", "1", "2", "3").Result()
 	// fmt.Println(paramList[0].(string), paramList[1].(string), paramList[2].(string))
 
