@@ -104,14 +104,6 @@ func InitiateRedis() {
 	connectionOptions.Password = redisPassword
 
 	rdb = redis.NewUniversalClient(&connectionOptions)
-	// rdb.Do(context.TODO(), "set", "key123", "value123")
-	// val, _ := rdb.Do(context.TODO(), "get", "key123").Text()
-	// fmt.Println(val)
-	// iDel, iDelErr := rdb.Do(context.TODO(),"del", "key123").Int()
-	// fmt.Println(iDel)
-	// errHndlr("RemoveDashboardSession", "Cmd", iDelErr)
-	// paramList, _  := rdb.HMGet(context.TODO(),"test1", "1", "2", "3").Result()
-	// fmt.Println(paramList[0].(string), paramList[1].(string), paramList[2].(string))
 
 }
 
@@ -1086,6 +1078,16 @@ func OnReset() {
 			LtotCountEventNameWithSingleParam_BusinessUnit := fmt.Sprintf("TOTALCOUNTWSPARAM:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[4], sessItemsL[6])
 			LtotTimeEventNameWithLastParam_BusinessUnit := fmt.Sprintf("TOTALTIMEWLPARAM:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[4], sessItemsL[7])
 			LtotCountEventNameWithLastParam_BusinessUnit := fmt.Sprintf("TOTALCOUNTWLPARAM:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[4], sessItemsL[7])
+
+
+			// rdb.Pipelined(context.TODO(), func(pipe redis.Pipeliner) error {
+				
+			// 	pipe.HMSet(context.TODO(),LsessParamEventName, "businessUnit", sessItemsL[3], "param1", sessItemsL[6], "param2", sessItemsL[7])
+			// 	pipe.Set(context.TODO(), LtotTimeEventName, 0, 0)
+
+			// 	return nil
+			// })
+
 
 			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"hmset", LsessParamEventName, "businessUnit", sessItemsL[3], "param1", sessItemsL[6], "param2", sessItemsL[7]).Err())
 			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotTimeEventName, 0).Err())
