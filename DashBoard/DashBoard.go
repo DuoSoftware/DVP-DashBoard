@@ -623,9 +623,6 @@ func IncrementEvent(_tenent, _company int, _businessUnit, window, _parameter1, _
 
 	errHndlr("OnEvent", "Cmd ccountErr", err)
 
-
-
-
 	fmt.Println("tcount ", tcount)
 	fmt.Println("ccount ", ccount)
 	fmt.Println("tcountB ", tcountB)
