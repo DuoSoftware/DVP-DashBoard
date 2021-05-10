@@ -243,7 +243,7 @@ func SecurityGet(key string) string {
 			fmt.Println("Recovered in RedisGet", r)
 		}
 	}()
-	strObj,_ := rdb.Do(context.TODO(),"get", key).Text()
+	strObj := rdb.Get(context.TODO(), key).Val()
 	//fmt.Println(strObj)
 	return strObj
 }

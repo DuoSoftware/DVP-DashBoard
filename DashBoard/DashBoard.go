@@ -104,14 +104,6 @@ func InitiateRedis() {
 	connectionOptions.Password = redisPassword
 
 	rdb = redis.NewUniversalClient(&connectionOptions)
-	// rdb.Do(context.TODO(), "set", "key123", "value123")
-	// val, _ := rdb.Do(context.TODO(), "get", "key123").Text()
-	// fmt.Println(val)
-	// iDel, iDelErr := rdb.Do(context.TODO(),"del", "key123").Int()
-	// fmt.Println(iDel)
-	// errHndlr("RemoveDashboardSession", "Cmd", iDelErr)
-	// paramList, _  := rdb.HMGet(context.TODO(),"test1", "1", "2", "3").Result()
-	// fmt.Println(paramList[0].(string), paramList[1].(string), paramList[2].(string))
 
 }
 
@@ -381,22 +373,27 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 
 
 
-	if _flushEnable == true {
-		errHndlr("CacheMetaData", "Cmd", rdb.Do(context.TODO(), "setnx", _flushName, _window).Err())
+	if _flushEnable {
+		errHndlr("CacheMetaData", "Cmd", rdb.SetNX(context.TODO(),  _flushName, _window, 0).Err())
 	} else {
-		errHndlr("CacheMetaData", "Cmd", rdb.Do(context.TODO(),"del", _flushName).Err())
+		errHndlr("CacheMetaData", "Cmd", rdb.Del(context.TODO(), _flushName).Err())
 	}
 
-	if _thresholdEnable == true {
-		errHndlr("CacheMetaData", "Cmd", rdb.Do(context.TODO(),"setnx", _thresholdEnableName, _thresholdValue).Err())
+	if _thresholdEnable{
+		errHndlr("CacheMetaData", "Cmd", rdb.SetNX(context.TODO(), _thresholdEnableName, _thresholdValue,0).Err())
 	} else {
-		errHndlr("CacheMetaData", "Cmd", rdb.Do(context.TODO(),"del", _thresholdEnableName).Err())
+		errHndlr("CacheMetaData", "Cmd", rdb.Del(context.TODO(), _thresholdEnableName).Err())
 	}
 
-	errHndlr("CacheMetaData", "Cmd", rdb.Do(context.TODO(),"setnx", _useSessionName, strconv.FormatBool(_useSession)).Err())
-	errHndlr("CacheMetaData", "Cmd", rdb.Do(context.TODO(),"setnx", _persistSessionName, strconv.FormatBool(_persistSession)).Err())
-	errHndlr("CacheMetaData", "Cmd", rdb.Do(context.TODO(),"setnx", _windowName, _window).Err())
-	errHndlr("CacheMetaData", "Cmd", rdb.Do(context.TODO(),"setnx", _incName, strconv.Itoa(count)).Err())
+	pipe := rdb.TxPipeline()
+
+	pipe.SetNX(context.TODO(), _useSessionName, _useSession,0)
+	pipe.SetNX(context.TODO(), _persistSessionName, _persistSession, 0)
+	pipe.SetNX(context.TODO(), _windowName, _window, 0)
+	pipe.SetNX(context.TODO(), _incName, count, 0)
+
+	_, err := pipe.Exec(context.TODO())
+	errHndlr("CacheMetaData", "Cmd", err)
 }
 
 func OnMeta(_class, _type, _category, _window string, count int, _flushEnable, _useSession, _persistSession, _thresholdEnable bool, _thresholdValue int) {
@@ -456,19 +453,30 @@ func OnEvent(_tenent, _company int, _businessUnit, _class, _type, _category, _se
 		_persistSessionName := fmt.Sprintf("META:%s:%s:%s:PERSISTSESSION", _class, _type, _category)
 		_thresholdEnableName := fmt.Sprintf("META:%s:%s:%s:thresholdEnable", _class, _type, _category)
 
-		isWindowExist, windowExistErr := rdb.Do(context.TODO(),"exists", _window).Int()
+		isWindowExist, windowExistErr := rdb.Exists(context.TODO(),_window).Result()
 		errHndlr("OnEvent", "Cmd windowExistErr", windowExistErr)
-		isIncExist, incExistErr := rdb.Do(context.TODO(),"exists", _inc).Int()
+		isIncExist, incExistErr := rdb.Exists(context.TODO(),_inc).Result()
 		errHndlr("OnEvent", "Cmd incExistErr", incExistErr)
 
 		if isWindowExist == 0 || isIncExist == 0 {
 			ReloadMetaData(_class, _type, _category)
 		}
-		window, _= rdb.Do(context.TODO(),"get", _window).Text()
-		sinc, _ = rdb.Do(context.TODO(),"get", _inc).Text()
-		useSession, _= rdb.Do(context.TODO(),"get", _useSessionName).Text()
-		persistSession, _= rdb.Do(context.TODO(),"get", _persistSessionName).Text()
-		threshold, _ = rdb.Do(context.TODO(),"get", _thresholdEnableName).Text()
+		pipe := rdb.TxPipeline()
+		windowres := pipe.Get(context.TODO(), _window)
+		sincres := pipe.Get(context.TODO(), _inc)
+		useSessionres := pipe.Get(context.TODO(), _useSessionName)
+		persistSessionres := pipe.Get(context.TODO(), _persistSessionName)
+		thresholdres := pipe.Get(context.TODO(), _thresholdEnableName)
+
+		pipe.Exec(context.TODO())
+
+		window = windowres.Val()
+		sinc = sincres.Val();
+		useSession = useSessionres.Val()
+		persistSession = persistSessionres.Val()
+		threshold = thresholdres.Val()
+
+
 
 		if threshold != "" {
 			thresholdEnabled = true
@@ -518,8 +526,8 @@ func OnEvent(_tenent, _company int, _businessUnit, _class, _type, _category, _se
 					sessEventName := fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s:%s", _tenent, _company, _businessUnit, window, _session, _parameter1, _parameter2)
 					sessParamEventName := fmt.Sprintf("SESSIONPARAMS:%d:%d:%s:%s", _tenent, _company, window, _session)
 
-					errHndlr("OnEvent", "Cmd sessEventName", rdb.Do(context.TODO(),"hset", sessEventName, "time", tm.Format(layout)).Err())
-					errHndlr("OnEvent", "Cmd sessParamEventName", rdb.Do(context.TODO(),"hmset", sessParamEventName, "businessUnit", _businessUnit, "param1", _parameter1, "param2", _parameter2).Err())
+					errHndlr("OnEvent", "Cmd sessEventName", rdb.HSet(context.TODO(), sessEventName, "time", tm.Format(layout)).Err())
+					errHndlr("OnEvent", "Cmd sessParamEventName", rdb.HMSet(context.TODO(), sessParamEventName, "businessUnit", _businessUnit, "param1", _parameter1, "param2", _parameter2).Err())
 				}
 			}
 
@@ -583,43 +591,40 @@ func IncrementEvent(_tenent, _company int, _businessUnit, window, _parameter1, _
 	gaugeConcStatName := fmt.Sprintf("event.%s.concurrent.%d.%d.%s.%s.%s", statsDPath, _tenent, _company, _businessUnit, _parameter1, window)
 	totCountStatName := fmt.Sprintf("event.%s.totalcount.%d.%d.%s.%s.%s", statsDPath, _tenent, _company, _businessUnit, _parameter1, window)
 
-	ccount, ccountErr := rdb.Do(context.TODO(),"incr", concEventName).Int()
-	tcount, tcountErr := rdb.Do(context.TODO(),"incr", totCountEventName).Int()
-	ccountB, ccountBErr := rdb.Do(context.TODO(),"incr", concEventName_businessUnit).Int()
-	tcountB, tcountBErr := rdb.Do(context.TODO(),"incr", totCountEventName_businessUnit).Int()
-	errHndlr("OnEvent", "Cmd ccountErr", ccountErr)
-	errHndlr("OnEvent", "Cmd tcountErr", tcountErr)
-	errHndlr("OnEvent", "Cmd tcountBErr", ccountBErr)
-	errHndlr("OnEvent", "Cmd tcountBErr", tcountBErr)
+	pipe := rdb.TxPipeline()
 
-	_, err1 := rdb.Do(context.TODO(),"incr", concEventNameWithoutParams).Int()
-	_, err2 := rdb.Do(context.TODO(),"incr", totCountEventNameWithoutParams).Int()
-	_, errB1 := rdb.Do(context.TODO(),"incr", concEventNameWithoutParams_businessUnit).Int()
-	_, errB2 := rdb.Do(context.TODO(),"incr", totCountEventNameWithoutParams_businessUnit).Int()
-	errHndlr("OnEvent", "Cmd err1", err1)
-	errHndlr("OnEvent", "Cmd err2", err2)
-	errHndlr("OnEvent", "Cmd errB1", errB1)
-	errHndlr("OnEvent", "Cmd errB2", errB2)
+	ccountRes := pipe.Incr(context.TODO(),concEventName)
+	tcountRes := pipe.Incr(context.TODO(), totCountEventName)
+	ccountBRes := pipe.Incr(context.TODO(), concEventName_businessUnit)
+	tcountBRes := pipe.Incr(context.TODO(), totCountEventName_businessUnit)
+	pipe.Incr(context.TODO(), concEventNameWithoutParams)
+	pipe.Incr(context.TODO(), totCountEventNameWithoutParams)
+	pipe.Incr(context.TODO(), concEventNameWithoutParams_businessUnit)
+	pipe.Incr(context.TODO(), totCountEventNameWithoutParams_businessUnit)
+	pipe.Incr(context.TODO(), concEventNameWithSingleParam)
+	pipe.Incr(context.TODO(), totCountEventNameWithSingleParam)
+	pipe.Incr(context.TODO(), concEventNameWithSingleParam_businessUnit)
+	pipe.Incr(context.TODO(), totCountEventNameWithSingleParam_businessUnit)
+	pipe.Incr(context.TODO(), concEventNameWithLastParam)
+	pipe.Incr(context.TODO(), totCountEventNameWithLastParam)
+	pipe.Incr(context.TODO(), concEventNameWithLastParam_businessUnit)
+	pipe.Incr(context.TODO(), totCountEventNameWithLastParam_businessUnit)
 
-	_, err3 := rdb.Do(context.TODO(),"incr", concEventNameWithSingleParam).Int()
-	_, err4 := rdb.Do(context.TODO(),"incr", totCountEventNameWithSingleParam).Int()
-	_, errB3 := rdb.Do(context.TODO(),"incr", concEventNameWithSingleParam_businessUnit).Int()
-	_, errB4 := rdb.Do(context.TODO(),"incr", totCountEventNameWithSingleParam_businessUnit).Int()
-	errHndlr("OnEvent", "Cmd err3", err3)
-	errHndlr("OnEvent", "Cmd err4", err4)
-	errHndlr("OnEvent", "Cmd errB3", errB3)
-	errHndlr("OnEvent", "Cmd errB4", errB4)
 
-	_, err5 := rdb.Do(context.TODO(),"incr", concEventNameWithLastParam).Int()
-	_, err6 := rdb.Do(context.TODO(),"incr", totCountEventNameWithLastParam).Int()
-	_, errB5 := rdb.Do(context.TODO(),"incr", concEventNameWithLastParam_businessUnit).Int()
-	_, errB6 := rdb.Do(context.TODO(),"incr", totCountEventNameWithLastParam_businessUnit).Int()
-	errHndlr("OnEvent", "Cmd err5", err5)
-	errHndlr("OnEvent", "Cmd err6", err6)
-	errHndlr("OnEvent", "Cmd errB5", errB5)
-	errHndlr("OnEvent", "Cmd errB6", errB6)
+	result, err := pipe.Exec(context.TODO())
 
-	//errHndlr("OnEvent", "Cmd totCountHrEventName", rdb.Do(context.TODO(),"incr", totCountHrEventName).Err())
+	ccount := ccountRes.Val()
+	tcount := tcountRes.Val()
+	ccountB := ccountBRes.Val()
+	tcountB := tcountBRes.Val()
+
+
+	fmt.Println(result)
+
+	errHndlr("OnEvent", "Cmd ccountErr", err)
+
+
+
 
 	fmt.Println("tcount ", tcount)
 	fmt.Println("ccount ", ccount)
@@ -712,83 +717,81 @@ func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSe
 			totTimeStatName := fmt.Sprintf("event.%s.totaltime.%d.%d.%s.%s.%s", statsDPath, _tenent, _company, businessUnit, sParam1, window)
 			timeStatName := fmt.Sprintf("event.%s.timer.%d.%d.%s.%s.%s", statsDPath, _tenent, _company, businessUnit, sParam1, window)
 
-			_, rincErr := rdb.Do(context.TODO(),"incrby", totTimeEventName, timeDiff).Int()
-			_, err2 := rdb.Do(context.TODO(),"incrby", totTimeEventNameWithoutParams, timeDiff).Int()
-			_, err3 := rdb.Do(context.TODO(),"incrby", totTimeEventNameWithSingleParam, timeDiff).Int()
-			_, err4 := rdb.Do(context.TODO(),"incrby", totTimeEventNameWithLastParam, timeDiff).Int()
+			pipe := rdb.TxPipeline()
 
-			rincB, rincErrB := rdb.Do(context.TODO(),"incrby", totTimeEventName_BusinssUnit, timeDiff).Int()
-			_, errB2 := rdb.Do(context.TODO(),"incrby", totTimeEventNameWithoutParams_BusinssUnit, timeDiff).Int()
-			_, errB3 := rdb.Do(context.TODO(),"incrby", totTimeEventNameWithSingleParam_BusinssUnit, timeDiff).Int()
-			_, errB4 := rdb.Do(context.TODO(),"incrby", totTimeEventNameWithLastParam_BusinssUnit, timeDiff).Int()
+			pipe.IncrBy(context.TODO(), totTimeEventName, int64(timeDiff))
+			pipe.IncrBy(context.TODO(),totTimeEventNameWithoutParams, int64(timeDiff))
+			pipe.IncrBy(context.TODO(),totTimeEventNameWithSingleParam, int64(timeDiff))
+			pipe.IncrBy(context.TODO(),totTimeEventNameWithLastParam, int64(timeDiff))
 
-			dccount, dccountErr := rdb.Do(context.TODO(),"decr", concEventName).Int()
-			_, err5 := rdb.Do(context.TODO(),"decr", concEventNameWithoutParams).Int()
-			_, err6 := rdb.Do(context.TODO(),"decr", concEventNameWithSingleParam).Int()
-			_, err7 := rdb.Do(context.TODO(),"decr", concEventNameWithLastParam).Int()
+			rincBRes := pipe.IncrBy(context.TODO(), totTimeEventName_BusinssUnit, int64(timeDiff))
+			pipe.IncrBy(context.TODO(), totTimeEventNameWithoutParams_BusinssUnit, int64(timeDiff))
+			pipe.IncrBy(context.TODO(), totTimeEventNameWithSingleParam_BusinssUnit, int64(timeDiff))
+			pipe.IncrBy(context.TODO(),totTimeEventNameWithLastParam_BusinssUnit, int64(timeDiff))
 
-			dccountB, dccountErrB := rdb.Do(context.TODO(),"decr", concEventName_BusinssUnit).Int()
-			_, errB5 := rdb.Do(context.TODO(),"decr", concEventNameWithoutParams_BusinssUnit).Int()
-			_, errB6 := rdb.Do(context.TODO(),"decr", concEventNameWithSingleParam_BusinssUnit).Int()
-			_, errB7 := rdb.Do(context.TODO(),"decr", concEventNameWithLastParam_BusinssUnit).Int()
+			dccountRes  := pipe.Decr(context.TODO(),concEventName)
+			pipe.Decr(context.TODO(), concEventNameWithoutParams)
+			pipe.Decr(context.TODO(), concEventNameWithSingleParam)
+			pipe.Decr(context.TODO(), concEventNameWithLastParam)
 
-			errHndlr("OnEvent", "Cmd rincErr", rincErr)
-			errHndlr("OnEvent", "Cmd err2", err2)
-			errHndlr("OnEvent", "Cmd err3", err3)
-			errHndlr("OnEvent", "Cmd err4", err4)
-			errHndlr("OnEvent", "Cmd dccountErr", dccountErr)
-			errHndlr("OnEvent", "Cmd err5", err5)
-			errHndlr("OnEvent", "Cmd err6", err6)
-			errHndlr("OnEvent", "Cmd err7", err7)
+			dccountBRes := pipe.Decr(context.TODO(), concEventName_BusinssUnit)
+			pipe.Decr(context.TODO(), concEventNameWithoutParams_BusinssUnit)
+			pipe.Decr(context.TODO(), concEventNameWithSingleParam_BusinssUnit)
+			pipe.Decr(context.TODO(), concEventNameWithLastParam_BusinssUnit)
 
-			errHndlr("OnEvent", "Cmd rincErrB", rincErrB)
-			errHndlr("OnEvent", "Cmd errB2", errB2)
-			errHndlr("OnEvent", "Cmd errB3", errB3)
-			errHndlr("OnEvent", "Cmd errB4", errB4)
-			errHndlr("OnEvent", "Cmd dccountErrB", dccountErrB)
-			errHndlr("OnEvent", "Cmd errB5", errB5)
-			errHndlr("OnEvent", "Cmd errB6", errB6)
-			errHndlr("OnEvent", "Cmd errB7", errB7)
+			result, err := pipe.Exec(context.TODO())
+
+			rincB := rincBRes.Val()
+			dccount := dccountRes.Val()
+			dccountB := dccountBRes.Val()
+
+			fmt.Println(result)
+			errHndlr("OnEvent", "Cmd rincErr", err)
+
 
 			if dccount < 0 {
 				fmt.Println("reset minus concurrent count:: incr by 1 :: ", concEventName)
-				dccount, dccountErr = rdb.Do(context.TODO(),"incr", concEventName).Int()
-				_, err8 := rdb.Do(context.TODO(),"incr", concEventNameWithoutParams).Int()
-				_, err9 := rdb.Do(context.TODO(),"incr", concEventNameWithSingleParam).Int()
-				_, err10 := rdb.Do(context.TODO(),"incr", concEventNameWithLastParam).Int()
-				errHndlr("OnEvent", "Cmd dccountErr", dccountErr)
-				errHndlr("OnEvent", "Cmd err8", err8)
-				errHndlr("OnEvent", "Cmd err9", err9)
-				errHndlr("OnEvent", "Cmd err10", err10)
+				dpipe := rdb.TxPipeline()
+				dccountRes = dpipe.Incr(context.TODO(),concEventName)
+				dpipe.Incr(context.TODO(), concEventNameWithoutParams)
+				dpipe.Incr(context.TODO(), concEventNameWithSingleParam)
+				dpipe.Incr(context.TODO(), concEventNameWithLastParam)
+				result1, err1 := dpipe.Exec(context.TODO())
+
+				dccount = dccountRes.Val()
+				fmt.Println(result1)
+				errHndlr("OnEvent", "Cmd dccountErr", err1)
 			}
 			if dccountB < 0 {
 				fmt.Println("reset minus concurrent business unit count:: incr by 1 :: ", concEventName_BusinssUnit)
-				dccountB, dccountErrB = rdb.Do(context.TODO(),"incr", concEventName_BusinssUnit).Int()
-				_, errB8 := rdb.Do(context.TODO(),"incr", concEventNameWithoutParams_BusinssUnit).Int()
-				_, errB9 := rdb.Do(context.TODO(),"incr", concEventNameWithSingleParam_BusinssUnit).Int()
-				_, errB10 := rdb.Do(context.TODO(),"incr", concEventNameWithLastParam_BusinssUnit).Int()
-				errHndlr("OnEvent", "Cmd dccountErrB", dccountErrB)
-				errHndlr("OnEvent", "Cmd errB8", errB8)
-				errHndlr("OnEvent", "Cmd errB9", errB9)
-				errHndlr("OnEvent", "Cmd errB10", errB10)
+				dpipe := rdb.TxPipeline()
+				dccountBRes = rdb.Incr(context.TODO(),concEventName_BusinssUnit)
+				rdb.Incr(context.TODO(),concEventNameWithoutParams_BusinssUnit)
+				rdb.Incr(context.TODO(),concEventNameWithSingleParam_BusinssUnit)
+				rdb.Incr(context.TODO(), concEventNameWithLastParam_BusinssUnit)
+				result2, err2 := dpipe.Exec(context.TODO())
+				dccountB = dccountBRes.Val()
+				fmt.Println(result2)
+				errHndlr("OnEvent", "Cmd dccountErrB", err2)
+
 			}
 
-			oldMaxTime, oldMaxTimeErr := rdb.Do(context.TODO(),"get", maxTimeEventName).Int()
+			oldMaxTime, oldMaxTimeErr := rdb.Get(context.TODO(), maxTimeEventName).Int()
 			errHndlr("OnEvent", "Cmd oldMaxTimeErr", oldMaxTimeErr)
-			if oldMaxTime < timeDiff {
-				errHndlr("OnEvent", "Cmd maxTimeEventName", rdb.Do(context.TODO(),"set", maxTimeEventName, timeDiff).Err())
+			if oldMaxTime  < timeDiff {
+				errHndlr("OnEvent", "Cmd maxTimeEventName", rdb.Set(context.TODO(), maxTimeEventName, timeDiff, 0).Err())
 			}
 			if window != "QUEUE" {
 				statClient.Decrement(countConcStatName)
 			}
-			if thresholdEnabled == true && threshold != "" {
+			if thresholdEnabled && threshold != "" {
 				thValue, _ := strconv.Atoi(threshold)
 
 				if thValue > 0 {
 					thHour := tm.Hour()
 
 					if timeDiff > thValue {
-						thcount, thcountErr := rdb.Do(context.TODO(),"incr", thresholdEventName).Int()
+						thcount, thcountErr := rdb.Incr(context.TODO(), thresholdEventName).Result()
 						errHndlr("OnEvent", "Cmd thcountErr", thcountErr)
 						fmt.Println(thresholdEventName, ": ", thcount)
 
@@ -806,32 +809,32 @@ func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSe
 
 						if timeDiff > thValue && timeDiff <= thValue_2 {
 							thresholdBreakDown_1 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue, thValue_2)
-							errHndlr("OnEvent", "Cmd thresholdBreakDown_1", rdb.Do(context.TODO(),"incr", thresholdBreakDown_1).Err())
+							errHndlr("OnEvent", "Cmd thresholdBreakDown_1", rdb.Incr(context.TODO(),thresholdBreakDown_1).Err())
 							fmt.Println("thresholdBreakDown_1::", thresholdBreakDown_1)
 						} else if timeDiff > thValue_2 && timeDiff <= thValue_4 {
 							thresholdBreakDown_2 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_2, thValue_4)
-							errHndlr("OnEvent", "Cmd thresholdBreakDown_2", rdb.Do(context.TODO(),"incr", thresholdBreakDown_2).Err())
+							errHndlr("OnEvent", "Cmd thresholdBreakDown_2", rdb.Incr(context.TODO(),thresholdBreakDown_2).Err())
 							fmt.Println("thresholdBreakDown_2::", thresholdBreakDown_2)
 						} else if timeDiff > thValue_4 && timeDiff <= thValue_8 {
 							thresholdBreakDown_3 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_4, thValue_8)
-							errHndlr("OnEvent", "Cmd thresholdBreakDown_3", rdb.Do(context.TODO(),"incr", thresholdBreakDown_3).Err())
+							errHndlr("OnEvent", "Cmd thresholdBreakDown_3", rdb.Incr(context.TODO(), thresholdBreakDown_3).Err())
 							fmt.Println("thresholdBreakDown_3::", thresholdBreakDown_3)
 						} else if timeDiff > thValue_8 && timeDiff <= thValue_10 {
 							thresholdBreakDown_4 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_8, thValue_10)
-							errHndlr("OnEvent", "Cmd thresholdBreakDown_4", rdb.Do(context.TODO(),"incr", thresholdBreakDown_4).Err())
+							errHndlr("OnEvent", "Cmd thresholdBreakDown_4", rdb.Incr(context.TODO(), thresholdBreakDown_4).Err())
 							fmt.Println("thresholdBreakDown_4::", thresholdBreakDown_4)
 						} else if timeDiff > thValue_10 && timeDiff <= thValue_12 {
 							thresholdBreakDown_5 := fmt.Sprintf("%s:%d:%d:%d", thresholdBreakDownEventName, thHour, thValue_10, thValue_12)
-							errHndlr("OnEvent", "Cmd thresholdBreakDown_5", rdb.Do(context.TODO(),"incr", thresholdBreakDown_5).Err())
+							errHndlr("OnEvent", "Cmd thresholdBreakDown_5", rdb.Incr(context.TODO(), thresholdBreakDown_5).Err())
 							fmt.Println("thresholdBreakDown_5::", thresholdBreakDown_5)
 						} else {
 							thresholdBreakDown_6 := fmt.Sprintf("%s:%d:%d:%s", thresholdBreakDownEventName, thHour, thValue_12, "gt")
-							errHndlr("OnEvent", "Cmd thresholdBreakDown_6", rdb.Do(context.TODO(),"incr", thresholdBreakDown_6).Err())
+							errHndlr("OnEvent", "Cmd thresholdBreakDown_6", rdb.Incr(context.TODO(), thresholdBreakDown_6).Err())
 							fmt.Println("thresholdBreakDown_6::", thresholdBreakDown_6)
 						}
 					} else {
 						thresholdBreakDown_7 := fmt.Sprintf("%s:%d:%s:%d", thresholdBreakDownEventName, thHour, "lt", thValue)
-						errHndlr("OnEvent", "Cmd thresholdBreakDown_7", rdb.Do(context.TODO(),"incr", thresholdBreakDown_7).Err())
+						errHndlr("OnEvent", "Cmd thresholdBreakDown_7", rdb.Incr(context.TODO(), thresholdBreakDown_7).Err())
 						fmt.Println("thresholdBreakDown_7::", thresholdBreakDown_7)
 					}
 				}
@@ -871,7 +874,7 @@ func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSe
 				fmt.Println("Marshal Retry data failed: ", _session, " :: Error: ", mErr.Error())
 			} else {
 				reTryDetailJsonString := string(reTryDetailMarshalData)
-				_, lpushErr := rdb.Do(context.TODO(),"hset", "DecrRetrySessions", _session, reTryDetailJsonString).Int()
+				_, lpushErr := rdb.HSet(context.TODO(), "DecrRetrySessions", _session, reTryDetailJsonString).Result()
 				if lpushErr != nil {
 					fmt.Println("Lpush retry data failed: ", _session, " :: Error: ", lpushErr.Error())
 				}
@@ -912,7 +915,7 @@ func ProcessDecrRetry() {
 			fmt.Println("Execute decr late event session: ", decrEventDetail.Session)
 			decrEventDetail.TryCount++
 
-			rdb.Do(context.TODO(),"hdel", "DecrRetrySessions", decrEventDetail.Session)
+			rdb.HDel(context.TODO(), "DecrRetrySessions", decrEventDetail.Session)
 			DecrementEvent(decrEventDetail.Tenant, decrEventDetail.Company, decrEventDetail.TryCount, decrEventDetail.Window, decrEventDetail.Session, decrEventDetail.PersistSession, decrEventDetail.StatsDPath, decrEventDetail.Threshold, eventTime, location, decrEventDetail.ThresholdEnabled)
 
 		} else {
@@ -946,7 +949,7 @@ func OnReset() {
 		fmt.Println(lenth)
 		if lenth > 0 {
 			for _, value := range val {
-				tmx, _ := rdb.Do(context.TODO(),"get", value).Text()
+				tmx, _ := rdb.Get(context.TODO(), value).Result()
 				_windowList = AppendIfMissing(_windowList, tmx)
 			}
 
@@ -1060,11 +1063,11 @@ func OnReset() {
 	tm := time.Now()
 	for _, remove := range _keysToRemove {
 		fmt.Println("remove_: ", remove)
-		errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"del", remove).Err())
+		errHndlr("OnReset", "Cmd", rdb.Del(context.TODO(), remove).Err())
 	}
 	for _, session := range _loginSessions {
 		fmt.Println("readdSession: ", session)
-		errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"hset", session, "time", tm.Format(layout)).Err())
+		errHndlr("OnReset", "Cmd", rdb.HSet(context.TODO(), session, "time", tm.Format(layout)).Err())
 		sessItemsL := strings.Split(session, ":")
 
 		if len(sessItemsL) >= 7 {
@@ -1087,30 +1090,44 @@ func OnReset() {
 			LtotTimeEventNameWithLastParam_BusinessUnit := fmt.Sprintf("TOTALTIMEWLPARAM:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[4], sessItemsL[7])
 			LtotCountEventNameWithLastParam_BusinessUnit := fmt.Sprintf("TOTALCOUNTWLPARAM:%s:%s:%s:%s:%s", sessItemsL[1], sessItemsL[2], sessItemsL[3], sessItemsL[4], sessItemsL[7])
 
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"hmset", LsessParamEventName, "businessUnit", sessItemsL[3], "param1", sessItemsL[6], "param2", sessItemsL[7]).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotTimeEventName, 0).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotCountEventName, 0).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotTimeEventNameWithoutParams, 0).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotCountEventNameWithoutParams, 0).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotTimeEventNameWithSingleParam, 0).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotCountEventNameWithSingleParam, 0).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotTimeEventNameWithLastParam, 0).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotCountEventNameWithLastParam, 0).Err())
 
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotTimeEventName_BusinessUnit, 0).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotCountEventName_BusinessUnit, 0).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotTimeEventNameWithoutParams_BusinessUnit, 0).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotCountEventNameWithoutParams_BusinessUnit, 0).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotTimeEventNameWithSingleParam_BusinessUnit, 0).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotCountEventNameWithSingleParam_BusinessUnit, 0).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotTimeEventNameWithLastParam_BusinessUnit, 0).Err())
-			errHndlr("OnReset", "Cmd", rdb.Do(context.TODO(),"set", LtotCountEventNameWithLastParam_BusinessUnit, 0).Err())
+			// rdb.Pipelined(context.TODO(), func(pipe redis.Pipeliner) error {
+				
+			// 	pipe.HMSet(context.TODO(),LsessParamEventName, "businessUnit", sessItemsL[3], "param1", sessItemsL[6], "param2", sessItemsL[7])
+			// 	pipe.Set(context.TODO(), LtotTimeEventName, 0, 0)
+
+			// 	return nil
+			// })
+
+
+			pipe := rdb.TxPipeline()
+			pipe.HMSet(context.TODO(), LsessParamEventName, "businessUnit", sessItemsL[3], "param1", sessItemsL[6], "param2", sessItemsL[7])
+			pipe.Set(context.TODO(), LtotTimeEventName, 0,0)
+			pipe.Set(context.TODO(),LtotCountEventName, 0,0)
+			pipe.Set(context.TODO(), LtotTimeEventNameWithoutParams, 0,0)
+			pipe.Set(context.TODO(),LtotCountEventNameWithoutParams, 0,0)
+			pipe.Set(context.TODO(), LtotTimeEventNameWithSingleParam, 0,0)
+			pipe.Set(context.TODO(), LtotCountEventNameWithSingleParam, 0,0)
+			pipe.Set(context.TODO(),LtotCountEventNameWithSingleParam, 0,0)
+			pipe.Set(context.TODO(),LtotTimeEventNameWithLastParam, 0,0)
+			pipe.Set(context.TODO(),LtotCountEventNameWithLastParam, 0,0)
+			pipe.Set(context.TODO(), LtotTimeEventName_BusinessUnit, 0,0)
+			pipe.Set(context.TODO(),LtotCountEventName_BusinessUnit, 0,0)
+			pipe.Set(context.TODO(),LtotTimeEventNameWithoutParams_BusinessUnit, 0,0)
+			pipe.Set(context.TODO(),LtotCountEventNameWithoutParams_BusinessUnit, 0,0)
+			pipe.Set(context.TODO(),LtotTimeEventNameWithSingleParam_BusinessUnit, 0,0)
+			pipe.Set(context.TODO(), LtotCountEventNameWithSingleParam_BusinessUnit, 0,0)
+			pipe.Set(context.TODO(), LtotTimeEventNameWithLastParam_BusinessUnit, 0,0)
+			pipe.Set(context.TODO(),LtotCountEventNameWithLastParam_BusinessUnit, 0,0)
+			resp, err := pipe.Exec(context.TODO())
+
+
+			fmt.Println(resp)
+			errHndlr("OnReset", "Cmd", err)
+
 		}
 	}
-	/*for _, prosession := range _productivitySessions {
-		fmt.Println("readdSession: ", prosession)
-		rdb.Do(context.TODO(),"hset", prosession, "time", tm.Format(layout))
-	}*/
+	
 }
 
 func OnSetDailySummary(_date time.Time) {
@@ -1145,7 +1162,7 @@ func OnSetDailySummary(_date time.Time) {
 				sessEventSearch := fmt.Sprintf("SESSION:%d:%d:%s:%s:*:%s:%s", tenant, company, summery.BusinessUnit, summery.WindowName, summery.Param1, summery.Param2)
 				sessEvents := ScanAndGetKeys(sessEventSearch)
 				if len(sessEvents) > 0 {
-					tmx, _ := rdb.Do(context.TODO(),"hget", sessEvents[0], "time").Text()
+					tmx, _ := rdb.HGet(context.TODO(), sessEvents[0], "time").Result()
 					if tmx != "" {
 						tm2, _ := time.Parse(layout, tmx)
 						currentTime = int(_date.Sub(tm2.Local()).Seconds())
@@ -1161,10 +1178,10 @@ func OnSetDailySummary(_date time.Time) {
 			fmt.Println("maxTimeEventNameBU: ", maxTimeEventName)
 			fmt.Println("thresholdEventNameBU: ", thresholdEventName)
 
-			totCount, totCountErr := rdb.Do(context.TODO(),"get", key).Int()
-			totTime, totTimeErr := rdb.Do(context.TODO(),"get", totTimeEventName).Int()
-			maxTime, maxTimeErr := rdb.Do(context.TODO(),"get", maxTimeEventName).Int()
-			threshold, thresholdErr := rdb.Do(context.TODO(),"get", thresholdEventName).Int()
+			totCount, totCountErr := rdb.Get(context.TODO(), key).Int()
+			totTime, totTimeErr := rdb.Get(context.TODO(),totTimeEventName).Int()
+			maxTime, maxTimeErr := rdb.Get(context.TODO(),maxTimeEventName).Int()
+			threshold, thresholdErr := rdb.Get(context.TODO(), thresholdEventName).Int()
 
 			errHndlr("OnSetDailySummary", "Cmd", totCountErr)
 			errHndlr("OnSetDailySummary", "Cmd", totTimeErr)
@@ -1217,7 +1234,7 @@ func OnSetDailyThesholdBreakDown(_date time.Time) {
 			summery.BreakDown = fmt.Sprintf("%s-%s", keyItems[8], keyItems[9])
 			summery.Hour = hour
 
-			thCount, thCountErr := rdb.Do(context.TODO(),"get", key).Int()
+			thCount, thCountErr := rdb.Get(context.TODO(), key).Int()
 			errHndlr("OnSetDailyThesholdBreakDown", "Cmd", thCountErr)
 			summery.ThresholdCount = thCount
 			summery.SummaryDate = _date
@@ -1272,7 +1289,7 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 
 		sessParamsEventKey := fmt.Sprintf("SESSIONPARAMS:%d:%d:%s:%s", _tenant, _company, _window, _session)
 
-		isExists, isExistErr := rdb.Do(context.TODO(),"exists", sessParamsEventKey).Int()
+		isExists, isExistErr := rdb.Exists(context.TODO(),sessParamsEventKey).Result()
 		errHndlr("FindDashboardSession", "exists", isExistErr)
 
 		if isExists == 1 {
@@ -1281,13 +1298,13 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 			errHndlr("FindDashboardSession", "Cmd", paramListErr)
 			if len(paramList) >= 3 {
 				sessionKey = fmt.Sprintf("SESSION:%d:%d:%s:%s:%s:%s:%s", _tenant, _company, paramList[0].(string), _window, _session, paramList[1].(string), paramList[2].(string))
-				tmx, _:= rdb.Do(context.TODO(),"hget", sessionKey, "time").Text()
+				tmx, _:= rdb.HGet(context.TODO(), sessionKey, "time").Result()
 				timeValue = tmx
 				businessUnit = paramList[0].(string)
 				param1 = paramList[1].(string)
 				param2 = paramList[2].(string)
 
-				errHndlr("FindDashboardSession", "Cmd", rdb.Do(context.TODO(),"del", sessParamsEventKey).Err())
+				errHndlr("FindDashboardSession", "Cmd", rdb.Del(context.TODO(),sessParamsEventKey).Err())
 			}
 		}
 
@@ -1295,7 +1312,7 @@ func FindDashboardSession(_tenant, _company int, _window, _session, _persistSess
 	}
 }
 
-func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey, _persistSession string) (result int) {
+func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey, _persistSession string) (result int64) {
 
 
 	defer func() {
@@ -1311,7 +1328,7 @@ func RemoveDashboardSession(_tenant, _company int, _window, _session, sessionKey
 	} else {
 
 
-		iDel, iDelErr := rdb.Do(context.TODO(),"del", sessionKey).Int()
+		iDel, iDelErr := rdb.Del(context.TODO(),"del", sessionKey).Result()
 		errHndlr("RemoveDashboardSession", "Cmd", iDelErr)
 		result = iDel
 		return
@@ -1342,7 +1359,7 @@ func DoPublish(company, tenant int, businessUnit, window, param1, param2 string)
 	fmt.Println("response Headers:", resp.Header)
 	//body, _ := ioutil.ReadAll(resp.Body)
 	//result := string(body)
-	fmt.Println("response CODE::", string(resp.StatusCode))
+	fmt.Println("response CODE::", strconv.Itoa(resp.StatusCode))
 	fmt.Println("End======================================:: ", time.Now().UTC())
 	if resp.StatusCode == 200 {
 		fmt.Println("Return true")

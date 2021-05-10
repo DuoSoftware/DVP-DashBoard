@@ -84,7 +84,7 @@ func FindPersistedSession(tenant, company int, window, dashboardSession string) 
 	return
 }
 
-func DeletePersistedSession(tenant, company int, window, dashboardSession string) (result int) {
+func DeletePersistedSession(tenant, company int, window, dashboardSession string) (result int64) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in DeletePersistedSession", r)

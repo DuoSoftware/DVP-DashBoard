@@ -96,7 +96,7 @@ func (client *StatsdClient) Increment(stat string) {
 	client.UpdateStats(stats, 1, 1)
 }
 
-func (client *StatsdClient) Gauge(stat string, val int) {
+func (client *StatsdClient) Gauge(stat string, val int64) {
 	updateString := fmt.Sprintf("%d|g", val)
 	stats := map[string]string{stat: updateString}
 	client.Send(stats, 1)
