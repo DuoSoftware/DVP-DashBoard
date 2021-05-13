@@ -105,6 +105,12 @@ func InitiateRedis() {
 
 	rdb = redis.NewUniversalClient(&connectionOptions)
 
+	
+	// pipe := rdb.TxPipeline()
+	// windowres := pipe.Get(context.TODO(), "aaa")
+    // cmd, err := pipe.Exec(context.TODO())
+	// fmt.Println(windowres.Val(), cmd, err)
+
 }
 
 func PubSub() {
@@ -392,7 +398,8 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 	pipe.SetNX(context.TODO(), _windowName, _window, 0)
 	pipe.SetNX(context.TODO(), _incName, count, 0)
 
-	_, err := pipe.Exec(context.TODO())
+	cmd, err := pipe.Exec(context.TODO())
+	fmt.Println(cmd)
 	errHndlr("CacheMetaData", "Cmd", err)
 }
 
@@ -468,7 +475,10 @@ func OnEvent(_tenent, _company int, _businessUnit, _class, _type, _category, _se
 		persistSessionres := pipe.Get(context.TODO(), _persistSessionName)
 		thresholdres := pipe.Get(context.TODO(), _thresholdEnableName)
 
-		pipe.Exec(context.TODO())
+		cmd, err := pipe.Exec(context.TODO())
+
+		fmt.Println(cmd)
+		errHndlr("OnEvent", "GetMetaPipe", err)
 
 		window = windowres.Val()
 		sinc = sincres.Val();
@@ -501,7 +511,7 @@ func OnEvent(_tenent, _company int, _businessUnit, _class, _type, _category, _se
 		}
 	}
 
-	fmt.Println("Session: %s iinc value is %d", _session, iinc)
+	fmt.Println("Session: ", _session, " iinc value is ", iinc)
 
 	if  berr == nil {
 
@@ -541,7 +551,7 @@ func OnEvent(_tenent, _company int, _businessUnit, _class, _type, _category, _se
 
 			} else {
 
-				fmt.Println("Metadata not found for decriment: %s", _session)
+				fmt.Println("Metadata not found for decriment: ", _session)
 
 			}
 
@@ -613,13 +623,15 @@ func IncrementEvent(_tenent, _company int, _businessUnit, window, _parameter1, _
 
 	result, err := pipe.Exec(context.TODO())
 
+	fmt.Println(result)
+
 	ccount := ccountRes.Val()
 	tcount := tcountRes.Val()
 	ccountB := ccountBRes.Val()
 	tcountB := tcountBRes.Val()
 
 
-	fmt.Println(result)
+	
 
 	errHndlr("OnEvent", "Cmd ccountErr", err)
 
@@ -737,12 +749,13 @@ func DecrementEvent(_tenent, _company, tryCount int, window, _session, persistSe
 			pipe.Decr(context.TODO(), concEventNameWithLastParam_BusinssUnit)
 
 			result, err := pipe.Exec(context.TODO())
+			fmt.Println(result)
 
 			rincB := rincBRes.Val()
 			dccount := dccountRes.Val()
 			dccountB := dccountBRes.Val()
 
-			fmt.Println(result)
+			
 			errHndlr("OnEvent", "Cmd rincErr", err)
 
 
