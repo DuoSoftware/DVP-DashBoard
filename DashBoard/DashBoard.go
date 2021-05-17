@@ -393,8 +393,8 @@ func CacheMetaData(_class, _type, _category, _window string, count int, _flushEn
 
 	pipe := rdb.TxPipeline()
 
-	pipe.SetNX(context.TODO(), _useSessionName, _useSession,0)
-	pipe.SetNX(context.TODO(), _persistSessionName, _persistSession, 0)
+	pipe.SetNX(context.TODO(), _useSessionName,strconv.FormatBool( _useSession),0)
+	pipe.SetNX(context.TODO(), _persistSessionName, strconv.FormatBool(_persistSession), 0)
 	pipe.SetNX(context.TODO(), _windowName, _window, 0)
 	pipe.SetNX(context.TODO(), _incName, count, 0)
 
